@@ -5,9 +5,10 @@ import {
   STATE_UPDATE_EVENT,
   timerControls,
   setScore,
+  // --- addPreset, deletePreset removed ---
 } from '../stateManager';
+import { showNotification } from '../notification';
 
-// ... (formatTime function is unchanged) ...
 function formatTime(totalSeconds: number): string {
   const min = Math.floor(totalSeconds / 60)
     .toString()
@@ -34,7 +35,6 @@ export function render(container: HTMLElement) {
           <button id="team-a-dec" class="btn-secondary" style="flex-grow: 1;">-1</button>
         </div>
       </div>
-
       <div class="card team-control">
         <h4>${config?.teamB.name || 'Team B'} (${
     config?.teamB.abbreviation || 'TMB'
@@ -54,12 +54,14 @@ export function render(container: HTMLElement) {
       <div class="timer-display" id="timer-display">${formatTime(
         timer.seconds,
       )}</div>
+      
       <div class="btn-group">
         <button id="start-timer" class="btn-green" style="flex-grow: 1;">Start</button>
         <button id="stop-timer" class="btn-red" style="flex-grow: 1;">Stop</button>
         <button id="reset-timer" class="btn-secondary">Reset</button>
         <button id="show-set-time" class="btn-secondary">Set</button>
       </div>
+
       <div id="set-time-popup">
         <div style="display: flex; gap: 8px; align-items: center;">
             <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
@@ -71,6 +73,7 @@ export function render(container: HTMLElement) {
                 <input type="number" id="timer-sec" min="0" max="59" value="0">
             </div>
         </div>
+        
         <div class="btn-group" style="margin-top: 10px;">
             <button id="save-set-time" style="flex-grow: 1;">Save</button>
             <button id="cancel-set-time" class="btn-secondary" style="flex-grow: 1;">Cancel</button>
@@ -82,7 +85,6 @@ export function render(container: HTMLElement) {
   // --- Get Element References ---
   const teamAScoreEl = container.querySelector('#team-a-score') as HTMLElement;
   const teamBScoreEl = container.querySelector('#team-b-score') as HTMLElement;
-  // ... (rest of element references are unchanged) ...
   const timerDisplayEl = container.querySelector('#timer-display') as HTMLElement;
   const startTimerBtn = container.querySelector(
     '#start-timer',
@@ -99,6 +101,9 @@ export function render(container: HTMLElement) {
   const timerSecInput = container.querySelector(
     '#timer-sec',
   ) as HTMLInputElement;
+  // --- presetContainer ref removed ---
+
+  // --- renderPresetButtons function removed ---
 
   // --- Update UI Function ---
   const updateUI = () => {
@@ -108,73 +113,64 @@ export function render(container: HTMLElement) {
     if (config) {
       teamAScoreEl.textContent = config.teamA.score.toString();
       teamBScoreEl.textContent = config.teamB.score.toString();
-      
-      // Update headers
       const headers = container.querySelectorAll('.team-control h4');
-      if (headers[0])
-        (headers[0] as HTMLElement).textContent = `${config.teamA.name} (${config.teamA.abbreviation})`;
-      if (headers[1])
-        (headers[1] as HTMLElement).textContent = `${config.teamB.name} (${config.teamB.abbreviation})`;
+      if (headers[0]) (headers[0] as HTMLElement).textContent = `${config.teamA.name} (${config.teamA.abbreviation})`;
+      if (headers[1]) (headers[1] as HTMLElement).textContent = `${config.teamB.name} (${config.teamB.abbreviation})`;
     }
 
-    // ... (rest of updateUI function is unchanged) ...
+    // Update timer display
     timerDisplayEl.textContent = formatTime(timer.seconds);
     startTimerBtn.disabled = timer.isRunning;
     stopTimerBtn.disabled = !timer.isRunning;
+    
+    // --- renderPresets call removed ---
   };
 
   // --- Add Event Listeners ---
-  // ... (event listeners are unchanged) ...
-  container.querySelector('#team-a-inc')?.addEventListener('click', () => {
-    const currentScore = getState().config?.teamA.score ?? 0;
-    setScore('teamA', currentScore + 1);
-  });
-  container.querySelector('#team-a-dec')?.addEventListener('click', () => {
-    const currentScore = getState().config?.teamA.score ?? 0;
-    setScore('teamA', currentScore - 1);
-  });
-  container.querySelector('#team-b-inc')?.addEventListener('click', () => {
-    const currentScore = getState().config?.teamB.score ?? 0;
-    setScore('teamB', currentScore + 1);
-  });
-  container.querySelector('#team-b-dec')?.addEventListener('click', () => {
-    const currentScore = getState().config?.teamB.score ?? 0;
-    setScore('teamB', currentScore - 1);
-  });
-
+  // Score buttons
+  container.querySelector('#team-a-inc')?.addEventListener('click', () => setScore('teamA', (getState().config?.teamA.score ?? 0) + 1));
+  container.querySelector('#team-a-dec')?.addEventListener('click', () => setScore('teamA', (getState().config?.teamA.score ?? 0) - 1));
+  container.querySelector('#team-b-inc')?.addEventListener('click', () => setScore('teamB', (getState().config?.teamB.score ?? 0) + 1));
+  container.querySelector('#team-b-dec')?.addEventListener('click', () => setScore('teamB', (getState().config?.teamB.score ?? 0) - 1));
+  
+  // Timer buttons
   startTimerBtn.addEventListener('click', timerControls.start);
   stopTimerBtn.addEventListener('click', timerControls.stop);
-  container
-    .querySelector('#reset-timer')
-    ?.addEventListener('click', timerControls.reset);
+  container.querySelector('#reset-timer')?.addEventListener('click', timerControls.reset);
 
+  // Set Time Popup controls
   container.querySelector('#show-set-time')?.addEventListener('click', () => {
     const { seconds } = getState().timer;
     timerMinInput.value = Math.floor(seconds / 60).toString();
     timerSecInput.value = (seconds % 60).toString();
     setTimePopup.style.display = 'block';
+    // --- delete-mode class removed ---
   });
 
   container.querySelector('#cancel-set-time')?.addEventListener('click', () => {
     setTimePopup.style.display = 'none';
+    // --- delete-mode class removed ---
   });
 
   container.querySelector('#save-set-time')?.addEventListener('click', () => {
     let minutes = parseInt(timerMinInput.value, 10) || 0;
     let seconds = parseInt(timerSecInput.value, 10) || 0;
-
+    
     if (minutes > 999) minutes = 999;
     if (minutes < 0) minutes = 0;
     if (seconds > 59) seconds = 59;
     if (seconds < 0) seconds = 0;
-
+    
     timerControls.set(minutes * 60 + seconds);
     setTimePopup.style.display = 'none';
+    // --- delete-mode class removed ---
   });
+  
+  // --- 'Add Preset' listener removed ---
 
   // --- Subscribe to State ---
   subscribe(updateUI);
-  updateUI();
+  updateUI(); // Initial sync
 
   // Return a cleanup function
   return () => {

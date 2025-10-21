@@ -1,4 +1,3 @@
-// --- Type Definitions (mirroring backend Pydantic models) ---
 export interface ColorConfig {
   primary: string;
   secondary: string;
@@ -21,28 +20,27 @@ export interface TimerStatus {
   seconds: number;
 }
 
-
-
 // --- API and WebSocket URLs ---
-// *** ROLLED BACK: URLs are now hard-coded ***
 const API_URL = 'http://localhost:8000';
 const WS_URL = 'ws://localhost:8000/ws';
 
 // --- State and Event Emitter ---
-// ... (appState, stateEmitter, STATE_UPDATE_EVENT are unchanged) ...
 let appState: {
   config: ScoreboardConfig | null;
   timer: TimerStatus;
+  isConnected: boolean;
+  // --- presets removed ---
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
+  isConnected: false,
 };
 
-const stateEmitter = new EventTarget();
+export const stateEmitter = new EventTarget();
 export const STATE_UPDATE_EVENT = 'stateupdate';
+export const CONNECTION_STATUS_EVENT = 'connectionstatus';
 
 // --- Private Helper Functions ---
-// ... (updateConfig, updateTimer, post functions are unchanged) ...
 function updateConfig(newConfig: ScoreboardConfig) {
   appState.config = newConfig;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
@@ -53,6 +51,15 @@ function updateTimer(newTimerStatus: Partial<TimerStatus>) {
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
+function updateConnectionStatus(status: boolean) {
+  appState.isConnected = status;
+  stateEmitter.dispatchEvent(
+    new CustomEvent(CONNECTION_STATUS_EVENT, { detail: status }),
+  );
+}
+
+// --- updatePresets function removed ---
+
 async function post(endpoint: string, body: object) {
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -60,24 +67,29 @@ async function post(endpoint: string, body: object) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.detail || 'An API error occurred');
+    }
     return await response.json();
   } catch (error) {
     console.error(`Error in POST ${endpoint}:`, error);
+    throw error;
   }
 }
 
 // --- WebSocket Connection ---
 function connectWebSocket() {
-  // *** ROLLED BACK: Removed the check for WS_URL ***
   const ws = new WebSocket(WS_URL);
 
   ws.onopen = () => {
     console.log('WebSocket connected');
+    updateConnectionStatus(true);
   };
 
   ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
+    
     if (message.type === 'time') {
       updateTimer({ seconds: message.seconds });
     } else if (message.type === 'status') {
@@ -85,29 +97,27 @@ function connectWebSocket() {
         isRunning: message.isRunning,
         seconds: message.seconds,
       });
-    }
-    else if (message.type === 'config') {
+    } else if (message.type === 'config') {
       updateConfig(message.config as ScoreboardConfig);
-    }
+    } 
+    // --- presets 'else if' removed ---
   };
 
   ws.onclose = () => {
     console.log('WebSocket disconnected. Reconnecting in 3 seconds...');
+    updateConnectionStatus(false);
     setTimeout(connectWebSocket, 3000);
   };
 
   ws.onerror = (error) => {
     console.error('WebSocket error:', error);
+    updateConnectionStatus(false);
     ws.close();
   };
 }
 
 // --- Public Interface ---
-// ... (Rest of the file is unchanged) ...
 export async function initStateManager() {
-  // *** REMOVED initial config fetch ***
-  // The WebSocket now sends the config on connection,
-  // so this fetch is no longer needed and prevents a race condition.
   connectWebSocket();
 }
 
@@ -141,3 +151,5 @@ export async function saveTeamInfo(teamA: object, teamB: object) {
 export async function saveColors(teamA: object, teamB: object) {
   await post('/api/customization', { teamA, teamB });
 }
+
+// --- addPreset and deletePreset functions removed ---
