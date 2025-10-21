@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Control Panel</title>
+    <link rel="stylesheet" href="/control_panel/control-panel.css" />
+  </head>
+  <body>
+    <div class="control-panel-container">
+      <nav class="sidebar">
+        <h3>Soccer Overlay</h3>
+        <ul>
+          <li>
+            <a href="#" class="nav-link active" data-page="dashboard"
+              >📊 Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="#" class="nav-link" data-page="customization"
+              >🎨 Customization</a
+            >
+          </li>
+          <li>
+            <a href="#" class="nav-link" data-page="team-info"
+              >⚽ Team Info</a
+            >
+          </li>
+          <li>
+            <a href="#" class="nav-link" data-page="setting">⚙️ Setting</a>
+          </li>
+        </ul>
+      </nav>
+
+      <main class="subpage-content" id="app-content"></main>
+    </div>
+    <script type="module" src="/control_panel/main.ts"></script>
+  </body>
+</html>

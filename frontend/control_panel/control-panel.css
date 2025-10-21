@@ -1,0 +1,268 @@
+/* Basic Reset and Root Variables */
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  --bg-light: #f4f7fa;
+  --bg-dark: #1a1a1a;
+  --sidebar-bg-light: #ffffff;
+  --sidebar-bg-dark: #242424;
+  --border-light: #e0e0e0;
+  --border-dark: #3a3a3a;
+  --text-light: #212121;
+  --text-dark: #eeeeee;
+  --accent-light: #007aff;
+  --accent-dark: #00aaff;
+  --green: #28a745;
+  --red: #dc3545;
+
+  --bg-color: var(--bg-light);
+  --sidebar-bg: var(--sidebar-bg-light);
+  --border-color: var(--border-light);
+  --text-color: var(--text-light);
+  --accent-color: var(--accent-light);
+}
+
+body.dark-mode {
+  --bg-color: var(--bg-dark);
+  --sidebar-bg: var(--sidebar-bg-dark);
+  --border-color: var(--border-dark);
+  --text-color: var(--text-dark);
+  --accent-color: var(--accent-dark);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Main Layout */
+.control-panel-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.sidebar h3 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar ul {
+  list-style: none;
+  flex-grow: 1;
+}
+
+.sidebar li {
+  margin-bottom: 4px;
+}
+
+.sidebar .nav-link {
+  display: block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--text-color);
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar .nav-link:hover {
+  background-color: var(--border-color);
+}
+
+.sidebar .nav-link.active {
+  background-color: var(--accent-color);
+  color: #ffffff;
+}
+
+/* Subpage Content */
+.subpage-content {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Form Elements */
+.card {
+  background-color: var(--sidebar-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.card h4 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+input[type='text'],
+input[type='number'] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+input[type='color'] {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+button {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #ffffff;
+  background-color: var(--accent-color);
+  transition: opacity 0.2s;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+button.btn-secondary {
+  background-color: #6c757d;
+}
+body.dark-mode button.btn-secondary {
+  background-color: #5a6268;
+}
+
+button.btn-green {
+  background-color: var(--green);
+}
+
+button.btn-red {
+  background-color: var(--red);
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* Controller Page Specifics */
+.controller-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.team-control {
+  text-align: center;
+}
+
+.team-score {
+  font-size: 48px;
+  font-weight: bold;
+  margin: 10px 0;
+  color: var(--accent-color);
+}
+
+.timer-control {
+  text-align: center;
+}
+
+.timer-display {
+  font-size: 36px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Setting Page Specifics */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Notification Popups */
+#notification-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notification {
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.notification.success {
+  background-color: var(--green);
+  color: #ffffff;
+}
+
+.notification.error {
+  background-color: var(--red);
+  color: #ffffff;
+}
+
+/* Dashboard Timer Set Popup */
+#set-time-popup {
+  display: none; /* Hidden by default */
+  border-top: 1px solid var(--border-color);
+  margin-top: 12px;
+  padding-top: 12px;
+}

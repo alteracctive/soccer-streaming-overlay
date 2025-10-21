@@ -1,0 +1,66 @@
+# =============================================================================
+# General / OS
+# =============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =============================================================================
+# Backend (Python / FastAPI)
+# =============================================================================
+# Virtual environment
+/backend/venv/
+
+# Python cache
+/backend/__pycache__/
+*.py[cod]
+*$py.class
+*.cpython-*.pyc
+
+# Local config file (contains live data)
+/backend/config.json
+
+# =Example local run scripts (uncomment if you have local scripts)
+# /backend/run.bat
+# /backend/run.sh
+
+# =============================================================================
+# Frontend (Vite / TypeScript / Node.js)
+# =============================================================================
+# Node dependencies
+/frontend/node_modules/
+
+# Build output
+/frontend/dist/
+
+# Vite cache
+/frontend/.vite/
+/frontend/.tsbuildinfo
+
+# Environment variables
+# Ignore all .env files except the example template
+.env
+.env.*
+!.env.example
+
+# Unused file from default Vite install (if you deleted it)
+/frontend/public/vite.svg
