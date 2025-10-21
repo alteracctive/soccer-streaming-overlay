@@ -1,0 +1,72 @@
+/* Makes the entire page transparent.
+  When loaded in OBS as a "Browser Source," this will be see-through.
+*/
+body {
+  background-color: rgba(0, 0, 0, 0);
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevents scrollbars */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+/* This container holds the scoreboard in the top-left corner.
+*/
+.scoreboard-container {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.75); /* Dark, semi-transparent background */
+  color: #ffffff; /* White text */
+  border-radius: 8px;
+  padding: 8px 16px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  min-width: 250px; /* Give it some minimum width */
+}
+
+/* Top row: [ABBR] [SCORE] : [SCORE] [ABBR]
+*/
+.score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Spreads elements out */
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.score-row .abbr {
+  flex: 1; /* Allows team names to take up space */
+  text-transform: uppercase;
+}
+
+/* Center-align the team abbreviations */
+.score-row .abbr:first-child {
+  text-align: left;
+}
+.score-row .abbr:last-child {
+  text-align: right;
+}
+
+.score-row .score {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 36px;
+  margin: 0 10px;
+  width: 40px; /* Fixed width for score numbers */
+  text-align: center;
+}
+
+.score-row .separator {
+  margin: 0 5px;
+}
+
+/* Bottom row: [TIMER]
+*/
+.timer-row {
+  font-size: 28px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  margin-top: 5px;
+  padding-top: 5px;
+}
