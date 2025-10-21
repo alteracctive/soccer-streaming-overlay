@@ -266,3 +266,35 @@ button.btn-red {
   margin-top: 12px;
   padding-top: 12px;
 }
+
+/* Sidebar Overlay Link Box */
+.sidebar .overlay-link-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 16px;
+}
+
+.sidebar .overlay-link-container a {
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--accent-color);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.sidebar .overlay-link-container a:hover {
+  text-decoration: underline;
+}
+
+.sidebar .overlay-link-container button {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0; /* Prevent button from shrinking */
+}

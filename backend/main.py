@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from pydantic import BaseModel # *** IMPORT BaseModel ***
+from pydantic import BaseModel
 
 # Import our managers and data models
 from data_manager import (
@@ -10,9 +10,10 @@ from data_manager import (
     ScoreboardConfig,
     TeamInfoUpdate,
     CustomizationUpdate,
-    SetScoreUpdate  # *** IMPORT SetScoreUpdate ***
+    SetScoreUpdate
 )
-from timer_manager import timer_manager
+# *** RENAME import ***
+from websocket_manager import websocket_manager
 
 # --- App Lifecycle ---
 @asynccontextmanager
@@ -40,63 +41,81 @@ app.add_middleware(
 # --- WebSocket Endpoint ---
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await timer_manager.connect(websocket)
+    # *** Use websocket_manager ***
+    await websocket_manager.connect(websocket)
+    
+    # *** ADDED: Send the current config on initial connect ***
+    try:
+        await websocket.send_json({
+            "type": "config", 
+            "config": data_manager.get_config().model_dump()
+        })
+    except Exception as e:
+        print(f"Error sending initial config: {e}")
+
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        timer_manager.disconnect(websocket)
+        # *** Use websocket_manager ***
+        websocket_manager.disconnect(websocket)
         print("Client disconnected")
 
 
 # --- HTTP API Endpoints ---
 
-# --- Timer Control ---
+# --- Timer Control (use websocket_manager) ---
 @app.post("/api/timer/start")
 async def start_timer():
-    timer_manager.start()
+    websocket_manager.start()
     return {"message": "Timer started"}
 
 @app.post("/api/timer/stop")
 async def stop_timer():
-    timer_manager.stop()
+    websocket_manager.stop()
     return {"message": "Timer stopped"}
 
 @app.post("/api/timer/reset")
 async def reset_timer():
-    timer_manager.reset()
+    websocket_manager.reset()
     return {"message": "Timer reset"}
 
-# *** NEW MODEL AND ENDPOINT FOR SETTING TIME ***
 class SetTimeUpdate(BaseModel):
     seconds: int
 
 @app.post("/api/timer/set")
 async def set_timer(update: SetTimeUpdate):
-    timer_manager.set_time(update.seconds)
+    websocket_manager.set_time(update.seconds)
     return {"message": f"Timer set to {update.seconds} seconds"}
 
-# --- Data Control ---
+# --- Data Control (Broadcast changes) ---
 @app.get("/api/config")
 async def get_full_config() -> ScoreboardConfig:
-    """Gets the entire current scoreboard configuration."""
     return data_manager.get_config()
 
-# *** UPDATED ENDPOINT FOR SETTING SCORE ***
 @app.post("/api/score/set")
 async def set_score(update: SetScoreUpdate) -> ScoreboardConfig:
-    """Sets the score for one team to an exact value."""
-    return await data_manager.set_score(update)
+    """Sets the score and broadcasts the change."""
+    config = await data_manager.set_score(update)
+    # *** ADDED: Broadcast the new config ***
+    await websocket_manager.broadcast_config(config)
+    return config
 
 @app.post("/api/team-info")
 async def update_team_info(update: TeamInfoUpdate) -> ScoreboardConfig:
-    """Sets the team names and abbreviations."""
-    return await data_manager.update_team_info(update)
+    """Sets team info and broadcasts the change."""
+    config = await data_manager.update_team_info(update)
+    # *** ADDED: Broadcast the new config ***
+    await websocket_manager.broadcast_config(config)
+    return config
 
 @app.post("/api/customization")
 async def update_customization(update: CustomizationUpdate) -> ScoreboardConfig:
-    """Sets the team colors."""
-    return await data_manager.update_colors(update)
+    """Sets colors and broadcasts the change."""
+    config = await data_manager.update_colors(update)
+    # *** ADDED: Broadcast the new config ***
+    await websocket_manager.broadcast_config(config)
+    return config
 
 
 # --- Run the App ---

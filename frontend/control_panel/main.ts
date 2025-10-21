@@ -2,8 +2,8 @@ import { render as renderDashboard } from './pages/dashboard';
 import { render as renderCustomization } from './pages/customization';
 import { render as renderTeamInfo } from './pages/team-info';
 import { render as renderSetting } from './pages/setting';
-// *** IMPORT THE STATE MANAGER ***
 import { initStateManager } from './stateManager';
+import { showNotification } from './notification';
 
 // ... (PageModule interface is unchanged) ...
 interface PageModule {
@@ -73,6 +73,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load theme first
   if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark-mode');
+  }
+
+  const copyBtn = document.getElementById('copy-overlay-link');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      // Construct the full, absolute URL
+      const overlayUrl = `${window.location.origin}/overlay/`;
+
+      navigator.clipboard
+        .writeText(overlayUrl)
+        .then(() => {
+          // Success!
+          showNotification('Overlay URL copied to clipboard!');
+        })
+        .catch((err) => {
+          // Error
+          console.error('Failed to copy URL: ', err);
+          showNotification('Failed to copy URL', 'error');
+        });
+    });
   }
 
   // *** INITIALIZE STATE MANAGER ***

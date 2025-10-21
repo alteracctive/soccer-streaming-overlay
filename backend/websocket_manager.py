@@ -1,15 +1,16 @@
 import asyncio
 from fastapi import WebSocket
+# *** IMPORT ScoreboardConfig from data_manager ***
+from data_manager import ScoreboardConfig 
 
-class TimerManager:
+# *** RENAME class to WebSocketManager ***
+class WebSocketManager:
     def __init__(self):
         self._is_running: bool = False
         self._seconds: int = 0
         self._timer_task: asyncio.Task | None = None
         self._active_connections: list[WebSocket] = []
 
-    # ... (get_status, connect, disconnect, _timer_loop are unchanged) ...
-    
     def get_status(self):
         """Returns the current timer status."""
         return {"isRunning": self._is_running, "seconds": self._seconds}
@@ -18,8 +19,12 @@ class TimerManager:
         """Adds a new client to the broadcast list."""
         await websocket.accept()
         self._active_connections.append(websocket)
-        # Send the current status to the new client immediately
+        # Send the current timer status to the new client
         await self.broadcast_status()
+        # *** ADDED: Send the current config to the new client ***
+        # This requires data_manager to be imported, but let's
+        # fetch it from main.py later. For now, let's just add the broadcast method.
+        # We will send the config on connect from main.py
 
     def disconnect(self, websocket: WebSocket):
         """Removes a client from the broadcast list."""
@@ -43,6 +48,15 @@ class TimerManager:
         """Sends the current status (running/stopped) to all clients."""
         status = self.get_status()
         message = {"type": "status", **status}
+        await asyncio.gather(
+            *[client.send_json(message) for client in self._active_connections]
+        )
+
+    # *** NEW METHOD ***
+    async def broadcast_config(self, config: ScoreboardConfig):
+        """Sends the full config data to all connected clients."""
+        # Use .model_dump() to convert the Pydantic model to a dict
+        message = {"type": "config", "config": config.model_dump()}
         await asyncio.gather(
             *[client.send_json(message) for client in self._active_connections]
         )
@@ -71,17 +85,15 @@ class TimerManager:
         asyncio.create_task(self.broadcast_time())
         print("Timer reset")
 
-    # *** NEW METHOD ***
     def set_time(self, new_seconds: int):
         """Sets the timer to an exact number of seconds."""
         if new_seconds < 0:
             self._seconds = 0
         else:
             self._seconds = new_seconds
-        # Broadcast the change to all clients
         asyncio.create_task(self.broadcast_time())
         print(f"Timer set to {self._seconds} seconds")
 
 
-# Create a single instance to be used by the app
-timer_manager = TimerManager()
+# *** RENAME the instance ***
+websocket_manager = WebSocketManager()

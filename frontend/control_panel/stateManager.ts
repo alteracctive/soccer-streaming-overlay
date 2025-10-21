@@ -84,6 +84,9 @@ function connectWebSocket() {
         seconds: message.seconds,
       });
     }
+    else if (message.type === 'config') {
+      updateConfig(message.config as ScoreboardConfig);
+    }  
   };
 
   ws.onclose = () => {
@@ -100,13 +103,9 @@ function connectWebSocket() {
 // --- Public Interface ---
 // ... (Rest of the file is unchanged) ...
 export async function initStateManager() {
-  try {
-    const config = await fetch(`${API_URL}/api/config`);
-    const configJson: ScoreboardConfig = await config.json();
-    updateConfig(configJson);
-  } catch (error) {
-    console.error('Failed to fetch initial config:', error);
-  }
+  // *** REMOVED initial config fetch ***
+  // The WebSocket now sends the config on connection,
+  // so this fetch is no longer needed and prevents a race condition.
   connectWebSocket();
 }
 
@@ -130,22 +129,13 @@ export const timerControls = {
 };
 
 export async function setScore(team: 'teamA' | 'teamB', score: number) {
-  const newConfig = await post('/api/score/set', { team, score });
-  if (newConfig) {
-    updateConfig(newConfig);
-  }
+  await post('/api/score/set', { team, score });
 }
 
 export async function saveTeamInfo(teamA: object, teamB: object) {
-  const newConfig = await post('/api/team-info', { teamA, teamB });
-  if (newConfig) {
-    updateConfig(newConfig);
-  }
+  await post('/api/team-info', { teamA, teamB });
 }
 
 export async function saveColors(teamA: object, teamB: object) {
-  const newConfig = await post('/api/customization', { teamA, teamB });
-  if (newConfig) {
-    updateConfig(newConfig);
-  }
+  await post('/api/customization', { teamA, teamB });
 }
