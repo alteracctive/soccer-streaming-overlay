@@ -298,3 +298,194 @@ button.btn-red {
   font-weight: 500;
   flex-shrink: 0; /* Prevent button from shrinking */
 }
+
+/* Server Status Indicator */
+.sidebar .server-status-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+#status-indicator.connected {
+  background-color: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+#status-indicator.disconnected {
+  background-color: var(--red);
+  box-shadow: 0 0 6px var(--red);
+}
+
+/* Mini Scoreboard */
+.sidebar .mini-scoreboard {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  font-family: 'Courier New', Courier, monospace;
+  text-align: center;
+}
+
+.sidebar .mini-score-row {
+  display: flex;
+  justify-content: center;
+  align-items: center; /* This correctly aligns the strips and text */
+  font-size: 24px;
+  font-weight: bold;
+  gap: 8px;
+}
+
+.sidebar .mini-score-row .dash {
+  flex-shrink: 0;
+  color: var(--text-color);
+}
+
+.sidebar .mini-score-row span {
+  flex-grow: 1;
+  width: 35px;
+}
+
+.sidebar .mini-score-row span:first-child {
+  text-align: right;
+  color: var(--accent-color); /* <-- RE-ADDED NEUTRAL COLOR */
+}
+.sidebar .mini-score-row span:last-child {
+  text-align: left;
+  color: var(--accent-color); /* <-- RE-ADDED NEUTRAL COLOR */
+}
+
+.sidebar .mini-timer-row {
+  font-size: 16px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 4px;
+  opacity: 0.8;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Color Strips */
+.sidebar .team-color-strip {
+  width: 8px;
+  height: 28px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.sidebar .team-color-strip div {
+  flex: 1;
+  background-color: var(--border-color);
+}
+
+#mini-extra-time {
+  font-weight: bold;
+  color: #ffd700;
+}
+
+/* Timer Preset Buttons */
+.preset-buttons-container {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap; /* Allows presets to wrap if needed */
+  justify-content: flex-start; /* Aligns left */
+}
+
+.preset-btn-wrapper {
+  position: relative;
+}
+
+.preset-btn {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.preset-btn-delete {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--red);
+  color: white;
+  border: 1px solid white;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 18px; /* Center the 'x' */
+  text-align: center;
+  padding: 0;
+  cursor: pointer;
+  z-index: 10;
+  display: none; /* Hidden by default */
+}
+
+/* "Delete Mode" - show the 'x' buttons */
+.delete-mode .preset-btn-delete {
+  display: block;
+}
+
+.inline-form-group {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end; /* Aligns inputs nicely if labels wrap */
+}
+
+/* Remove the default bottom margin when inputs are inline */
+.inline-form-group .form-group {
+  margin-bottom: 0;
+}
+
+/* Customization Page Layout */
+.color-input-row {
+  display: flex;
+  gap: 12px;
+}
+.color-input-row .form-group {
+  flex: 1; /* Make them share space equally */
+  margin-bottom: 0;
+}
+
+/* Dashboard Color Swatches */
+.team-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.team-header h4 {
+  margin-bottom: 0; /* Remove default margin from h4 */
+}
+.color-swatch-container {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 10px;
+}
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
