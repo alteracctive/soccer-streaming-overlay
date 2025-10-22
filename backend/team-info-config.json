@@ -1,11 +1,11 @@
 {
   "teamA": {
-    "name": "Team A",
-    "abbreviation": "TMA",
-    "score": 1,
+    "name": "DS",
+    "abbreviation": "TMAD",
+    "score": 0,
     "colors": {
-      "primary": "#FF0000",
-      "secondary": "#FFFFFF"
+      "primary": "#ff0000",
+      "secondary": "#000000"
     }
   },
   "teamB": {
@@ -13,8 +13,8 @@
     "abbreviation": "TMB",
     "score": 0,
     "colors": {
-      "primary": "#0000FF",
-      "secondary": "#FFFFFF"
+      "primary": "#0000ff",
+      "secondary": "#ffffff"
     }
   }
 }

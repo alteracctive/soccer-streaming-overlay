@@ -345,10 +345,10 @@ button.btn-red {
 .sidebar .mini-score-row {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center; /* This correctly aligns the strips and text */
   font-size: 24px;
   font-weight: bold;
-  gap: 10px;
+  gap: 8px;
 }
 
 .sidebar .mini-score-row .dash {
@@ -358,16 +358,16 @@ button.btn-red {
 
 .sidebar .mini-score-row span {
   flex-grow: 1;
-  width: 35px; /* Ensures scores don't jump around */
+  width: 35px;
 }
 
 .sidebar .mini-score-row span:first-child {
   text-align: right;
-  color: var(--accent-color);
+  color: var(--accent-color); /* <-- RE-ADDED NEUTRAL COLOR */
 }
 .sidebar .mini-score-row span:last-child {
   text-align: left;
-  color: var(--accent-color);
+  color: var(--accent-color); /* <-- RE-ADDED NEUTRAL COLOR */
 }
 
 .sidebar .mini-timer-row {
@@ -376,7 +376,32 @@ button.btn-red {
   border-top: 1px solid var(--border-color);
   padding-top: 4px;
   opacity: 0.8;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
+
+/* Color Strips */
+.sidebar .team-color-strip {
+  width: 8px;
+  height: 28px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.sidebar .team-color-strip div {
+  flex: 1;
+  background-color: var(--border-color);
+}
+
+#mini-extra-time {
+  font-weight: bold;
+  color: #ffd700;
+}
+
 /* Timer Preset Buttons */
 .preset-buttons-container {
   display: flex;
@@ -420,4 +445,47 @@ button.btn-red {
 /* "Delete Mode" - show the 'x' buttons */
 .delete-mode .preset-btn-delete {
   display: block;
+}
+
+.inline-form-group {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end; /* Aligns inputs nicely if labels wrap */
+}
+
+/* Remove the default bottom margin when inputs are inline */
+.inline-form-group .form-group {
+  margin-bottom: 0;
+}
+
+/* Customization Page Layout */
+.color-input-row {
+  display: flex;
+  gap: 12px;
+}
+.color-input-row .form-group {
+  flex: 1; /* Make them share space equally */
+  margin-bottom: 0;
+}
+
+/* Dashboard Color Swatches */
+.team-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.team-header h4 {
+  margin-bottom: 0; /* Remove default margin from h4 */
+}
+.color-swatch-container {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 10px;
+}
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
 }

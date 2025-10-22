@@ -9,35 +9,39 @@ export function render(container: HTMLElement) {
       
       <div class="card">
         <h4>Team A Info</h4>
-        <div class="form-group">
-          <label for="team-a-name">Team Name</label>
-          <input type="text" id="team-a-name" value="${
-            config?.teamA.name ?? ''
-          }">
+        <div class="inline-form-group">
+          <div class="form-group" style="flex-grow: 1;">
+            <label for="team-a-name">Team Name</label>
+            <input type="text" id="team-a-name" value="${
+              config?.teamA.name ?? ''
+            }">
+          </div>
+          <div class="form-group" style="width: 120px;">
+            <label for="team-a-abbr">Abbreviation</label>
+            <input type="text" id="team-a-abbr" maxlength="4" value="${
+              config?.teamA.abbreviation ?? ''
+            }">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="team-a-abbr">Abbreviation (Max 4)</label>
-          <input type="text" id="team-a-abbr" maxlength="4" value="${
-            config?.teamA.abbreviation ?? ''
-          }">
         </div>
-      </div>
 
       <div class="card">
         <h4>Team B Info</h4>
-        <div class="form-group">
-          <label for="team-b-name">Team Name</label>
-          <input type="text" id="team-b-name" value="${
-            config?.teamB.name ?? ''
-          }">
+        <div class="inline-form-group">
+          <div class="form-group" style="flex-grow: 1;">
+            <label for="team-b-name">Team Name</label>
+            <input type="text" id="team-b-name" value="${
+              config?.teamB.name ?? ''
+            }">
+          </div>
+          <div class="form-group" style="width: 120px;">
+            <label for="team-b-abbr">Abbreviation</label>
+            <input type="text" id="team-b-abbr" maxlength="4" value="${
+              config?.teamB.abbreviation ?? ''
+            }">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="team-b-abbr">Abbreviation (Max 4)</label>
-          <input type="text" id="team-b-abbr" maxlength="4" value="${
-            config?.teamB.abbreviation ?? ''
-          }">
         </div>
-      </div>
 
     </div>
     <button id="save-team-info" style="margin-top: 16px;">Save Info</button>
@@ -47,7 +51,6 @@ export function render(container: HTMLElement) {
   const teamAName = container.querySelector('#team-a-name') as HTMLInputElement;
   const teamAAbbr = container.querySelector('#team-a-abbr') as HTMLInputElement;
   const teamBName = container.querySelector('#team-b-name') as HTMLInputElement;
-  // *** FIX: Changed selector from '#team-a-abbr' to '#team-b-abbr' ***
   const teamBAbbr = container.querySelector(
     '#team-b-abbr',
   ) as HTMLInputElement;

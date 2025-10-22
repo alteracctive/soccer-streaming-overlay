@@ -10,36 +10,40 @@ export function render(container: HTMLElement) {
       
       <div class="card">
         <h4>Team A Colors</h4>
-        <div class="form-group">
-          <label for="team-a-primary">Primary Color</label>
-          <input type="color" id="team-a-primary" value="${
-            config?.teamA.colors.primary ?? '#FF0000'
-          }">
+        <div class="color-input-row">
+          <div class="form-group">
+            <label for="team-a-primary">Primary Color</label>
+            <input type="color" id="team-a-primary" value="${
+              config?.teamA.colors.primary ?? '#FF0000'
+            }">
+          </div>
+          <div class="form-group">
+            <label for="team-a-secondary">Secondary Color</label>
+            <input type="color" id="team-a-secondary" value="${
+              config?.teamA.colors.secondary ?? '#FFFFFF'
+            }">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="team-a-secondary">Secondary Color</label>
-          <input type="color" id="team-a-secondary" value="${
-            config?.teamA.colors.secondary ?? '#FFFFFF'
-          }">
-        </div>
-        <button id="sync-a" class="btn-secondary">Use Primary as Secondary</button>
+        <button id="sync-a" class="btn-secondary" style="margin-top: 12px;">Use Primary as Secondary</button>
       </div>
 
       <div class="card">
         <h4>Team B Colors</h4>
-        <div class="form-group">
-          <label for="team-b-primary">Primary Color</label>
-          <input type="color" id="team-b-primary" value="${
-            config?.teamB.colors.primary ?? '#0000FF'
-          }">
+        <div class="color-input-row">
+          <div class="form-group">
+            <label for="team-b-primary">Primary Color</label>
+            <input type="color" id="team-b-primary" value="${
+              config?.teamB.colors.primary ?? '#0000FF'
+            }">
+          </div>
+          <div class="form-group">
+            <label for="team-b-secondary">Secondary Color</label>
+            <input type="color" id="team-b-secondary" value="${
+              config?.teamB.colors.secondary ?? '#FFFFFF'
+            }">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="team-b-secondary">Secondary Color</label>
-          <input type="color" id="team-b-secondary" value="${
-            config?.teamB.colors.secondary ?? '#FFFFFF'
-          }">
-        </div>
-        <button id="sync-b" class="btn-secondary">Use Primary as Secondary</button>
+        <button id="sync-b" class="btn-secondary" style="margin-top: 12px;">Use Primary as Secondary</button>
       </div>
 
     </div>

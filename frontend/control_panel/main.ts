@@ -150,6 +150,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const miniScoreB = document.getElementById('mini-score-b') as HTMLElement;
   const miniTimer = document.getElementById('mini-timer') as HTMLElement;
 
+  const stripAPrimary = document.getElementById('mini-strip-a-primary') as HTMLDivElement;
+  const stripASecondary = document.getElementById('mini-strip-a-secondary') as HTMLDivElement;
+  const stripBPrimary = document.getElementById('mini-strip-b-primary') as HTMLDivElement;
+  const stripBSecondary = document.getElementById('mini-strip-b-secondary') as HTMLDivElement;
+
   if (miniScoreA && miniScoreB && miniTimer) {
     // Function to update the mini scoreboard
     const updateMiniScoreboard = () => {
@@ -158,9 +163,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (config) {
         miniScoreA.textContent = formatScore(config.teamA.score);
         miniScoreB.textContent = formatScore(config.teamB.score);
+
+        // *** 2. SET STRIP COLORS ***
+        if (stripAPrimary) stripAPrimary.style.backgroundColor = config.teamA.colors.primary;
+        if (stripASecondary) stripASecondary.style.backgroundColor = config.teamA.colors.secondary;
+        if (stripBPrimary) stripBPrimary.style.backgroundColor = config.teamB.colors.primary;
+        if (stripBSecondary) stripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
       } else {
         miniScoreA.textContent = '00';
         miniScoreB.textContent = '00';
+        miniScoreA.style.color = 'var(--text-color)';
+        miniScoreB.style.color = 'var(--text-color)';
       }
 
       miniTimer.textContent = formatTime(timer.seconds);
