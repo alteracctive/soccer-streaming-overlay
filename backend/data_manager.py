@@ -3,7 +3,7 @@ import aiofiles
 from pydantic import BaseModel
 from typing import Literal
 
-CONFIG_FILE = "config.json"
+CONFIG_FILE = "team-info-config.json"
 # MAX_TIME_SECONDS = (999 * 60) + 59 # Removed
 
 # --- Pydantic Data Models ---
