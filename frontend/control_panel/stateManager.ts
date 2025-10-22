@@ -21,6 +21,8 @@ export interface TimerStatus {
   seconds: number;
 }
 
+
+
 // --- API and WebSocket URLs ---
 // *** ROLLED BACK: URLs are now hard-coded ***
 const API_URL = 'http://localhost:8000';
@@ -106,6 +108,9 @@ export async function initStateManager() {
   // *** REMOVED initial config fetch ***
   // The WebSocket now sends the config on connection,
   // so this fetch is no longer needed and prevents a race condition.
+  // *** REMOVED initial config fetch ***
+  // The WebSocket now sends the config on connection,
+  // so this fetch is no longer needed and prevents a race condition.
   connectWebSocket();
 }
 
@@ -130,12 +135,15 @@ export const timerControls = {
 
 export async function setScore(team: 'teamA' | 'teamB', score: number) {
   await post('/api/score/set', { team, score });
+  await post('/api/score/set', { team, score });
 }
 
 export async function saveTeamInfo(teamA: object, teamB: object) {
   await post('/api/team-info', { teamA, teamB });
+  await post('/api/team-info', { teamA, teamB });
 }
 
 export async function saveColors(teamA: object, teamB: object) {
+  await post('/api/customization', { teamA, teamB });
   await post('/api/customization', { teamA, teamB });
 }
