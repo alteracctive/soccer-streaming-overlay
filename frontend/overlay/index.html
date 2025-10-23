@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-g" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Soccer Overlay</title>
     <link rel="stylesheet" href="./overlay.css" />
@@ -9,18 +9,36 @@
   <body>
     <div class="scoreboard-container">
       <div class="score-row">
+        
         <span class="abbr" id="team-a-abbr">TMA</span>
-        <span class="score" id="team-a-score">0</span>
-        <span class="separator">:</span>
-        <span class="score" id="team-b-score">0</span>
+
+        <div class="score-block" id="score-block-a">
+          <div class="team-color-strip" id="overlay-strip-a">
+            <div id="overlay-strip-a-primary"></div>
+            <div id="overlay-strip-a-secondary"></div>
+          </div>
+          <span class="score" id="team-a-score">0</span>
+        </div>
+        
+        <span class="separator">-</span>
+        
+        <div class="score-block" id="score-block-b">
+          <span class="score" id="team-b-score">0</span>
+          <div class="team-color-strip" id="overlay-strip-b">
+            <div id="overlay-strip-b-primary"></div>
+            <div id="overlay-strip-b-secondary"></div>
+          </div>
+        </div>
+
         <span class="abbr" id="team-b-abbr">TMB</span>
+
       </div>
 
       <div class="timer-row">
         <span id="timer-display">00:00</span>
       </div>
     </div>
-
+    
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

@@ -1,72 +1,111 @@
-/* Makes the entire page transparent.
-  When loaded in OBS as a "Browser Source," this will be see-through.
-*/
+/* Makes the entire page transparent */
 body {
   background-color: rgba(0, 0, 0, 0);
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Prevents scrollbars */
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif;
 }
 
-/* This container holds the scoreboard in the top-left corner.
+/* This container holds the scoreboard in the top-left corner
+  and vertically aligns the two boxes.
 */
 .scoreboard-container {
   position: fixed;
   top: 20px;
   left: 20px;
-  background-color: rgba(0, 0, 0, 0.75); /* Dark, semi-transparent background */
-  color: #ffffff; /* White text */
-  border-radius: 8px;
-  padding: 8px 16px;
-  text-align: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  min-width: 250px; /* Give it some minimum width */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* This centers the timer box under the score box */
+  gap: 8px; /* Space between score box and timer box */
 }
 
-/* Top row: [ABBR] [SCORE] : [SCORE] [ABBR]
-*/
+/* Top row: [ABBR] [SCORE-BLOCK-A] [ - ] [SCORE-BLOCK-B] [ABBR] */
 .score-row {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Spreads elements out */
+  justify-content: space-between; /* Spaces out the main elements */
   font-size: 32px;
   font-weight: bold;
+
+  /* This is the "big rectangle box" style */
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  min-width: 400px; /* Set a minimum width */
+  height: 50px;
+  box-sizing: border-box;
 }
 
 .score-row .abbr {
-  flex: 1; /* Allows team names to take up space */
+  flex: 1; /* Make abbreviations take up the extra space */
   text-transform: uppercase;
+  text-align: center;
 }
 
-/* Center-align the team abbreviations */
 .score-row .abbr:first-child {
-  text-align: left;
+  text-align: left; /* Aligns "TMA" to the left */
 }
 .score-row .abbr:last-child {
-  text-align: right;
+  text-align: right; /* Aligns "TMB" to the right */
+}
+
+/* This is the [STRIP] [SCORE] container */
+.score-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0; /* Prevents shrinking */
 }
 
 .score-row .score {
   font-family: 'Courier New', Courier, monospace;
   font-size: 36px;
-  margin: 0 10px;
-  width: 40px; /* Fixed width for score numbers */
+  width: 40px;
   text-align: center;
 }
 
 .score-row .separator {
-  margin: 0 5px;
+  margin: 0 15px; /* Space around the dash */
+  flex-shrink: 0;
 }
 
-/* Bottom row: [TIMER]
-*/
+/* Overlay Color Strips (larger than sidebar) */
+.team-color-strip {
+  width: 10px;
+  height: 32px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+.team-color-strip div {
+  flex: 1;
+  background-color: #333; /* Default gray */
+}
+
+/* Bottom row: [TIMER] */
 .timer-row {
   font-size: 28px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
-  margin-top: 5px;
-  padding-top: 5px;
+  
+  /* This is the "smaller rectangle box" style */
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 5px 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  
+  /* Centering the timer text */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 150px; /* Fixed width */
+  box-sizing: border-box;
 }

@@ -6,12 +6,17 @@ import {
 } from '../control_panel/stateManager';
 
 // --- Get Element References ---
-// We use the '!' to tell TypeScript we know these elements exist.
 const teamAAbbr = document.getElementById('team-a-abbr')!;
 const teamAScore = document.getElementById('team-a-score')!;
 const teamBAbbr = document.getElementById('team-b-abbr')!;
 const teamBScore = document.getElementById('team-b-score')!;
 const timerDisplay = document.getElementById('timer-display')!;
+
+// Get color strip elements
+const stripAPrimary = document.getElementById('overlay-strip-a-primary') as HTMLDivElement;
+const stripASecondary = document.getElementById('overlay-strip-a-secondary') as HTMLDivElement;
+const stripBPrimary = document.getElementById('overlay-strip-b-primary') as HTMLDivElement;
+const stripBSecondary = document.getElementById('overlay-strip-b-secondary') as HTMLDivElement;
 
 // --- Utility Function ---
 function formatTime(totalSeconds: number): string {
@@ -23,10 +28,6 @@ function formatTime(totalSeconds: number): string {
 }
 
 // --- Main UI Update Function ---
-/**
- * This function is called every time the state changes
- * (e.g., score update, timer tick).
- */
 function updateUI() {
   const { config, timer } = getState();
 
@@ -36,12 +37,12 @@ function updateUI() {
     teamAScore.textContent = config.teamA.score.toString();
     teamBAbbr.textContent = config.teamB.abbreviation;
     teamBScore.textContent = config.teamB.score.toString();
-  } else {
-    // Fallback if config isn't loaded yet
-    teamAAbbr.textContent = 'TMA';
-    teamAScore.textContent = '0';
-    teamBAbbr.textContent = 'TMB';
-    teamBScore.textContent = '0';
+
+    // Update color strips
+    if (stripAPrimary) stripAPrimary.style.backgroundColor = config.teamA.colors.primary;
+    if (stripASecondary) stripASecondary.style.backgroundColor = config.teamA.colors.secondary;
+    if (stripBPrimary) stripBPrimary.style.backgroundColor = config.teamB.colors.primary;
+    if (stripBSecondary) stripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
   }
 
   // Update timer display
@@ -49,17 +50,8 @@ function updateUI() {
 }
 
 // --- Initialization ---
-/**
- * When the page loads, initialize the state manager
- * and subscribe to updates.
- */
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Connect to the backend (fetches config, starts WebSocket)
   await initStateManager();
-
-  // 2. Subscribe our updateUI function to all state changes
   subscribe(updateUI);
-
-  // 3. Run updateUI once immediately to load the initial data
   updateUI();
 });

@@ -1,4 +1,5 @@
 import { render as renderDashboard } from './pages/dashboard';
+import { render as renderBroadcast } from './pages/broadcast';
 import { render as renderCustomization } from './pages/customization';
 import { render as renderTeamInfo } from './pages/team-info';
 import { render as renderSetting } from './pages/setting';
@@ -32,6 +33,7 @@ interface PageModule {
 // Map page names to their render functions
 const pages: Record<string, PageModule> = {
   dashboard: { render: renderDashboard },
+  broadcast: { render: renderBroadcast },
   customization: { render: renderCustomization },
   'team-info': { render: renderTeamInfo },
   setting: { render: renderSetting },
