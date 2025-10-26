@@ -1,3 +1,5 @@
+// frontend/control_panel/stateManager.ts
+
 // --- Type Definitions ---
 export interface ColorConfig {
   primary: string;
@@ -33,21 +35,19 @@ const API_URL = 'http://localhost:8000';
 const WS_URL = 'ws://localhost:8000/ws';
 
 // --- State and Event Emitter ---
-// This holds the "source of truth" for the app
 let appState: {
   config: ScoreboardConfig | null;
   timer: TimerStatus;
   isConnected: boolean;
-  scoreboardStyle: ScoreboardStyleConfig | null; // Keep this
+  scoreboardStyle: ScoreboardStyleConfig | null;
+  // Visibility flags removed
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
-  // Default includes opacity
   scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100 },
 };
 
-// Allows pages to "listen" for changes to the state
 export const stateEmitter = new EventTarget();
 export const STATE_UPDATE_EVENT = 'stateupdate';
 export const CONNECTION_STATUS_EVENT = 'connectionstatus';
@@ -71,7 +71,6 @@ function updateConnectionStatus(status: boolean) {
 }
 
 function updateScoreboardStyle(newStyle: ScoreboardStyleConfig) {
-  // Add scale validation/clamping
   if (newStyle.opacity < 50) newStyle.opacity = 50;
   if (newStyle.opacity > 100) newStyle.opacity = 100;
   if (newStyle.scale < 50) newStyle.scale = 50;
@@ -80,7 +79,6 @@ function updateScoreboardStyle(newStyle: ScoreboardStyleConfig) {
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
-// Simple wrapper for API POST requests
 async function post(endpoint: string, body: object) {
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -95,7 +93,7 @@ async function post(endpoint: string, body: object) {
     return await response.json();
   } catch (error) {
     console.error(`Error in POST ${endpoint}:`, error);
-    throw error; // Re-throw to be caught by the caller
+    throw error;
   }
 }
 
@@ -117,8 +115,7 @@ function connectWebSocket() {
       updateTimer({ isRunning: message.isRunning, seconds: message.seconds });
     } else if (message.type === 'config') {
       updateConfig(message.config as ScoreboardConfig);
-    } 
-    // This calls the function defined above
+    }
     else if (message.type === 'scoreboard_style') {
       updateScoreboardStyle(message.style as ScoreboardStyleConfig);
     }
@@ -137,40 +134,26 @@ function connectWebSocket() {
   };
 }
 
-
-
 // --- Public Interface ---
-
-/**
- * Initializes the state manager. Connects to WebSocket.
- */
 export async function initStateManager() {
   connectWebSocket();
 }
 
-/**
- * Gets the current application state.
- */
 export function getState() {
   return appState;
 }
 
-/**
- * Subscribes a callback function to state updates.
- */
 export function subscribe(callback: (event: Event) => void) {
   stateEmitter.addEventListener(STATE_UPDATE_EVENT, callback);
 }
 
-/**
- * Unsubscribes a callback function from state updates.
- */
 export function unsubscribe(callback: (event: Event) => void) {
   stateEmitter.removeEventListener(STATE_UPDATE_EVENT, callback);
 }
 
-// --- API-Calling Functions ---
+// Visibility setter functions removed
 
+// --- API-Calling Functions ---
 export const timerControls = {
   start: () => post('/api/timer/start', {}),
   stop: () => post('/api/timer/stop', {}),

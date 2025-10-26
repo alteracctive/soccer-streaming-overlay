@@ -1,15 +1,15 @@
 {
   "teamA": {
-    "name": "DS",
+    "name": "TEAM A",
     "abbreviation": "TGV",
-    "score": 1,
+    "score": 0,
     "colors": {
       "primary": "#ff0000",
       "secondary": "#8f0000"
     }
   },
   "teamB": {
-    "name": "Team B",
+    "name": "TEAM B",
     "abbreviation": "PTNK",
     "score": 0,
     "colors": {

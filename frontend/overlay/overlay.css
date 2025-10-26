@@ -3,67 +3,55 @@ body {
   background-color: rgba(0, 0, 0, 0);
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: hidden; /* Hide scrollbars, crucial for animation */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif;
 }
 
-/* Container positions the boxes and applies scaling */
+/* Container positions the scoreboard boxes */
 .scoreboard-container {
   position: fixed;
   top: 20px;
   left: 20px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: center; /* Centers timer box */
   gap: 8px;
-
   transform-origin: top left;
+  /* Scale is controlled by JS */
 }
 
-/* Top row styles */
+/* Top row styles (Scoreboard) */
 .score-row {
   display: flex;
   align-items: center;
-  /* Removed justify-content for more manual spacing */
-  font-size: 32px; /* Font size remains the same, scale handles reduction */
+  justify-content: space-between;
+  font-size: 32px;
   font-weight: bold;
-
   background-color: rgba(0, 0, 0, 0.75); /* Default */
   color: #ffffff; /* Default */
-
   border-radius: 8px;
   padding: 8px 16px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  min-width: 450px; /* Adjusted min-width slightly */
+  min-width: 400px;
   height: 50px;
   box-sizing: border-box;
 }
 
-/* --- 2. ABBREVIATION ALIGNMENT --- */
+/* Abbreviation styling (Scoreboard) */
 .score-row .abbr {
-  flex-basis: 100px; /* Give abbreviations a base width */
-  flex-grow: 1;      /* Allow them to expand */
+  flex: 1;
   text-transform: uppercase;
-  text-align: center; /* Center text within the element */
-  overflow: hidden;    /* Prevent text overflow */
-  white-space: nowrap;
+  text-align: center;
+}
+.score-row .abbr:first-child {
+    text-align: left;
+}
+.score-row .abbr:last-child {
+    text-align: right;
 }
 
-/* Specific alignment adjustments using padding/margins if needed */
-/* Team A needs space on its left */
-#team-a-abbr {
-  /* text-align: left; /* Removed - center align text */
-  padding-right: 10px; /* Add space between Abbr and Score Block A */
-}
-/* Team B needs space on its right */
-#team-b-abbr {
-  /* text-align: right; /* Removed - center align text */
-  padding-left: 10px; /* Add space between Score Block B and Abbr */
-}
-
-
-/* Score Block ([STRIP][SCORE]) */
+/* Score Block ([STRIP][SCORE]) (Scoreboard) */
 .score-block {
   display: flex;
   align-items: center;
@@ -76,7 +64,6 @@ body {
   font-size: 36px;
   width: 40px;
   text-align: center;
-  flex-shrink: 0;
 }
 
 .score-row .separator {
@@ -84,7 +71,7 @@ body {
   flex-shrink: 0;
 }
 
-/* Color Strips */
+/* Color Strips (Shared Style) */
 .team-color-strip {
   width: 10px;
   height: 32px;
@@ -100,22 +87,135 @@ body {
   background-color: #333; /* Default gray */
 }
 
-/* Bottom row styles */
+/* Timer row styles (Scoreboard) */
 .timer-row {
   font-size: 28px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
-
   background-color: rgba(0, 0, 0, 0.75); /* Default */
   color: #ffffff; /* Default */
-
   border-radius: 8px;
   padding: 5px 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-
   display: flex;
   justify-content: center;
   align-items: center;
   width: 150px;
   box-sizing: border-box;
+}
+
+
+/* --- GAME REPORT STYLES --- */
+.game-report-container {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) scale(1); /* JS controls scale */
+    transform-origin: bottom center;
+    width: 960px;
+    min-height: 200px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(0, 0, 0, 0.75); /* Default */
+    color: #FFFFFF; /* Default */
+}
+
+.game-report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    font-weight: bold;
+    font-size: 28px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.report-timer {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 38px;
+    flex-shrink: 0;
+}
+
+.team-info-left, .team-info-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-basis: 40%;
+    max-width: 40%;
+    overflow: hidden; /* Crucial: hide overflow for the name container */
+}
+
+.team-info-left {
+    justify-content: flex-start;
+}
+.team-info-right {
+    justify-content: flex-end;
+}
+
+.report-team-name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 26px;
+    /* Remove any default text-align here if present */
+}
+
+/* Align Team A name text to the left */
+#report-team-a-name {
+    text-align: right; /* Align text within its container to the left */
+}
+
+/* Align Team B name text to the right */
+#report-team-b-name {
+    text-align: left; /* Align text within its container to the right */
+}
+
+.report-score {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 43px; /* 35% increase */
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* Game Report color strips */
+.game-report-header .team-color-strip {
+    width: 12px;
+    height: 38px;
+}
+
+.game-report-content {
+    flex-grow: 1;
+    padding: 10px 30px;
+    font-size: 20px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* --- Scrolling Text Animation --- */
+/* Wrapper for the scrolling text, applied by JS */
+.scrolling-text-wrapper {
+    display: inline-block; /* Allows text to scroll within the container */
+    vertical-align: middle; /* Or adjust as needed */
+    width: 100%; /* Take full width of parent (.report-team-name) */
+    /* text-align inherited from parent */
+}
+
+/* The actual text element that moves */
+.scrolling-text {
+    display: inline-block;
+    padding-left: 100%; /* Start offscreen to the right */
+    animation: scroll-left 15s linear infinite; /* Adjust duration as needed */
+}
+
+@keyframes scroll-left {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        /* Move text its full width plus the container width to the left */
+        transform: translateX(-200%);
+    }
 }

@@ -1,3 +1,5 @@
+// frontend/control_panel/pages/broadcast.ts
+
 export function render(container: HTMLElement) {
   container.innerHTML = `
     <div class="card">
@@ -5,4 +7,5 @@ export function render(container: HTMLElement) {
       <p>Under construction</p>
     </div>
   `;
+  // No cleanup function needed
 }
