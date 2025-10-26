@@ -8,57 +8,67 @@ body {
     Arial, sans-serif;
 }
 
-/* This container holds the scoreboard in the top-left corner
-  and vertically aligns the two boxes.
-*/
+/* Container positions the boxes and applies scaling */
 .scoreboard-container {
   position: fixed;
   top: 20px;
   left: 20px;
   display: flex;
   flex-direction: column;
-  align-items: center; /* This centers the timer box under the score box */
-  gap: 8px; /* Space between score box and timer box */
+  align-items: center;
+  gap: 8px;
+
+  transform-origin: top left;
 }
 
-/* Top row: [ABBR] [SCORE-BLOCK-A] [ - ] [SCORE-BLOCK-B] [ABBR] */
+/* Top row styles */
 .score-row {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Spaces out the main elements */
-  font-size: 32px;
+  /* Removed justify-content for more manual spacing */
+  font-size: 32px; /* Font size remains the same, scale handles reduction */
   font-weight: bold;
 
-  /* This is the "big rectangle box" style */
-  background-color: rgba(0, 0, 0, 0.75);
-  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.75); /* Default */
+  color: #ffffff; /* Default */
+
   border-radius: 8px;
   padding: 8px 16px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  min-width: 400px; /* Set a minimum width */
+  min-width: 450px; /* Adjusted min-width slightly */
   height: 50px;
   box-sizing: border-box;
 }
 
+/* --- 2. ABBREVIATION ALIGNMENT --- */
 .score-row .abbr {
-  flex: 1; /* Make abbreviations take up the extra space */
+  flex-basis: 100px; /* Give abbreviations a base width */
+  flex-grow: 1;      /* Allow them to expand */
   text-transform: uppercase;
-  text-align: center;
+  text-align: center; /* Center text within the element */
+  overflow: hidden;    /* Prevent text overflow */
+  white-space: nowrap;
 }
 
-.score-row .abbr:first-child {
-  text-align: left; /* Aligns "TMA" to the left */
+/* Specific alignment adjustments using padding/margins if needed */
+/* Team A needs space on its left */
+#team-a-abbr {
+  /* text-align: left; /* Removed - center align text */
+  padding-right: 10px; /* Add space between Abbr and Score Block A */
 }
-.score-row .abbr:last-child {
-  text-align: right; /* Aligns "TMB" to the right */
+/* Team B needs space on its right */
+#team-b-abbr {
+  /* text-align: right; /* Removed - center align text */
+  padding-left: 10px; /* Add space between Score Block B and Abbr */
 }
 
-/* This is the [STRIP] [SCORE] container */
+
+/* Score Block ([STRIP][SCORE]) */
 .score-block {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-shrink: 0; /* Prevents shrinking */
+  flex-shrink: 0;
 }
 
 .score-row .score {
@@ -66,14 +76,15 @@ body {
   font-size: 36px;
   width: 40px;
   text-align: center;
-}
-
-.score-row .separator {
-  margin: 0 15px; /* Space around the dash */
   flex-shrink: 0;
 }
 
-/* Overlay Color Strips (larger than sidebar) */
+.score-row .separator {
+  margin: 0 15px;
+  flex-shrink: 0;
+}
+
+/* Color Strips */
 .team-color-strip {
   width: 10px;
   height: 32px;
@@ -89,23 +100,22 @@ body {
   background-color: #333; /* Default gray */
 }
 
-/* Bottom row: [TIMER] */
+/* Bottom row styles */
 .timer-row {
   font-size: 28px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
-  
-  /* This is the "smaller rectangle box" style */
-  background-color: rgba(0, 0, 0, 0.75);
-  color: #ffffff;
+
+  background-color: rgba(0, 0, 0, 0.75); /* Default */
+  color: #ffffff; /* Default */
+
   border-radius: 8px;
   padding: 5px 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  
-  /* Centering the timer text */
+
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 150px; /* Fixed width */
+  width: 150px;
   box-sizing: border-box;
 }

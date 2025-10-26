@@ -1,3 +1,4 @@
+// --- Type Definitions ---
 export interface ColorConfig {
   primary: string;
   secondary: string;
@@ -20,22 +21,33 @@ export interface TimerStatus {
   seconds: number;
 }
 
+export interface ScoreboardStyleConfig {
+  primary: string;
+  secondary: string;
+  opacity: number;
+  scale: number;
+}
+
 // --- API and WebSocket URLs ---
 const API_URL = 'http://localhost:8000';
 const WS_URL = 'ws://localhost:8000/ws';
 
 // --- State and Event Emitter ---
+// This holds the "source of truth" for the app
 let appState: {
   config: ScoreboardConfig | null;
   timer: TimerStatus;
   isConnected: boolean;
-  // --- presets removed ---
+  scoreboardStyle: ScoreboardStyleConfig | null; // Keep this
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
+  // Default includes opacity
+  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100 },
 };
 
+// Allows pages to "listen" for changes to the state
 export const stateEmitter = new EventTarget();
 export const STATE_UPDATE_EVENT = 'stateupdate';
 export const CONNECTION_STATUS_EVENT = 'connectionstatus';
@@ -58,8 +70,17 @@ function updateConnectionStatus(status: boolean) {
   );
 }
 
-// --- updatePresets function removed ---
+function updateScoreboardStyle(newStyle: ScoreboardStyleConfig) {
+  // Add scale validation/clamping
+  if (newStyle.opacity < 50) newStyle.opacity = 50;
+  if (newStyle.opacity > 100) newStyle.opacity = 100;
+  if (newStyle.scale < 50) newStyle.scale = 50;
+  if (newStyle.scale > 150) newStyle.scale = 150;
+  appState.scoreboardStyle = newStyle;
+  stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
 
+// Simple wrapper for API POST requests
 async function post(endpoint: string, body: object) {
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -74,7 +95,7 @@ async function post(endpoint: string, body: object) {
     return await response.json();
   } catch (error) {
     console.error(`Error in POST ${endpoint}:`, error);
-    throw error;
+    throw error; // Re-throw to be caught by the caller
   }
 }
 
@@ -93,14 +114,14 @@ function connectWebSocket() {
     if (message.type === 'time') {
       updateTimer({ seconds: message.seconds });
     } else if (message.type === 'status') {
-      updateTimer({
-        isRunning: message.isRunning,
-        seconds: message.seconds,
-      });
+      updateTimer({ isRunning: message.isRunning, seconds: message.seconds });
     } else if (message.type === 'config') {
       updateConfig(message.config as ScoreboardConfig);
     } 
-    // --- presets 'else if' removed ---
+    // This calls the function defined above
+    else if (message.type === 'scoreboard_style') {
+      updateScoreboardStyle(message.style as ScoreboardStyleConfig);
+    }
   };
 
   ws.onclose = () => {
@@ -116,22 +137,39 @@ function connectWebSocket() {
   };
 }
 
+
+
 // --- Public Interface ---
+
+/**
+ * Initializes the state manager. Connects to WebSocket.
+ */
 export async function initStateManager() {
   connectWebSocket();
 }
 
+/**
+ * Gets the current application state.
+ */
 export function getState() {
   return appState;
 }
 
+/**
+ * Subscribes a callback function to state updates.
+ */
 export function subscribe(callback: (event: Event) => void) {
   stateEmitter.addEventListener(STATE_UPDATE_EVENT, callback);
 }
 
+/**
+ * Unsubscribes a callback function from state updates.
+ */
 export function unsubscribe(callback: (event: Event) => void) {
   stateEmitter.removeEventListener(STATE_UPDATE_EVENT, callback);
 }
+
+// --- API-Calling Functions ---
 
 export const timerControls = {
   start: () => post('/api/timer/start', {}),
@@ -142,17 +180,16 @@ export const timerControls = {
 
 export async function setScore(team: 'teamA' | 'teamB', score: number) {
   await post('/api/score/set', { team, score });
-  await post('/api/score/set', { team, score });
 }
 
 export async function saveTeamInfo(teamA: object, teamB: object) {
-  await post('/api/team-info', { teamA, teamB });
   await post('/api/team-info', { teamA, teamB });
 }
 
 export async function saveColors(teamA: object, teamB: object) {
   await post('/api/customization', { teamA, teamB });
-  await post('/api/customization', { teamA, teamB });
 }
 
-// --- addPreset and deletePreset functions removed ---
+export async function saveScoreboardStyle(style: ScoreboardStyleConfig) {
+  await post('/api/scoreboard-style', style);
+}

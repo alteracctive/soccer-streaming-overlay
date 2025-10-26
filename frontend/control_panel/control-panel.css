@@ -489,3 +489,81 @@ button.btn-red {
   border: 1px solid var(--border-color);
   border-radius: 4px;
 }
+
+.color-picker-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px; /* Space between primary/secondary rows */
+}
+.color-picker-row label {
+  margin-bottom: 0; /* Remove default margin */
+}
+.color-picker-row input[type='color'] {
+  width: 60px; /* Make the color input smaller */
+  height: 30px;
+  padding: 2px;
+}
+
+.scoreboard-container {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  /* Add CSS variables */
+  --scoreboard-bg: rgba(0, 0, 0, 0.75); /* Default background */
+  --scoreboard-text: #FFFFFF; /* Default text */
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 32px;
+  font-weight: bold;
+
+  /* Use CSS variables */
+  background-color: var(--scoreboard-bg);
+  color: var(--scoreboard-text);
+
+  border-radius: 8px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  min-width: 400px;
+  height: 50px;
+  box-sizing: border-box;
+}
+
+.timer-row {
+  font-size: 28px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+
+  /* Use CSS variables */
+  background-color: var(--scoreboard-bg);
+  color: var(--scoreboard-text);
+
+  border-radius: 8px;
+  padding: 5px 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 150px;
+  box-sizing: border-box;
+}
+
+/* Customization Page - Sliders Side-by-Side */
+.slider-row {
+  display: flex;
+  gap: 16px; /* Space between the sliders */
+  align-items: flex-start; /* Align tops if labels wrap differently */
+}
+.slider-row .form-group {
+  flex: 1; /* Make sliders share space equally */
+  margin-top: 0; /* Remove top margin if added previously */
+}

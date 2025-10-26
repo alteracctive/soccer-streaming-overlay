@@ -1,17 +1,17 @@
 {
   "teamA": {
     "name": "DS",
-    "abbreviation": "TMAD",
-    "score": 15,
+    "abbreviation": "TGV",
+    "score": 1,
     "colors": {
       "primary": "#ff0000",
-      "secondary": "#000000"
+      "secondary": "#8f0000"
     }
   },
   "teamB": {
     "name": "Team B",
-    "abbreviation": "TMB",
-    "score": 12,
+    "abbreviation": "PTNK",
+    "score": 0,
     "colors": {
       "primary": "#0000ff",
       "secondary": "#ffffff"
