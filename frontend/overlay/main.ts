@@ -67,10 +67,10 @@ function checkAndApplyScroll(element: HTMLElement | null, textContent: string) {
 
 // --- Main UI Update Function ---
 function updateUI() {
-  // Visibility flags removed from getState()
-  const { config, timer, scoreboardStyle } = getState();
+  // Get all relevant state
+  const { config, timer, scoreboardStyle, isGameReportVisible, isScoreboardVisible } = getState();
 
-  // Visibility logic removed - elements are always potentially updated
+  // Visibility flags removed from getState()
   
   // Update main scoreboard team info
   if (config) {
@@ -126,9 +126,15 @@ function updateUI() {
     if (gameReportContainer) { gameReportContainer.style.backgroundColor = ''; gameReportContainer.style.color = ''; gameReportContainer.style.transform = 'translateX(-50%) scale(1)'; }
   }
 
-  // Ensure containers are visible (remove potential display:none)
-  if (scoreboardContainer) scoreboardContainer.style.display = 'flex';
-  if (gameReportContainer) gameReportContainer.style.display = 'flex';
+  // --- NEW VISIBILITY LOGIC ---
+  // Apply visibility to the scoreboard container
+  if (scoreboardContainer) {
+      scoreboardContainer.style.display = isScoreboardVisible ? 'flex' : 'none';
+  }
+  // Apply visibility to the game report container
+  if (gameReportContainer) {
+      gameReportContainer.style.display = isGameReportVisible ? 'flex' : 'none';
+  }
 }
 
 // --- Initialization ---

@@ -17,6 +17,7 @@ from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # ... (no changes in this function)
     print("Application starting up...")
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
@@ -30,6 +31,7 @@ origins = [
 ]
 app.add_middleware(
     CORSMiddleware,
+    # ... (no changes in this middleware)
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
@@ -38,6 +40,7 @@ app.add_middleware(
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # ... (no changes in this function)
     await websocket_manager.connect(websocket)
     
     try:
@@ -65,6 +68,7 @@ async def websocket_endpoint(websocket: WebSocket):
 # --- Timer Control ---
 @app.post("/api/timer/start")
 async def start_timer():
+    # ... (no changes in this section)
     websocket_manager.start()
     return {"message": "Timer started"}
 
@@ -89,6 +93,7 @@ async def set_timer(update: SetTimeUpdate):
 # --- Data Control ---
 @app.get("/api/config")
 async def get_full_config() -> ScoreboardConfig:
+    # ... (no changes in this section)
     return data_manager.get_config()
 
 @app.post("/api/score/set")
@@ -109,17 +114,27 @@ async def update_customization(update: CustomizationUpdate) -> ScoreboardConfig:
     await websocket_manager.broadcast_config(config)
     return config
 
+@app.post("/api/game-report/toggle")
+async def toggle_game_report():
+    # ... (no changes in this function)
+    status = await websocket_manager.toggle_game_report()
+    return status
+
+# --- New Endpoint ---
+@app.post("/api/scoreboard/toggle")
+async def toggle_scoreboard():
+    """
+    Toggles the visibility of the main scoreboard overlay.
+    """
+    status = await websocket_manager.toggle_scoreboard()
+    return status
 
 @app.post("/api/scoreboard-style")
 async def update_scoreboard_style(style: ScoreboardStyleConfig):
+    # ... (no changes in this function)
     try:
-        # This saves the file AND updates the in-memory style
         new_style = await data_manager.update_scoreboard_style(style)
-        
-        # *** THIS LINE IS CRUCIAL ***
-        # It tells all connected clients (like the overlay) about the new style.
         await websocket_manager.broadcast_scoreboard_style(new_style)
-        
         return new_style
     except Exception as e:
         print(f"Error updating scoreboard style: {e}")

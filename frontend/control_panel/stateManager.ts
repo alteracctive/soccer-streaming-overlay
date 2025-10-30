@@ -40,12 +40,15 @@ let appState: {
   timer: TimerStatus;
   isConnected: boolean;
   scoreboardStyle: ScoreboardStyleConfig | null;
-  // Visibility flags removed
+  isGameReportVisible: boolean; // <-- New state
+  isScoreboardVisible: boolean; // <-- New state
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
   scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100 },
+  isGameReportVisible: false, // <-- Default to false
+  isScoreboardVisible: true, // <-- Default to true
 };
 
 export const stateEmitter = new EventTarget();
@@ -76,6 +79,17 @@ function updateScoreboardStyle(newStyle: ScoreboardStyleConfig) {
   if (newStyle.scale < 50) newStyle.scale = 50;
   if (newStyle.scale > 150) newStyle.scale = 150;
   appState.scoreboardStyle = newStyle;
+  stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
+// --- New Function ---
+function updateGameReportVisibility(isVisible: boolean) {
+  appState.isGameReportVisible = isVisible;
+  stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
+function updateScoreboardVisibility(isVisible: boolean) {
+  appState.isScoreboardVisible = isVisible;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
@@ -118,6 +132,14 @@ function connectWebSocket() {
     }
     else if (message.type === 'scoreboard_style') {
       updateScoreboardStyle(message.style as ScoreboardStyleConfig);
+    }
+    // --- New Case ---
+    else if (message.type === 'game_report_visibility') {
+      updateGameReportVisibility(message.isVisible as boolean);
+    }
+    // --- New Case ---
+    else if (message.type === 'scoreboard_visibility') {
+      updateScoreboardVisibility(message.isVisible as boolean);
     }
   };
 
@@ -175,4 +197,13 @@ export async function saveColors(teamA: object, teamB: object) {
 
 export async function saveScoreboardStyle(style: ScoreboardStyleConfig) {
   await post('/api/scoreboard-style', style);
+}
+
+// --- New Function ---
+export async function toggleGameReport() {
+  await post('/api/game-report/toggle', {});
+}
+
+export async function toggleScoreboard() {
+  await post('/api/scoreboard/toggle', {});
 }
