@@ -9,10 +9,20 @@ export function render(container: HTMLElement) {
   const { scoreboardStyle } = getState();
 
   container.innerHTML = `
+    <style>
+      .unsaved-indicator {
+        opacity: 0.7;
+        font-weight: normal;
+        font-size: 0.8em;
+        margin-left: 8px;
+        font-style: italic;
+      }
+    </style>
+
     <div style="display: flex; flex-direction: column; gap: 16px;">
 
       <div class="card">
-        <h3>Scoreboard</h3>
+        <h3>Scoreboard <span id="unsaved-scoreboard" class="unsaved-indicator"></span></h3>
         <div style="margin-top: 10px;">
           <div class="color-picker-row">
              <label for="sb-color-primary">Box Color (Main)</label>
@@ -58,7 +68,11 @@ export function render(container: HTMLElement) {
     </div>
   `;
 
+  // --- Local State for Unsaved Data ---
+  let isScoreboardUnsaved = false;
+
   // --- Get Element References ---
+  // Inputs
   const sbPrimaryInput = container.querySelector(
     '#sb-color-primary',
   ) as HTMLInputElement;
@@ -68,15 +82,42 @@ export function render(container: HTMLElement) {
   const sbOpacitySlider = container.querySelector(
     '#sb-opacity',
   ) as HTMLInputElement;
-  const sbOpacityValueSpan = container.querySelector(
-    '#sb-opacity-value',
-  ) as HTMLSpanElement;
   const sbScaleSlider = container.querySelector(
     '#sb-scale',
   ) as HTMLInputElement;
+  
+  // Labels
+  const sbPrimaryLabel = container.querySelector('label[for="sb-color-primary"]') as HTMLLabelElement;
+  const sbSecondaryLabel = container.querySelector('label[for="sb-color-secondary"]') as HTMLLabelElement;
+  const sbOpacityLabel = container.querySelector('label[for="sb-opacity"]') as HTMLLabelElement;
+  const sbScaleLabel = container.querySelector('label[for="sb-scale"]') as HTMLLabelElement;
+
+  // Span Indicators
+  const sbOpacityValueSpan = container.querySelector(
+    '#sb-opacity-value',
+  ) as HTMLSpanElement;
   const sbScaleValueSpan = container.querySelector(
     '#sb-scale-value',
   ) as HTMLSpanElement;
+  const unsavedScoreboard = container.querySelector(
+    '#unsaved-scoreboard',
+  ) as HTMLSpanElement;
+  
+  // Group fields and labels
+  const scoreboardFields: [HTMLInputElement, HTMLLabelElement][] = [
+    [sbPrimaryInput, sbPrimaryLabel],
+    [sbSecondaryInput, sbSecondaryLabel],
+    [sbOpacitySlider, sbOpacityLabel],
+    [sbScaleSlider, sbScaleLabel]
+  ];
+  
+  // --- Helper Function ---
+  const updateUnsavedIndicator = () => {
+    if (unsavedScoreboard) {
+      unsavedScoreboard.textContent = isScoreboardUnsaved ? '(unsaved data)' : '';
+    }
+  };
+
 
   // --- Add Event Listeners ---
 
@@ -93,6 +134,18 @@ export function render(container: HTMLElement) {
       sbScaleValueSpan.textContent = `${sbScaleSlider.value}%`;
     });
   }
+  
+  // Add 'input' listeners to all fields
+  scoreboardFields.forEach(([input, label]) => {
+    if (input) {
+      input.addEventListener('input', () => {
+        isScoreboardUnsaved = true;
+        if (label) label.style.fontStyle = 'italic';
+        updateUnsavedIndicator();
+      });
+    }
+  });
+
 
   // Save Scoreboard Settings Button
   container
@@ -114,6 +167,14 @@ export function render(container: HTMLElement) {
           opacity: parseInt(sbOpacitySlider.value, 10),
           scale: parseInt(sbScaleSlider.value, 10),
         });
+        
+        // Reset unsaved state
+        isScoreboardUnsaved = false;
+        updateUnsavedIndicator();
+        scoreboardFields.forEach(([_, label]) => {
+          if (label) label.style.fontStyle = 'normal';
+        });
+
         showNotification('Scoreboard settings saved!');
       } catch (error: any) {
         showNotification(`Error: ${error.message}`, 'error');

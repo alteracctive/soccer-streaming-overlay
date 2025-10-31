@@ -1,20 +1,33 @@
 {
   "teamA": {
-    "name": "TEAM A",
-    "abbreviation": "TGV",
+    "name": "Thua",
+    "abbreviation": "FCB",
     "score": 0,
     "colors": {
       "primary": "#ff0000",
-      "secondary": "#8f0000"
-    }
+      "secondary": "#800000"
+    },
+    "players": [
+      {
+        "number": 1,
+        "name": "hello",
+        "onField": false,
+        "yellowCards": 0,
+        "redCards": 0,
+        "goals": [
+          1
+        ]
+      }
+    ]
   },
   "teamB": {
-    "name": "TEAM B",
-    "abbreviation": "PTNK",
+    "name": "Hay",
+    "abbreviation": "BAR",
     "score": 0,
     "colors": {
       "primary": "#0000ff",
       "secondary": "#ffffff"
-    }
+    },
+    "players": []
   }
 }

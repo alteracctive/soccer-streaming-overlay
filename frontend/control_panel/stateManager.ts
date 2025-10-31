@@ -6,11 +6,21 @@ export interface ColorConfig {
   secondary: string;
 }
 
+export interface PlayerConfig {
+  number: number;
+  name: string;
+  onField: boolean;
+  yellowCards: number;
+  redCards: number;
+  goals: number[];
+}
+
 export interface TeamConfig {
   name: string;
   abbreviation: string;
   score: number;
   colors: ColorConfig;
+  players: PlayerConfig[];
 }
 
 export interface ScoreboardConfig {
@@ -40,15 +50,15 @@ let appState: {
   timer: TimerStatus;
   isConnected: boolean;
   scoreboardStyle: ScoreboardStyleConfig | null;
-  isGameReportVisible: boolean; // <-- New state
-  isScoreboardVisible: boolean; // <-- New state
+  isGameReportVisible: boolean;
+  isScoreboardVisible: boolean;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
   scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100 },
-  isGameReportVisible: false, // <-- Default to false
-  isScoreboardVisible: true, // <-- Default to true
+  isGameReportVisible: false, 
+  isScoreboardVisible: true,
 };
 
 export const stateEmitter = new EventTarget();
@@ -82,7 +92,6 @@ function updateScoreboardStyle(newStyle: ScoreboardStyleConfig) {
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
-// --- New Function ---
 function updateGameReportVisibility(isVisible: boolean) {
   appState.isGameReportVisible = isVisible;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
@@ -92,6 +101,7 @@ function updateScoreboardVisibility(isVisible: boolean) {
   appState.isScoreboardVisible = isVisible;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
+
 
 async function post(endpoint: string, body: object) {
   try {
@@ -133,11 +143,9 @@ function connectWebSocket() {
     else if (message.type === 'scoreboard_style') {
       updateScoreboardStyle(message.style as ScoreboardStyleConfig);
     }
-    // --- New Case ---
     else if (message.type === 'game_report_visibility') {
       updateGameReportVisibility(message.isVisible as boolean);
     }
-    // --- New Case ---
     else if (message.type === 'scoreboard_visibility') {
       updateScoreboardVisibility(message.isVisible as boolean);
     }
@@ -173,8 +181,6 @@ export function unsubscribe(callback: (event: Event) => void) {
   stateEmitter.removeEventListener(STATE_UPDATE_EVENT, callback);
 }
 
-// Visibility setter functions removed
-
 // --- API-Calling Functions ---
 export const timerControls = {
   start: () => post('/api/timer/start', {}),
@@ -199,11 +205,64 @@ export async function saveScoreboardStyle(style: ScoreboardStyleConfig) {
   await post('/api/scoreboard-style', style);
 }
 
-// --- New Function ---
 export async function toggleGameReport() {
   await post('/api/game-report/toggle', {});
 }
 
 export async function toggleScoreboard() {
   await post('/api/scoreboard/toggle', {});
+}
+
+export async function addPlayer(
+  team: 'teamA' | 'teamB',
+  number: number,
+  name: string,
+) {
+  await post('/api/player/add', { team, number, name });
+}
+
+export async function clearPlayerList(team: 'teamA' | 'teamB') {
+  await post('/api/player/clear', { team });
+}
+
+export async function deletePlayer(team: 'teamA' | 'teamB', number: number) {
+  await post('/api/player/delete', { team, number });
+}
+
+export async function addGoal(
+  team: 'teamA' | 'teamB',
+  number: number,
+  minute: number,
+) {
+  await post('/api/player/goal', { team, number, minute });
+}
+
+export async function addCard(
+  team: 'teamA' | 'teamB',
+  number: number,
+  cardType: 'yellow' | 'red',
+) {
+  await post('/api/player/card', { team, number, card_type: cardType });
+}
+
+export async function toggleOnField(team: 'teamA' | 'teamB', number: number) {
+  await post('/api/player/togglefield', { team, number });
+}
+
+export async function editPlayer(
+  team: 'teamA' | 'teamB',
+  originalNumber: number,
+  playerData: Omit<PlayerConfig, 'onField'> & { onField: boolean }
+) {
+  const payload = {
+    team: team,
+    original_number: originalNumber,
+    ...playerData,
+  };
+  await post('/api/player/edit', payload);
+}
+
+// --- New Function ---
+export async function resetTeamStats(team: 'teamA' | 'teamB') {
+  await post('/api/player/resetstats', { team });
 }

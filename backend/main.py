@@ -11,13 +11,20 @@ from data_manager import (
     TeamInfoUpdate,
     CustomizationUpdate,
     SetScoreUpdate,
-    ScoreboardStyleConfig
+    ScoreboardStyleConfig,
+    AddPlayerUpdate,
+    ClearPlayersUpdate,
+    DeletePlayerUpdate,
+    AddGoalUpdate,
+    AddCardUpdate,
+    ToggleOnFieldUpdate,
+    EditPlayerUpdate,
+    ResetStatsUpdate # <-- Import new model
 )
 from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ... (no changes in this function)
     print("Application starting up...")
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
@@ -31,7 +38,6 @@ origins = [
 ]
 app.add_middleware(
     CORSMiddleware,
-    # ... (no changes in this middleware)
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
@@ -40,7 +46,6 @@ app.add_middleware(
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # ... (no changes in this function)
     await websocket_manager.connect(websocket)
     
     try:
@@ -68,7 +73,6 @@ async def websocket_endpoint(websocket: WebSocket):
 # --- Timer Control ---
 @app.post("/api/timer/start")
 async def start_timer():
-    # ... (no changes in this section)
     websocket_manager.start()
     return {"message": "Timer started"}
 
@@ -93,7 +97,6 @@ async def set_timer(update: SetTimeUpdate):
 # --- Data Control ---
 @app.get("/api/config")
 async def get_full_config() -> ScoreboardConfig:
-    # ... (no changes in this section)
     return data_manager.get_config()
 
 @app.post("/api/score/set")
@@ -116,22 +119,100 @@ async def update_customization(update: CustomizationUpdate) -> ScoreboardConfig:
 
 @app.post("/api/game-report/toggle")
 async def toggle_game_report():
-    # ... (no changes in this function)
     status = await websocket_manager.toggle_game_report()
     return status
 
-# --- New Endpoint ---
 @app.post("/api/scoreboard/toggle")
 async def toggle_scoreboard():
-    """
-    Toggles the visibility of the main scoreboard overlay.
-    """
     status = await websocket_manager.toggle_scoreboard()
     return status
 
+@app.post("/api/player/add")
+async def add_player(update: AddPlayerUpdate):
+    try:
+        config = await data_manager.add_player(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error adding player: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/player/clear")
+async def clear_player_list(update: ClearPlayersUpdate):
+    try:
+        config = await data_manager.clear_player_list(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error clearing player list: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/player/delete")
+async def delete_player(update: DeletePlayerUpdate):
+    try:
+        config = await data_manager.delete_player(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error deleting player: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/player/goal")
+async def add_goal(update: AddGoalUpdate):
+    try:
+        config = await data_manager.add_goal(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error adding goal: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/player/card")
+async def add_card(update: AddCardUpdate):
+    try:
+        config = await data_manager.add_card(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error adding card: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/player/togglefield")
+async def toggle_on_field(update: ToggleOnFieldUpdate):
+    try:
+        config = await data_manager.toggle_on_field(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error toggling onField: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/player/edit")
+async def edit_player(update: EditPlayerUpdate):
+    try:
+        config = await data_manager.edit_player(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error editing player: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# --- New Endpoint ---
+@app.post("/api/player/resetstats")
+async def reset_player_stats(update: ResetStatsUpdate):
+    """
+    Resets all stats (goals, cards, onField) for all players on a team.
+    """
+    try:
+        config = await data_manager.reset_team_stats(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error resetting team stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/scoreboard-style")
 async def update_scoreboard_style(style: ScoreboardStyleConfig):
-    # ... (no changes in this function)
     try:
         new_style = await data_manager.update_scoreboard_style(style)
         await websocket_manager.broadcast_scoreboard_style(new_style)
