@@ -53,6 +53,8 @@ let appState: {
   isGameReportVisible: boolean;
   isScoreboardVisible: boolean;
   isPlayersListVisible: boolean;
+  isAutoAddScoreOn: boolean;
+  isAutoConvertYellowToRedOn: boolean; // <-- New state
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
@@ -61,6 +63,8 @@ let appState: {
   isGameReportVisible: false, 
   isScoreboardVisible: true,
   isPlayersListVisible: false,
+  isAutoAddScoreOn: false,
+  isAutoConvertYellowToRedOn: false, // <-- Default to false
 };
 
 export const stateEmitter = new EventTarget();
@@ -176,6 +180,13 @@ function connectWebSocket() {
 
 // --- Public Interface ---
 export async function initStateManager() {
+  // --- Load local settings ---
+  const savedAutoScore = localStorage.getItem('autoAddScore');
+  appState.isAutoAddScoreOn = savedAutoScore === 'true';
+
+  const savedAutoConvert = localStorage.getItem('autoConvertYellowToRed'); // <-- New
+  appState.isAutoConvertYellowToRedOn = savedAutoConvert === 'true'; // <-- New
+
   connectWebSocket();
 }
 
@@ -189,6 +200,18 @@ export function subscribe(callback: (event: Event) => void) {
 
 export function unsubscribe(callback: (event: Event) => void) {
   stateEmitter.removeEventListener(STATE_UPDATE_EVENT, callback);
+}
+
+// --- New Function ---
+export function setAutoAddScore(isOn: boolean) {
+  appState.isAutoAddScoreOn = isOn;
+  localStorage.setItem('autoAddScore', isOn ? 'true' : 'false');
+}
+
+// --- New Function ---
+export function setAutoConvertYellowToRed(isOn: boolean) {
+  appState.isAutoConvertYellowToRedOn = isOn;
+  localStorage.setItem('autoConvertYellowToRed', isOn ? 'true' : 'false');
 }
 
 // --- API-Calling Functions ---
@@ -235,7 +258,6 @@ export async function addPlayer(
   await post('/api/player/add', { team, number, name });
 }
 
-// --- New Function ---
 export async function replacePlayer(
   team: 'teamA' | 'teamB',
   number: number,
@@ -257,7 +279,17 @@ export async function addGoal(
   number: number,
   minute: number,
 ) {
+  // First, add the goal to the player's stats
   await post('/api/player/goal', { team, number, minute });
+  
+  // --- Auto-Score Logic ---
+  if (appState.isAutoAddScoreOn) {
+    const { config } = getState();
+    if (!config) return;
+    
+    const currentScore = (team === 'teamA') ? config.teamA.score : config.teamB.score;
+    setScore(team, currentScore + 1);
+  }
 }
 
 export async function addCard(

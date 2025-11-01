@@ -38,6 +38,10 @@ const playersListHeaderB = document.getElementById('players-list-header-b') as H
 const playersListA = document.getElementById('players-list-a') as HTMLTableSectionElement;
 const playersListB = document.getElementById('players-list-b') as HTMLTableSectionElement;
 
+// --- New Game Report Goal List Refs ---
+const gameReportGoalsA = document.getElementById('game-report-goals-a') as HTMLDivElement;
+const gameReportGoalsB = document.getElementById('game-report-goals-b') as HTMLDivElement;
+
 
 // --- Utility Functions ---
 function formatTime(totalSeconds: number): string {
@@ -74,8 +78,8 @@ function checkAndApplyScroll(element: HTMLElement | null, textContent: string) {
   }
 }
 
-// --- Sort and Render Function ---
-const renderPlayerList = (players: PlayerConfig[], limit: number): string => {
+// --- Player List Sort and Render Function ---
+const renderPlayerList = (players: PlayerConfig[]): string => {
   const onField = players
     .filter(p => p.onField)
     .sort((a, b) => a.number - b.number);
@@ -84,21 +88,32 @@ const renderPlayerList = (players: PlayerConfig[], limit: number): string => {
     .filter(p => !p.onField)
     .sort((a, b) => a.number - b.number);
 
-  const sortedPlayers = [...onField, ...offField];
-
-  const listHtml = sortedPlayers
+  return [...onField, ...offField]
     .map(player => `
       <tr class="${player.onField ? '' : 'not-on-field'}">
         <td>${player.number}</td>
         <td>${player.name}</td>
       </tr>
     `).join('');
+};
 
-  if (players.length > limit) {
-    return listHtml + listHtml; // Duplicate for scrolling
-  } else {
-    return listHtml;
+// --- New Goal Scorer Render Function ---
+const renderGoalScorers = (players: PlayerConfig[]): string => {
+  const scorers = players
+    .filter(p => p.goals.length > 0)
+    .sort((a, b) => a.number - b.number);
+
+  if (scorers.length === 0) {
+    return '<span></span>'; // Empty but valid
   }
+
+  return scorers.map(player => `
+    <div class="overlay-goal-scorer">
+      <span class="player-number">#${player.number}</span>
+      <span class="player-name">${player.name}</span>
+      <span class="goal-minutes">${player.goals.map(g => `${g}'`).join(' ')}</span>
+    </div>
+  `).join('');
 };
 
 
@@ -110,19 +125,15 @@ function updateUI() {
   
   // --- Update Player List ---
   if (config && playersListContainer) {
-    // Update headers
     playersListHeaderA.textContent = config.teamA.name;
     playersListHeaderB.textContent = config.teamB.name;
     
-    // Populate Team A List
     const teamAPlayers = config.teamA.players;
-    playersListA.innerHTML = renderPlayerList(teamAPlayers, SCROLL_TRIGGER_LIMIT);
+    playersListA.innerHTML = renderPlayerList(teamAPlayers).slice(0, 20); // Still respect 20 player limit
     playersListA.closest('.players-table-wrapper')?.classList.toggle('scrolling', teamAPlayers.length > SCROLL_TRIGGER_LIMIT);
-
       
-    // Populate Team B List
     const teamBPlayers = config.teamB.players;
-    playersListB.innerHTML = renderPlayerList(teamBPlayers, SCROLL_TRIGGER_LIMIT);
+    playersListB.innerHTML = renderPlayerList(teamBPlayers).slice(0, 20); // Still respect 20 player limit
     playersListB.closest('.players-table-wrapper')?.classList.toggle('scrolling', teamBPlayers.length > SCROLL_TRIGGER_LIMIT);
   }
 
@@ -138,8 +149,9 @@ function updateUI() {
     if (stripBSecondary) stripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
   }
 
-  // Update Game Report team info
-  if (config) {
+  // Update Game Report
+  if (config && gameReportContainer) {
+    // Team Info
     checkAndApplyScroll(reportTeamAName, config.teamA.name);
     if (reportTeamAScore) reportTeamAScore.textContent = config.teamA.score.toString();
     if (reportStripAPrimary) reportStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
@@ -149,6 +161,10 @@ function updateUI() {
     if (reportTeamBScore) reportTeamBScore.textContent = config.teamB.score.toString();
     if (reportStripBPrimary) reportStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportStripBSecondary) reportStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
+    
+    // --- New: Goal Scorer List ---
+    gameReportGoalsA.innerHTML = renderGoalScorers(config.teamA.players);
+    gameReportGoalsB.innerHTML = renderGoalScorers(config.teamB.players);
   }
 
   // Update timers

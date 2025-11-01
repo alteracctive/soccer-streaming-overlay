@@ -310,3 +310,81 @@ body {
   opacity: 0.8;
   font-style: italic;
 }
+
+@keyframes scroll-left {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        /* Move text its full width plus the container width to the left */
+        transform: translateX(-200%);
+    }
+}
+
+
+/* --- New Game Report Content Styles --- */
+.game-report-content {
+  flex-grow: 1;
+  padding: 10px 30px 20px 30px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* Updated: Added auto column for divider */
+  gap: 20px;
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.game-report-divider { /* New Style for the divider line */
+  width: 2px;
+  background-color: rgba(255, 255, 255, 0.3); /* Slightly transparent white line */
+  height: 100%;
+  align-self: stretch; /* Make it stretch vertically */
+}
+
+.goal-list-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.overlay-goal-scorer {
+  display: flex;
+  align-items: baseline;
+}
+.overlay-goal-scorer .player-number {
+  font-weight: bold;
+  width: 50px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+.overlay-goal-scorer .player-name {
+  flex-grow: 1;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 10px;
+}
+.overlay-goal-scorer .goal-minutes {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+
+/* --- Players List Styles --- */
+.players-list-container {
+  display: none; /* Hidden by default */
+  /* ... (rest of .players-list-container styles) ... */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.75); 
+  color: #FFFFFF;
+  border-radius: 10px;
+  padding: 15px 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  gap: 20px;
+  max-height: 80vh; 
+}

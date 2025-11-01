@@ -11,7 +11,7 @@ import {
   toggleOnField,
   editPlayer,
   resetTeamStats,
-  replacePlayer, // <-- Import new function
+  replacePlayer,
   subscribe,
   unsubscribe,
   type PlayerConfig
@@ -714,12 +714,37 @@ export function render(container: HTMLElement) {
         const target = e.currentTarget as HTMLButtonElement;
         const team = target.dataset.team as 'teamA' | 'teamB';
         const number = parseInt(target.dataset.number || '', 10);
-        if (team && !isNaN(number)) {
-          const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
-          if (player && player.yellowCards >= 2) {
-            showNotification('Player already has 2 yellow cards.', 'error');
-            return;
+        if (!team || isNaN(number)) return;
+
+        const { config, isAutoConvertYellowToRedOn } = getState(); // Get config and new setting
+        if (!config) return;
+
+        const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
+        if (!player) return; // Player not found
+
+        // Check 1: Already has max cards
+        if (player.yellowCards >= 2) {
+          showNotification('Player already has 2 yellow cards.', 'error');
+          return;
+        }
+        
+        // Check 2: Is about to get 2nd yellow AND setting is ON
+        if (player.yellowCards === 1 && isAutoConvertYellowToRedOn) {
+          try {
+            // Add the 2nd yellow
+            await addCard(team, number, 'yellow');
+            // Add the red card (if they don't already have one)
+            if (player.redCards < 1) {
+              await addCard(team, number, 'red');
+              showNotification(`Player #${number} received 2nd yellow and a red card!`);
+            } else {
+              showNotification(`Player #${number} received 2nd yellow card.`);
+            }
+          } catch (error: any) {
+            showNotification(`Error adding cards: ${error.message}`, 'error');
           }
+        } else {
+          // Normal case (getting 1st yellow, or setting is off)
           try {
             await addCard(team, number, 'yellow');
           } catch (error: any) {
@@ -736,6 +761,8 @@ export function render(container: HTMLElement) {
         const team = target.dataset.team as 'teamA' | 'teamB';
         const number = parseInt(target.dataset.number || '', 10);
         if (team && !isNaN(number)) {
+          const { config } = getState();
+          if (!config) return;
           const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
           if (player && player.redCards >= 1) {
             showNotification('Player already has a red card.', 'error');
@@ -758,6 +785,9 @@ export function render(container: HTMLElement) {
         const number = parseInt(target.dataset.number || '', 10);
         
         if (!team || isNaN(number)) return;
+        
+        const { config } = getState();
+        if (!config) return;
 
         const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
         
@@ -771,7 +801,7 @@ export function render(container: HTMLElement) {
 
   // --- Add Event Listeners ---
   
-  // --- New: Player Number Input Validation ---
+  // --- Player Number Input Validation ---
   const numberInputHandler = (e: Event) => {
     const target = e.target as HTMLInputElement;
     target.value = target.value.replace(/[^0-9]/g, ''); // Remove non-digits
