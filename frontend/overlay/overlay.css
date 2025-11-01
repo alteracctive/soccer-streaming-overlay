@@ -219,3 +219,94 @@ body {
         transform: translateX(-200%);
     }
 }
+
+/* --- Players List Styles --- */
+.players-list-container {
+  display: none; /* Hidden by default */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.75); 
+  color: #FFFFFF;
+  border-radius: 10px;
+  padding: 15px 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  gap: 20px;
+  max-height: 80vh; 
+}
+
+.players-list-divider {
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.players-list-team {
+  width: 300px;
+  display: flex; 
+  flex-direction: column;
+}
+
+.players-list-team h4 {
+  margin: 0 0 10px 0;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center; 
+  flex-shrink: 0;
+}
+
+/* New Wrapper */
+.players-table-wrapper {
+  max-height: 495px; /* 15 rows * 33px */
+  overflow: hidden;
+}
+
+.players-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Scrolling animation */
+.players-table-wrapper.scrolling .players-table {
+  /* Adjust 20s based on list length if you want, 30s is a safe bet */
+  animation: scroll-up 30s linear infinite;
+}
+
+@keyframes scroll-up {
+  0% {
+    transform: translateY(0);
+  }
+  90% {
+    transform: translateY(-50%); /* Scroll to the end of the first list */
+  }
+  90.01% {
+    transform: translateY(0); /* Instant snap back to start */
+  }
+  100% {
+    transform: translateY(0); /* Pause at start */
+  }
+}
+
+
+.players-table th, .players-table td {
+  padding: 6px;
+  text-align: left;
+  font-size: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.players-table td:first-child {
+  width: 40px;
+  text-align: right;
+  padding-right: 10px;
+}
+
+.players-table tr.not-on-field {
+  opacity: 0.8;
+  font-style: italic;
+}

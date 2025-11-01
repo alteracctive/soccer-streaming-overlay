@@ -4,6 +4,7 @@ import {
   subscribe,
   getState,
   STATE_UPDATE_EVENT,
+  type PlayerConfig // <-- Import PlayerConfig type
 } from '../control_panel/stateManager';
 
 // --- Get Element References ---
@@ -29,6 +30,14 @@ const reportTeamBName = document.getElementById('report-team-b-name')!;
 const reportTeamBScore = document.getElementById('report-team-b-score')!;
 const reportStripBPrimary = document.getElementById('report-strip-b-primary') as HTMLDivElement;
 const reportStripBSecondary = document.getElementById('report-strip-b-secondary') as HTMLDivElement;
+
+// --- Player List Refs ---
+const playersListContainer = document.getElementById('players-list-container') as HTMLDivElement;
+const playersListHeaderA = document.getElementById('players-list-header-a') as HTMLHeadingElement;
+const playersListHeaderB = document.getElementById('players-list-header-b') as HTMLHeadingElement;
+const playersListA = document.getElementById('players-list-a') as HTMLTableSectionElement;
+const playersListB = document.getElementById('players-list-b') as HTMLTableSectionElement;
+
 
 // --- Utility Functions ---
 function formatTime(totalSeconds: number): string {
@@ -65,13 +74,58 @@ function checkAndApplyScroll(element: HTMLElement | null, textContent: string) {
   }
 }
 
+// --- Sort and Render Function ---
+const renderPlayerList = (players: PlayerConfig[], limit: number): string => {
+  const onField = players
+    .filter(p => p.onField)
+    .sort((a, b) => a.number - b.number);
+    
+  const offField = players
+    .filter(p => !p.onField)
+    .sort((a, b) => a.number - b.number);
+
+  const sortedPlayers = [...onField, ...offField];
+
+  const listHtml = sortedPlayers
+    .map(player => `
+      <tr class="${player.onField ? '' : 'not-on-field'}">
+        <td>${player.number}</td>
+        <td>${player.name}</td>
+      </tr>
+    `).join('');
+
+  if (players.length > limit) {
+    return listHtml + listHtml; // Duplicate for scrolling
+  } else {
+    return listHtml;
+  }
+};
+
+
 // --- Main UI Update Function ---
 function updateUI() {
   // Get all relevant state
-  const { config, timer, scoreboardStyle, isGameReportVisible, isScoreboardVisible } = getState();
-
-  // Visibility flags removed from getState()
+  const { config, timer, scoreboardStyle, isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
+  const SCROLL_TRIGGER_LIMIT = 15;
   
+  // --- Update Player List ---
+  if (config && playersListContainer) {
+    // Update headers
+    playersListHeaderA.textContent = config.teamA.name;
+    playersListHeaderB.textContent = config.teamB.name;
+    
+    // Populate Team A List
+    const teamAPlayers = config.teamA.players;
+    playersListA.innerHTML = renderPlayerList(teamAPlayers, SCROLL_TRIGGER_LIMIT);
+    playersListA.closest('.players-table-wrapper')?.classList.toggle('scrolling', teamAPlayers.length > SCROLL_TRIGGER_LIMIT);
+
+      
+    // Populate Team B List
+    const teamBPlayers = config.teamB.players;
+    playersListB.innerHTML = renderPlayerList(teamBPlayers, SCROLL_TRIGGER_LIMIT);
+    playersListB.closest('.players-table-wrapper')?.classList.toggle('scrolling', teamBPlayers.length > SCROLL_TRIGGER_LIMIT);
+  }
+
   // Update main scoreboard team info
   if (config) {
     teamAAbbr.textContent = config.teamA.abbreviation;
@@ -117,6 +171,13 @@ function updateUI() {
         gameReportContainer.style.color = scoreboardStyle.secondary;
         gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`;
     }
+    
+    // --- Apply to new players list ---
+    if (playersListContainer) {
+        playersListContainer.style.backgroundColor = backgroundColorWithOpacity;
+        playersListContainer.style.color = scoreboardStyle.secondary;
+        playersListContainer.style.transform = `translate(-50%, -50%) scale(${scaleValue})`;
+    }
 
   } else {
     // Fallback styles
@@ -124,16 +185,24 @@ function updateUI() {
     if (timerRow) { timerRow.style.backgroundColor = ''; timerRow.style.color = ''; }
     if (scoreboardContainer) { scoreboardContainer.style.transform = 'scale(1)'; }
     if (gameReportContainer) { gameReportContainer.style.backgroundColor = ''; gameReportContainer.style.color = ''; gameReportContainer.style.transform = 'translateX(-50%) scale(1)'; }
+    if (playersListContainer) { playersListContainer.style.backgroundColor = ''; playersListContainer.style.color = ''; playersListContainer.style.transform = 'translate(-50%, -50%) scale(1)'; }
   }
 
-  // --- NEW VISIBILITY LOGIC ---
+  // --- UPDATED VISIBILITY LOGIC ---
+  
   // Apply visibility to the scoreboard container
   if (scoreboardContainer) {
       scoreboardContainer.style.display = isScoreboardVisible ? 'flex' : 'none';
   }
+  
   // Apply visibility to the game report container
   if (gameReportContainer) {
       gameReportContainer.style.display = isGameReportVisible ? 'flex' : 'none';
+  }
+  
+  // Apply visibility to the players list container
+  if (playersListContainer) {
+      playersListContainer.style.display = isPlayersListVisible ? 'flex' : 'none';
   }
 }
 

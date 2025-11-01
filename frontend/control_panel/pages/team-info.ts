@@ -11,6 +11,7 @@ import {
   toggleOnField,
   editPlayer,
   resetTeamStats,
+  replacePlayer, // <-- Import new function
   subscribe,
   unsubscribe,
   type PlayerConfig
@@ -127,7 +128,7 @@ export function render(container: HTMLElement) {
             <button id="sync-a" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
           </div>
           
-          <div style="width: 1px; background-color: var(--border-color); height: 100%;"></div>
+          <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
 
           <div>
             <h4>Team B Info <span id="unsaved-b" class="unsaved-indicator"></span></h4>
@@ -191,7 +192,7 @@ export function render(container: HTMLElement) {
               </div>
           </div>
           
-          <div style="width: 1px; background-color: var(--border-color); height: 100%;"></div>
+          <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
 
           <div>
             <h4>Team B - Add Player</h4>
@@ -769,6 +770,28 @@ export function render(container: HTMLElement) {
   
 
   // --- Add Event Listeners ---
+  
+  // --- New: Player Number Input Validation ---
+  const numberInputHandler = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    target.value = target.value.replace(/[^0-9]/g, ''); // Remove non-digits
+    if (target.value.length > 2) {
+      target.value = target.value.slice(0, 2);
+    }
+    // Allow empty string
+    if (target.value === '') return;
+    
+    if (parseInt(target.value, 10) > 99) {
+      target.value = '99';
+    }
+    if (parseInt(target.value, 10) < 0) {
+      target.value = '0';
+    }
+  };
+  teamAPlayerNum.addEventListener('input', numberInputHandler);
+  teamBPlayerNum.addEventListener('input', numberInputHandler);
+  editPlayerNumber.addEventListener('input', numberInputHandler);
+
 
   // Listeners for Team A Inputs
   teamAFields.forEach(([input, label]) => {
@@ -865,13 +888,30 @@ export function render(container: HTMLElement) {
         showNotification('Player number must be between 0 and 99.', 'error');
         return;
     }
-    try {
-      await addPlayer('teamA', playerNumber, nameVal);
-      showNotification(`Player #${playerNumber} ${nameVal} added to Team A!`);
-      teamAPlayerNum.value = '';
-      teamAPlayerName.value = '';
-    } catch (error: any) {
-      showNotification(`Error: ${error.message}`, 'error');
+    
+    // --- New Conflict Logic ---
+    const { config } = getState();
+    const existingPlayer = config?.teamA.players.find(p => p.number === playerNumber);
+    if (existingPlayer) {
+      showConfirmModal(
+        `Player #${playerNumber} (${existingPlayer.name}) already exists. Do you want to replace them with ${nameVal}? This will reset their stats.`,
+        async () => {
+          await replacePlayer('teamA', playerNumber, nameVal);
+          showNotification(`Player #${playerNumber} (${nameVal}) updated and stats reset!`);
+          teamAPlayerNum.value = '';
+          teamAPlayerName.value = '';
+        }
+      );
+    } else {
+      // No conflict, add as new
+      try {
+        await addPlayer('teamA', playerNumber, nameVal);
+        showNotification(`Player #${playerNumber} ${nameVal} added to Team A!`);
+        teamAPlayerNum.value = '';
+        teamAPlayerName.value = '';
+      } catch (error: any) {
+        showNotification(`Error: ${error.message}`, 'error');
+      }
     }
   });
 
@@ -887,13 +927,30 @@ export function render(container: HTMLElement) {
         showNotification('Player number must be between 0 and 99.', 'error');
         return;
     }
-    try {
-      await addPlayer('teamB', playerNumber, nameVal);
-      showNotification(`Player #${playerNumber} ${nameVal} added to Team B!`);
-      teamBPlayerNum.value = '';
-      teamBPlayerName.value = '';
-    } catch (error: any) {
-      showNotification(`Error: ${error.message}`, 'error');
+    
+    // --- New Conflict Logic ---
+    const { config } = getState();
+    const existingPlayer = config?.teamB.players.find(p => p.number === playerNumber);
+    if (existingPlayer) {
+      showConfirmModal(
+        `Player #${playerNumber} (${existingPlayer.name}) already exists. Do you want to replace them with ${nameVal}? This will reset their stats.`,
+        async () => {
+          await replacePlayer('teamB', playerNumber, nameVal);
+          showNotification(`Player #${playerNumber} (${nameVal}) updated and stats reset!`);
+          teamBPlayerNum.value = '';
+          teamBPlayerName.value = '';
+        }
+      );
+    } else {
+      // No conflict, add as new
+      try {
+        await addPlayer('teamB', playerNumber, nameVal);
+        showNotification(`Player #${playerNumber} ${nameVal} added to Team B!`);
+        teamBPlayerNum.value = '';
+        teamBPlayerName.value = '';
+      } catch (error: any) {
+        showNotification(`Error: ${error.message}`, 'error');
+      }
     }
   });
 

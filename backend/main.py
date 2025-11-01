@@ -19,12 +19,14 @@ from data_manager import (
     AddCardUpdate,
     ToggleOnFieldUpdate,
     EditPlayerUpdate,
-    ResetStatsUpdate # <-- Import new model
+    ResetStatsUpdate,
+    ReplacePlayerUpdate # <-- Import new model
 )
 from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # ... (no change)
     print("Application starting up...")
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
@@ -38,6 +40,7 @@ origins = [
 ]
 app.add_middleware(
     CORSMiddleware,
+    # ... (no change)
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
@@ -46,6 +49,7 @@ app.add_middleware(
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # ... (no change)
     await websocket_manager.connect(websocket)
     
     try:
@@ -71,11 +75,12 @@ async def websocket_endpoint(websocket: WebSocket):
         print("Client disconnected")
 
 # --- Timer Control ---
+# ... (no changes in this section)
 @app.post("/api/timer/start")
 async def start_timer():
     websocket_manager.start()
     return {"message": "Timer started"}
-
+# ... (stop, reset, set) ...
 @app.post("/api/timer/stop")
 async def stop_timer():
     websocket_manager.stop()
@@ -94,7 +99,9 @@ async def set_timer(update: SetTimeUpdate):
     websocket_manager.set_time(update.seconds)
     return {"message": f"Timer set to {update.seconds} seconds"}
 
+
 # --- Data Control ---
+# ... (no changes in this section)
 @app.get("/api/config")
 async def get_full_config() -> ScoreboardConfig:
     return data_manager.get_config()
@@ -104,7 +111,7 @@ async def set_score(update: SetScoreUpdate) -> ScoreboardConfig:
     config = await data_manager.set_score(update)
     await websocket_manager.broadcast_config(config)
     return config
-
+# ... (team-info, customization) ...
 @app.post("/api/team-info")
 async def update_team_info(update: TeamInfoUpdate) -> ScoreboardConfig:
     config = await data_manager.update_team_info(update)
@@ -117,6 +124,7 @@ async def update_customization(update: CustomizationUpdate) -> ScoreboardConfig:
     await websocket_manager.broadcast_config(config)
     return config
 
+
 @app.post("/api/game-report/toggle")
 async def toggle_game_report():
     status = await websocket_manager.toggle_game_report()
@@ -127,6 +135,11 @@ async def toggle_scoreboard():
     status = await websocket_manager.toggle_scoreboard()
     return status
 
+@app.post("/api/players-list/toggle")
+async def toggle_players_list():
+    status = await websocket_manager.toggle_players_list()
+    return status
+
 @app.post("/api/player/add")
 async def add_player(update: AddPlayerUpdate):
     try:
@@ -135,6 +148,20 @@ async def add_player(update: AddPlayerUpdate):
         return config
     except Exception as e:
         print(f"Error adding player: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# --- New Endpoint ---
+@app.post("/api/player/replace")
+async def replace_player(update: ReplacePlayerUpdate):
+    """
+    Replaces an existing player's name and resets their stats.
+    """
+    try:
+        config = await data_manager.replace_player(update)
+        await websocket_manager.broadcast_config(config)
+        return config
+    except Exception as e:
+        print(f"Error replacing player: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/player/clear")
@@ -197,12 +224,8 @@ async def edit_player(update: EditPlayerUpdate):
         print(f"Error editing player: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-# --- New Endpoint ---
 @app.post("/api/player/resetstats")
 async def reset_player_stats(update: ResetStatsUpdate):
-    """
-    Resets all stats (goals, cards, onField) for all players on a team.
-    """
     try:
         config = await data_manager.reset_team_stats(update)
         await websocket_manager.broadcast_config(config)
@@ -210,6 +233,7 @@ async def reset_player_stats(update: ResetStatsUpdate):
     except Exception as e:
         print(f"Error resetting team stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/scoreboard-style")
 async def update_scoreboard_style(style: ScoreboardStyleConfig):

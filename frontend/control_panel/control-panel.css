@@ -629,7 +629,7 @@ button.btn-red {
 
 /* Player Table Styles */
 .player-list-container {
-  max-height: 300px;
+  max-height: 490px; /* 1 header (30) + 15 rows (30.5*15=457.5) */
   overflow-y: auto;
 }
 
@@ -723,7 +723,6 @@ button.btn-red {
 }
 
 /* Edit Modal Styles */
-/* --- New Rule --- */
 .modal-content.player-edit-modal {
   max-width: 550px;
 }
@@ -737,20 +736,13 @@ button.btn-red {
 .player-edit-modal-body input[type='number'] {
     width: 60px;
 }
-/* --- Removed This Rule --- */
-/* .player-edit-modal-body .form-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-} */
-.player-edit-modal-body .form-group label {
-    margin-bottom: 0;
-}
-/* --- New Rule --- */
 .player-edit-modal-body .form-group.inline-form-group {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+.player-edit-modal-body .form-group label {
+    margin-bottom: 0;
 }
 
 
@@ -796,6 +788,7 @@ button.btn-red {
 .goal-list-item:last-child {
   border-bottom: none;
 }
+/* New styles for editable goal minute */
 .goal-list-item span {
   font-weight: 500;
   margin-right: 4px;

@@ -5,6 +5,7 @@ import {
   unsubscribe,
   toggleGameReport,
   toggleScoreboard,
+  togglePlayersList, // <-- Import new function
 } from '../stateManager';
 
 export function render(container: HTMLElement) {
@@ -26,6 +27,13 @@ export function render(container: HTMLElement) {
           Hidden
         </button>
       </div>
+      
+      <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+        <label for="toggle-players-list" style="margin-bottom: 0; font-weight: 500;">Players List Overlay</label>
+        <button id="toggle-players-list" style="min-width: 100px;">
+          Hidden
+        </button>
+      </div>
 
     </div>
   `;
@@ -38,9 +46,13 @@ export function render(container: HTMLElement) {
     '#toggle-scoreboard',
   ) as HTMLButtonElement; 
 
+  const playersListToggleButton = container.querySelector(
+    '#toggle-players-list',
+  ) as HTMLButtonElement; // <-- Get new button
+
   // Function to update the button's appearance
   const updateUI = () => {
-    const { isGameReportVisible, isScoreboardVisible } = getState();
+    const { isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
     
     // Update Game Report Button
     if (gameReportToggleButton) {
@@ -67,6 +79,20 @@ export function render(container: HTMLElement) {
           scoreboardToggleButton.classList.add('btn-red');
         }
     }
+    
+    // --- New UI Logic ---
+    // Update Players List Button
+    if (playersListToggleButton) {
+        if (isPlayersListVisible) {
+          playersListToggleButton.textContent = 'Showing';
+          playersListToggleButton.classList.remove('btn-red', 'btn-secondary');
+          playersListToggleButton.classList.add('btn-green');
+        } else {
+          playersListToggleButton.textContent = 'Hidden';
+          playersListToggleButton.classList.remove('btn-green', 'btn-secondary');
+          playersListToggleButton.classList.add('btn-red');
+        }
+    }
   };
 
   // --- Add click listeners ---
@@ -76,6 +102,10 @@ export function render(container: HTMLElement) {
 
   scoreboardToggleButton.addEventListener('click', () => {
     toggleScoreboard(); 
+  });
+  
+  playersListToggleButton.addEventListener('click', () => {
+    togglePlayersList(); // <-- Call new toggle function
   });
 
 

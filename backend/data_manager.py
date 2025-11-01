@@ -86,9 +86,14 @@ class EditPlayerUpdate(BaseModel):
     redCards: int
     goals: List[int]
 
-# --- New Model ---
 class ResetStatsUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
+
+# --- New Model ---
+class ReplacePlayerUpdate(BaseModel):
+    team: Literal["teamA", "teamB"]
+    number: int
+    name: str
 
 
 class DataManager:
@@ -204,7 +209,7 @@ class DataManager:
         for player in team_to_update.players:
             if player.number == update.number:
                 print(f"Player with number {update.number} already exists for {update.team}.")
-                return config 
+                raise Exception(f"Player number {update.number} already exists.")
 
         new_player = PlayerConfig(
             number=update.number,
@@ -344,7 +349,6 @@ class DataManager:
             
         return config
 
-    # --- New Method ---
     async def reset_team_stats(self, update: ResetStatsUpdate) -> ScoreboardConfig:
         config = self.get_config()
         team = getattr(config, update.team)
@@ -357,6 +361,31 @@ class DataManager:
             
         await self.save_config()
         print(f"Stats for {update.team} have been reset.")
+        return config
+        
+    # --- New Method ---
+    async def replace_player(self, update: ReplacePlayerUpdate) -> ScoreboardConfig:
+        config = self.get_config()
+        team = getattr(config, update.team)
+        
+        player_found = False
+        for player in team.players:
+            if player.number == update.number:
+                # Reset the existing player
+                player.name = update.name
+                player.onField = False
+                player.yellowCards = 0
+                player.redCards = 0
+                player.goals = []
+                player_found = True
+                print(f"Player #{update.number} ({update.team}) replaced with {update.name} and stats reset.")
+                break
+        
+        if not player_found:
+             print(f"Could not replace player: Player #{update.number} not found.")
+             raise Exception(f"Player #{update.number} not found.")
+
+        await self.save_config()
         return config
 
 data_manager = DataManager(CONFIG_FILE, SCOREBOARD_STYLE_FILE)

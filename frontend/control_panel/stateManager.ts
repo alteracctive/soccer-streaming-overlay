@@ -52,6 +52,7 @@ let appState: {
   scoreboardStyle: ScoreboardStyleConfig | null;
   isGameReportVisible: boolean;
   isScoreboardVisible: boolean;
+  isPlayersListVisible: boolean;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
@@ -59,6 +60,7 @@ let appState: {
   scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100 },
   isGameReportVisible: false, 
   isScoreboardVisible: true,
+  isPlayersListVisible: false,
 };
 
 export const stateEmitter = new EventTarget();
@@ -99,6 +101,11 @@ function updateGameReportVisibility(isVisible: boolean) {
 
 function updateScoreboardVisibility(isVisible: boolean) {
   appState.isScoreboardVisible = isVisible;
+  stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
+function updatePlayersListVisibility(isVisible: boolean) {
+  appState.isPlayersListVisible = isVisible;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
@@ -148,6 +155,9 @@ function connectWebSocket() {
     }
     else if (message.type === 'scoreboard_visibility') {
       updateScoreboardVisibility(message.isVisible as boolean);
+    }
+    else if (message.type === 'players_list_visibility') {
+      updatePlayersListVisibility(message.isVisible as boolean);
     }
   };
 
@@ -213,12 +223,25 @@ export async function toggleScoreboard() {
   await post('/api/scoreboard/toggle', {});
 }
 
+export async function togglePlayersList() {
+  await post('/api/players-list/toggle', {});
+}
+
 export async function addPlayer(
   team: 'teamA' | 'teamB',
   number: number,
   name: string,
 ) {
   await post('/api/player/add', { team, number, name });
+}
+
+// --- New Function ---
+export async function replacePlayer(
+  team: 'teamA' | 'teamB',
+  number: number,
+  name: string,
+) {
+  await post('/api/player/replace', { team, number, name });
 }
 
 export async function clearPlayerList(team: 'teamA' | 'teamB') {
@@ -262,7 +285,6 @@ export async function editPlayer(
   await post('/api/player/edit', payload);
 }
 
-// --- New Function ---
 export async function resetTeamStats(team: 'teamA' | 'teamB') {
   await post('/api/player/resetstats', { team });
 }
