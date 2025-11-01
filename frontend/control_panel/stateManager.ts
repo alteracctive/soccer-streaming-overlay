@@ -33,7 +33,6 @@ export interface TimerStatus {
   seconds: number;
 }
 
-// --- New Interface ---
 export interface ExtraTimeStatus {
   minutes: number;
   isVisible: boolean;
@@ -44,6 +43,7 @@ export interface ScoreboardStyleConfig {
   secondary: string;
   opacity: number;
   scale: number;
+  matchInfo: string;
 }
 
 // --- API and WebSocket URLs ---
@@ -61,18 +61,20 @@ let appState: {
   isPlayersListVisible: boolean;
   isAutoAddScoreOn: boolean;
   isAutoConvertYellowToRedOn: boolean;
-  extraTime: ExtraTimeStatus; // <-- New state
+  extraTime: ExtraTimeStatus;
+  isMatchInfoVisible: boolean; // <-- New state
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
-  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100 },
+  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "" },
   isGameReportVisible: false, 
   isScoreboardVisible: true,
   isPlayersListVisible: false,
   isAutoAddScoreOn: false,
   isAutoConvertYellowToRedOn: false,
-  extraTime: { minutes: 0, isVisible: false }, // <-- Default
+  extraTime: { minutes: 0, isVisible: false },
+  isMatchInfoVisible: false, // <-- Default
 };
 
 export const stateEmitter = new EventTarget();
@@ -121,9 +123,14 @@ function updatePlayersListVisibility(isVisible: boolean) {
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
-// --- New Function ---
 function updateExtraTimeStatus(status: ExtraTimeStatus) {
   appState.extraTime = status;
+  stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
+// --- New Function ---
+function updateMatchInfoVisibility(isVisible: boolean) {
+  appState.isMatchInfoVisible = isVisible;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
@@ -177,9 +184,12 @@ function connectWebSocket() {
     else if (message.type === 'players_list_visibility') {
       updatePlayersListVisibility(message.isVisible as boolean);
     }
-    // --- New Case ---
     else if (message.type === 'extra_time_status') {
       updateExtraTimeStatus(message as ExtraTimeStatus);
+    }
+    // --- New Case ---
+    else if (message.type === 'match_info_visibility') {
+      updateMatchInfoVisibility(message.isVisible as boolean);
     }
   };
 
@@ -238,14 +248,12 @@ export const timerControls = {
   set: (seconds: number) => post('/api/timer/set', { seconds }),
 };
 
-// --- New Functions ---
 export async function setExtraTime(minutes: number) {
   await post('/api/extra-time/set', { minutes });
 }
 export async function toggleExtraTimeVisibility() {
   await post('/api/extra-time/toggle', {});
 }
-// --------------------
 
 export async function setScore(team: 'teamA' | 'teamB', score: number) {
   await post('/api/score/set', { team, score });
@@ -263,6 +271,10 @@ export async function saveScoreboardStyle(style: ScoreboardStyleConfig) {
   await post('/api/scoreboard-style', style);
 }
 
+export async function saveMatchInfo(info: string) {
+  await post('/api/match-info', { info });
+}
+
 export async function toggleGameReport() {
   await post('/api/game-report/toggle', {});
 }
@@ -273,6 +285,11 @@ export async function toggleScoreboard() {
 
 export async function togglePlayersList() {
   await post('/api/players-list/toggle', {});
+}
+
+// --- New Function ---
+export async function toggleMatchInfoVisibility() {
+  await post('/api/match-info/toggle', {});
 }
 
 export async function addPlayer(

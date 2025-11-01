@@ -20,7 +20,8 @@ from data_manager import (
     ToggleOnFieldUpdate,
     EditPlayerUpdate,
     ResetStatsUpdate,
-    ReplacePlayerUpdate
+    ReplacePlayerUpdate,
+    MatchInfoUpdate
 )
 from websocket_manager import websocket_manager
 
@@ -95,7 +96,6 @@ async def set_timer(update: SetTimeUpdate):
     websocket_manager.set_time(update.seconds)
     return {"message": f"Timer set to {update.seconds} seconds"}
 
-# --- New Model & Endpoints ---
 class SetExtraTimeUpdate(BaseModel):
     minutes: int
 
@@ -108,13 +108,28 @@ async def set_extra_time(update: SetExtraTimeUpdate):
 async def toggle_extra_time():
     status = await websocket_manager.toggle_extra_time_visibility()
     return status
-# -----------------------------
 
 
 # --- Data Control ---
 @app.get("/api/config")
 async def get_full_config() -> ScoreboardConfig:
     return data_manager.get_config()
+
+@app.post("/api/match-info")
+async def update_match_info(update: MatchInfoUpdate):
+    try:
+        new_style = await data_manager.update_match_info(update.info)
+        await websocket_manager.broadcast_scoreboard_style(new_style)
+        return new_style
+    except Exception as e:
+        print(f"Error updating match info: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- New Endpoint ---
+@app.post("/api/match-info/toggle")
+async def toggle_match_info():
+    status = await websocket_manager.toggle_match_info_visibility()
+    return status
 
 @app.post("/api/score/set")
 async def set_score(update: SetScoreUpdate) -> ScoreboardConfig:

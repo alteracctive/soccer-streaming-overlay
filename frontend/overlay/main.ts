@@ -42,9 +42,13 @@ const playersListB = document.getElementById('players-list-b') as HTMLTableSecti
 const gameReportGoalsA = document.getElementById('game-report-goals-a') as HTMLDivElement;
 const gameReportGoalsB = document.getElementById('game-report-goals-b') as HTMLDivElement;
 
-// --- Updated Extra Time Refs ---
+// --- Extra Time Refs ---
 const extraTimeBox = document.getElementById('extra-time-box') as HTMLDivElement;
 const extraTimeDisplay = document.getElementById('extra-time-display') as HTMLSpanElement;
+
+// --- Match Info Refs ---
+const matchInfoRow = document.getElementById('match-info-row') as HTMLDivElement;
+const matchInfoText = document.getElementById('match-info-text') as HTMLSpanElement;
 
 
 // --- Utility Functions ---
@@ -65,21 +69,29 @@ function hexToRgba(hex: string, opacityPercent: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function checkAndApplyScroll(element: HTMLElement | null, textContent: string) {
-  if (!element) return;
-  element.textContent = textContent;
-  const isOverflowing = element.scrollWidth > element.clientWidth;
-  if (isOverflowing) {
-    if (!element.querySelector('.scrolling-text-wrapper')) {
-      element.innerHTML = `<div class="scrolling-text-wrapper"><span class="scrolling-text">${textContent}</span></div>`;
-    }
-    const innerSpan = element.querySelector('.scrolling-text');
-    if(innerSpan && innerSpan.textContent !== textContent) { innerSpan.textContent = textContent; }
-  } else {
-    if (element.querySelector('.scrolling-text-wrapper')) {
-      element.innerHTML = textContent;
-    }
+// --- Updated Scroll Check Function ---
+function checkAndApplyScroll(wrapper: HTMLElement | null, textContent: string) {
+  if (!wrapper) return;
+  
+  const textSpan = wrapper.querySelector('.scrolling-text') as HTMLSpanElement;
+  if (!textSpan) { // Fallback for elements without the wrapper
+    wrapper.textContent = textContent;
+    return;
   }
+  
+  // Update text content
+  if (textSpan.textContent !== textContent) {
+    textSpan.textContent = textContent;
+  }
+  
+  // Check for overflow
+  // Force a reflow to get accurate scrollWidth after text change
+  textSpan.style.display = 'none';
+  void textSpan.offsetWidth; // This forces a reflow
+  textSpan.style.display = 'inline-block';
+  
+  const isOverflowing = textSpan.scrollWidth > wrapper.clientWidth;
+  wrapper.classList.toggle('is-scrolling', isOverflowing);
 }
 
 // --- Player List Sort and Render Function ---
@@ -124,7 +136,17 @@ const renderGoalScorers = (players: PlayerConfig[]): string => {
 // --- Main UI Update Function ---
 function updateUI() {
   // Get all relevant state
-  const { config, timer, extraTime, scoreboardStyle, isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
+  const { 
+    config, 
+    timer, 
+    extraTime, 
+    scoreboardStyle, 
+    isGameReportVisible, 
+    isScoreboardVisible, 
+    isPlayersListVisible,
+    isMatchInfoVisible // <-- New state
+  } = getState();
+  
   const SCROLL_TRIGGER_LIMIT = 15;
   
   // --- Update Player List ---
@@ -156,12 +178,12 @@ function updateUI() {
   // Update Game Report
   if (config && gameReportContainer) {
     // Team Info
-    checkAndApplyScroll(reportTeamAName, config.teamA.name);
+    checkAndApplyScroll(reportTeamAName.parentElement, config.teamA.name); // Pass wrapper
     if (reportTeamAScore) reportTeamAScore.textContent = config.teamA.score.toString();
     if (reportStripAPrimary) reportStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
     if (reportStripASecondary) reportStripASecondary.style.backgroundColor = config.teamA.colors.secondary;
 
-    checkAndApplyScroll(reportTeamBName, config.teamB.name);
+    checkAndApplyScroll(reportTeamBName.parentElement, config.teamB.name); // Pass wrapper
     if (reportTeamBScore) reportTeamBScore.textContent = config.teamB.score.toString();
     if (reportStripBPrimary) reportStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportStripBSecondary) reportStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
@@ -175,7 +197,7 @@ function updateUI() {
   timerDisplay.textContent = formatTime(timer.seconds);
   if (reportTimerDisplay) reportTimerDisplay.textContent = formatTime(timer.seconds);
   
-  // --- Updated Extra Time Logic ---
+  // Extra Time Logic
   if (extraTimeBox && extraTimeDisplay) {
     if (extraTime.isVisible && extraTime.minutes > 0) {
       extraTimeDisplay.textContent = `+${extraTime.minutes}'`;
@@ -191,10 +213,18 @@ function updateUI() {
     const backgroundColorWithOpacity = hexToRgba(scoreboardStyle.primary, scoreboardStyle.opacity);
     const scaleValue = Math.max(0.5, Math.min(1.5, scoreboardStyle.scale / 100));
 
+    // --- Updated Match Info Logic ---
+    if (matchInfoRow && matchInfoText) {
+      // Use the *wrapper* for the scroll check
+      checkAndApplyScroll(matchInfoRow.querySelector('.scrolling-text-wrapper'), scoreboardStyle.matchInfo);
+      matchInfoRow.style.backgroundColor = backgroundColorWithOpacity;
+      matchInfoRow.style.color = scoreboardStyle.secondary;
+    }
+
     // Apply to main scoreboard elements
     if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.secondary; }
     if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.secondary; }
-    if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; } // Color is already gold
+    if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; } 
     if (scoreboardContainer) { scoreboardContainer.style.transform = `scale(${scaleValue})`; }
 
     // Apply to game report container
@@ -204,7 +234,7 @@ function updateUI() {
         gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`;
     }
     
-    // --- Apply to new players list ---
+    // Apply to new players list
     if (playersListContainer) {
         playersListContainer.style.backgroundColor = backgroundColorWithOpacity;
         playersListContainer.style.color = scoreboardStyle.secondary;
@@ -213,6 +243,7 @@ function updateUI() {
 
   } else {
     // Fallback styles
+    if (matchInfoRow) { matchInfoRow.style.backgroundColor = ''; matchInfoRow.style.color = ''; }
     if (scoreRow) { scoreRow.style.backgroundColor = ''; scoreRow.style.color = ''; }
     if (timerRow) { timerRow.style.backgroundColor = ''; timerRow.style.color = ''; }
     if (extraTimeBox) { extraTimeBox.style.backgroundColor = ''; }
@@ -225,9 +256,24 @@ function updateUI() {
   
   // Apply visibility to the scoreboard container
   if (scoreboardContainer) {
-      scoreboardContainer.style.display = isScoreboardVisible ? 'flex' : 'none';
+      // Show the main container if either the scoreboard OR the match info is visible
+      scoreboardContainer.style.display = (isScoreboardVisible || isMatchInfoVisible) ? 'flex' : 'none';
   }
   
+  // Apply visibility to the individual scoreboard elements
+  if (scoreRow) {
+    scoreRow.style.display = isScoreboardVisible ? 'flex' : 'none';
+  }
+  if (timerRow) {
+    // The parent .timer-section-row handles the flex layout
+    (timerRow.parentElement as HTMLElement).style.display = isScoreboardVisible ? 'flex' : 'none';
+  }
+
+  // Apply visibility to the match info row
+  if (matchInfoRow) {
+      matchInfoRow.style.display = isMatchInfoVisible ? 'flex' : 'none';
+  }
+
   // Apply visibility to the game report container
   if (gameReportContainer) {
       gameReportContainer.style.display = isGameReportVisible ? 'flex' : 'none';

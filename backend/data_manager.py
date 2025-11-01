@@ -13,6 +13,7 @@ class ScoreboardStyleConfig(BaseModel):
     secondary: str
     opacity: int = Field(default=75, ge=50, le=100)
     scale: int = Field(default=100, ge=50, le=150)
+    matchInfo: str = "" # <-- New field
 
 class ColorConfig(BaseModel):
     primary: str
@@ -68,7 +69,6 @@ class AddGoalUpdate(BaseModel):
 
 class AddCardUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
-    number: int
     card_type: Literal["yellow", "red"]
 
 class ToggleOnFieldUpdate(BaseModel):
@@ -89,11 +89,14 @@ class EditPlayerUpdate(BaseModel):
 class ResetStatsUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
 
-# --- New Model ---
 class ReplacePlayerUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
     number: int
     name: str
+
+# --- New Model ---
+class MatchInfoUpdate(BaseModel):
+    info: str
 
 
 class DataManager:
@@ -134,11 +137,11 @@ class DataManager:
                 print("Scoreboard style loaded.")
             except FileNotFoundError:
                  print(f"{self.scoreboard_style_path} not found, using default.")
-                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF")
+                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
                  await self.save_scoreboard_style()
             except Exception as e:
                 print(f"Error loading scoreboard style: {e}, using default.")
-                self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF")
+                self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
 
 
     async def save_scoreboard_style(self):
@@ -152,7 +155,7 @@ class DataManager:
                  self.scoreboard_style = ScoreboardStyleConfig.model_validate(self.scoreboard_style)
              except Exception:
                  print("Falling back to default style due to invalid data.")
-                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF")
+                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
 
         try:
             json_data = self.scoreboard_style.model_dump_json(indent=2)
@@ -169,9 +172,18 @@ class DataManager:
         return self.scoreboard_style
 
     async def update_scoreboard_style(self, style: ScoreboardStyleConfig) -> ScoreboardStyleConfig:
+        # Ensure matchInfo is preserved if not included in a partial update
+        style.matchInfo = style.matchInfo if style.matchInfo is not None else self.scoreboard_style.matchInfo
         self.scoreboard_style = style
         await self.save_scoreboard_style()
         return self.scoreboard_style
+
+    # --- New Method ---
+    async def update_match_info(self, info: str) -> ScoreboardStyleConfig:
+        style = self.get_scoreboard_style()
+        style.matchInfo = info
+        await self.save_scoreboard_style()
+        return style
 
     def get_config(self) -> ScoreboardConfig:
         if self.config is None: raise Exception("Config not loaded")
@@ -363,7 +375,6 @@ class DataManager:
         print(f"Stats for {update.team} have been reset.")
         return config
         
-    # --- New Method ---
     async def replace_player(self, update: ReplacePlayerUpdate) -> ScoreboardConfig:
         config = self.get_config()
         team = getattr(config, update.team)
@@ -371,7 +382,6 @@ class DataManager:
         player_found = False
         for player in team.players:
             if player.number == update.number:
-                # Reset the existing player
                 player.name = update.name
                 player.onField = False
                 player.yellowCards = 0
