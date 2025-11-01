@@ -33,6 +33,12 @@ export interface TimerStatus {
   seconds: number;
 }
 
+// --- New Interface ---
+export interface ExtraTimeStatus {
+  minutes: number;
+  isVisible: boolean;
+}
+
 export interface ScoreboardStyleConfig {
   primary: string;
   secondary: string;
@@ -54,7 +60,8 @@ let appState: {
   isScoreboardVisible: boolean;
   isPlayersListVisible: boolean;
   isAutoAddScoreOn: boolean;
-  isAutoConvertYellowToRedOn: boolean; // <-- New state
+  isAutoConvertYellowToRedOn: boolean;
+  extraTime: ExtraTimeStatus; // <-- New state
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
@@ -64,7 +71,8 @@ let appState: {
   isScoreboardVisible: true,
   isPlayersListVisible: false,
   isAutoAddScoreOn: false,
-  isAutoConvertYellowToRedOn: false, // <-- Default to false
+  isAutoConvertYellowToRedOn: false,
+  extraTime: { minutes: 0, isVisible: false }, // <-- Default
 };
 
 export const stateEmitter = new EventTarget();
@@ -110,6 +118,12 @@ function updateScoreboardVisibility(isVisible: boolean) {
 
 function updatePlayersListVisibility(isVisible: boolean) {
   appState.isPlayersListVisible = isVisible;
+  stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
+// --- New Function ---
+function updateExtraTimeStatus(status: ExtraTimeStatus) {
+  appState.extraTime = status;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
@@ -163,6 +177,10 @@ function connectWebSocket() {
     else if (message.type === 'players_list_visibility') {
       updatePlayersListVisibility(message.isVisible as boolean);
     }
+    // --- New Case ---
+    else if (message.type === 'extra_time_status') {
+      updateExtraTimeStatus(message as ExtraTimeStatus);
+    }
   };
 
   ws.onclose = () => {
@@ -180,12 +198,12 @@ function connectWebSocket() {
 
 // --- Public Interface ---
 export async function initStateManager() {
-  // --- Load local settings ---
+  // Load local settings
   const savedAutoScore = localStorage.getItem('autoAddScore');
   appState.isAutoAddScoreOn = savedAutoScore === 'true';
 
-  const savedAutoConvert = localStorage.getItem('autoConvertYellowToRed'); // <-- New
-  appState.isAutoConvertYellowToRedOn = savedAutoConvert === 'true'; // <-- New
+  const savedAutoConvert = localStorage.getItem('autoConvertYellowToRed');
+  appState.isAutoConvertYellowToRedOn = savedAutoConvert === 'true';
 
   connectWebSocket();
 }
@@ -202,13 +220,11 @@ export function unsubscribe(callback: (event: Event) => void) {
   stateEmitter.removeEventListener(STATE_UPDATE_EVENT, callback);
 }
 
-// --- New Function ---
 export function setAutoAddScore(isOn: boolean) {
   appState.isAutoAddScoreOn = isOn;
   localStorage.setItem('autoAddScore', isOn ? 'true' : 'false');
 }
 
-// --- New Function ---
 export function setAutoConvertYellowToRed(isOn: boolean) {
   appState.isAutoConvertYellowToRedOn = isOn;
   localStorage.setItem('autoConvertYellowToRed', isOn ? 'true' : 'false');
@@ -221,6 +237,15 @@ export const timerControls = {
   reset: () => post('/api/timer/reset', {}),
   set: (seconds: number) => post('/api/timer/set', { seconds }),
 };
+
+// --- New Functions ---
+export async function setExtraTime(minutes: number) {
+  await post('/api/extra-time/set', { minutes });
+}
+export async function toggleExtraTimeVisibility() {
+  await post('/api/extra-time/toggle', {});
+}
+// --------------------
 
 export async function setScore(team: 'teamA' | 'teamB', score: number) {
   await post('/api/score/set', { team, score });
@@ -282,7 +307,6 @@ export async function addGoal(
   // First, add the goal to the player's stats
   await post('/api/player/goal', { team, number, minute });
   
-  // --- Auto-Score Logic ---
   if (appState.isAutoAddScoreOn) {
     const { config } = getState();
     if (!config) return;

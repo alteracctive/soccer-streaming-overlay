@@ -1,10 +1,12 @@
+// frontend/control_panel/pages/dashboard.ts
 import {
   getState,
   subscribe,
   unsubscribe,
-  STATE_UPDATE_EVENT,
   timerControls,
   setScore,
+  setExtraTime, // <-- New import
+  toggleExtraTimeVisibility, // <-- New import
 } from '../stateManager';
 import { showNotification } from '../notification';
 
@@ -18,7 +20,7 @@ function formatTime(totalSeconds: number): string {
 }
 
 export function render(container: HTMLElement) {
-  const { config, timer } = getState();
+  const { config, timer, extraTime } = getState();
 
   // --- Render HTML ---
   container.innerHTML = `
@@ -61,34 +63,50 @@ export function render(container: HTMLElement) {
       </div>
     </div>
     
-    <div class="card timer-control">
-      <h4>Timer</h4>
-      <div class="timer-display" id="timer-display">${formatTime(
-        timer.seconds,
-      )}</div>
-      
-      <div class="btn-group">
-        <button id="start-stop-toggle" class="btn-green" style="flex-grow: 1;">Start</button>
+    <div class="timer-grid">
+      <div class="card timer-control">
+        <h4>Timer</h4>
+        <div class="timer-display" id="timer-display">${formatTime(
+          timer.seconds,
+        )}</div>
         
-        <button id="reset-timer" class="btn-secondary">Reset</button>
-        <button id="show-set-time" class="btn-secondary">Set</button>
-      </div>
+        <div class="btn-group">
+          <button id="start-stop-toggle" class="btn-green" style="flex-grow: 1;">Start</button>
+          
+          <button id="reset-timer" class="btn-secondary">Reset</button>
+          <button id="show-set-time" class="btn-secondary">Set</button>
+        </div>
 
-      <div id="set-time-popup" style="display: none;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
-                <label for="timer-min">Minutes (0-999)</label>
-                <input type="number" id="timer-min" min="0" max="999" value="0">
-            </div>
-            <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
-                <label for="timer-sec">Seconds (0-59)</label>
-                <input type="number" id="timer-sec" min="0" max="59" value="0">
-            </div>
+        <div id="set-time-popup" style="display: none;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+              <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                  <label for="timer-min">Minutes (0-999)</label>
+                  <input type="number" id="timer-min" min="0" max="999" value="0">
+              </div>
+              <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                  <label for="timer-sec">Seconds (0-59)</label>
+                  <input type="number" id="timer-sec" min="0" max="59" value="0">
+              </div>
+          </div>
+          <div class="btn-group" style="margin-top: 10px;">
+              <button id="save-set-time" style="flex-grow: 1;">Save</button>
+              <button id="cancel-set-time" class="btn-secondary" style="flex-grow: 1;">Cancel</button>
+          </div>
         </div>
-        <div class="btn-group" style="margin-top: 10px;">
-            <button id="save-set-time" style="flex-grow: 1;">Save</button>
-            <button id="cancel-set-time" class="btn-secondary" style="flex-grow: 1;">Cancel</button>
+      </div>
+      
+      <div class="card timer-control">
+        <h4>Additional Time</h4>
+        <div class="form-group" style="padding: 10px 0;">
+          <label for="extra-time-input" style="font-weight: 500;">Minutes</label>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+            <input type="number" id="extra-time-input" min="0" max="99" value="${extraTime.minutes}" style="width: 100px; text-align: center; margin: 0 auto;">
+            <button id="set-extra-time" class="btn-secondary">Set</button>
+          </div>
         </div>
+        <button id="toggle-extra-time" style="width: 100%;">
+          ${extraTime.isVisible ? 'Showing' : 'Hidden'}
+        </button>
       </div>
     </div>
   `;
@@ -114,28 +132,37 @@ export function render(container: HTMLElement) {
     '#start-stop-toggle',
   ) as HTMLButtonElement;
 
-  // *** 4. GET SWATCH REFS ***
+  // Swatch refs
   const teamASwatchP = container.querySelector('#team-a-swatch-primary') as HTMLSpanElement;
   const teamASwatchS = container.querySelector('#team-a-swatch-secondary') as HTMLSpanElement;
   const teamBSwatchP = container.querySelector('#team-b-swatch-primary') as HTMLSpanElement;
   const teamBSwatchS = container.querySelector('#team-b-swatch-secondary') as HTMLSpanElement;
 
+  // --- New Extra Time Refs ---
+  const extraTimeInput = container.querySelector(
+    '#extra-time-input',
+  ) as HTMLInputElement;
+  const setExtraTimeBtn = container.querySelector(
+    '#set-extra-time',
+  ) as HTMLButtonElement;
+  const toggleExtraTimeBtn = container.querySelector(
+    '#toggle-extra-time',
+  ) as HTMLButtonElement;
+
 
   // --- Update UI Function ---
   const updateUI = () => {
-    const { config, timer } = getState();
+    const { config, timer, extraTime } = getState();
 
     // Update scores and team names
     if (config) {
       teamAScoreEl.textContent = config.teamA.score.toString();
       teamBScoreEl.textContent = config.teamB.score.toString();
       
-      // Update headers
       const headers = container.querySelectorAll('.team-header h4');
       if (headers[0]) (headers[0] as HTMLElement).textContent = `${config.teamA.name} (${config.teamA.abbreviation})`;
       if (headers[1]) (headers[1] as HTMLElement).textContent = `${config.teamB.name} (${config.teamB.abbreviation})`;
       
-      // *** 5. UPDATE SWATCH COLORS ***
       if (teamASwatchP) teamASwatchP.style.backgroundColor = config.teamA.colors.primary;
       if (teamASwatchS) teamASwatchS.style.backgroundColor = config.teamA.colors.secondary;
       if (teamBSwatchP) teamBSwatchP.style.backgroundColor = config.teamB.colors.primary;
@@ -159,10 +186,26 @@ export function render(container: HTMLElement) {
         startStopToggle.classList.add('btn-green');
       }
     }
+    
+    // --- Update Extra Time UI ---
+    if (extraTimeInput) {
+      extraTimeInput.value = extraTime.minutes.toString();
+    }
+    if (toggleExtraTimeBtn) {
+      if (extraTime.isVisible) {
+        toggleExtraTimeBtn.textContent = 'Showing';
+        toggleExtraTimeBtn.classList.remove('btn-red');
+        toggleExtraTimeBtn.classList.add('btn-green');
+      } else {
+        toggleExtraTimeBtn.textContent = 'Hidden';
+        toggleExtraTimeBtn.classList.remove('btn-green');
+        toggleExtraTimeBtn.classList.add('btn-red');
+      }
+    }
   };
 
   // --- Add Event Listeners ---
-  // Score buttons (unchanged)
+  // Score buttons
   container.querySelector('#team-a-inc')?.addEventListener('click', () => setScore('teamA', (getState().config?.teamA.score ?? 0) + 1));
   container.querySelector('#team-a-dec')?.addEventListener('click', () => setScore('teamA', (getState().config?.teamA.score ?? 0) - 1));
   container.querySelector('#team-b-inc')?.addEventListener('click', () => setScore('teamB', (getState().config?.teamB.score ?? 0) + 1));
@@ -177,13 +220,9 @@ export function render(container: HTMLElement) {
     }
   });
 
-  // Reset and Set Time Listeners (unchanged)
+  // Reset and Set Time Listeners
   container.querySelector('#reset-timer')?.addEventListener('click', timerControls.reset);
-  container.querySelector('#show-set-time')?.addEventListener('click', () => { /* ... */ });
-  container.querySelector('#cancel-set-time')?.addEventListener('click', () => { /* ... */ });
-  container.querySelector('#save-set-time')?.addEventListener('click', () => { /* ... */ });
   
-  // (Re-adding the full set-time logic just in case)
   container.querySelector('#show-set-time')?.addEventListener('click', () => {
     if (setTimePopup) {
       const { seconds } = getState().timer;
@@ -211,6 +250,20 @@ export function render(container: HTMLElement) {
       setTimePopup.style.display = 'none';
     }
   });
+  
+  // --- New Extra Time Listeners ---
+  setExtraTimeBtn.addEventListener('click', () => {
+    let minutes = parseInt(extraTimeInput.value, 10) || 0;
+    if (minutes < 0) minutes = 0;
+    if (minutes > 99) minutes = 99;
+    extraTimeInput.value = minutes.toString();
+    setExtraTime(minutes);
+  });
+  
+  toggleExtraTimeBtn.addEventListener('click', () => {
+    toggleExtraTimeVisibility();
+  });
+
 
   // --- Subscribe to State ---
   subscribe(updateUI);

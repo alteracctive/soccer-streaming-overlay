@@ -4,7 +4,7 @@ import {
   subscribe,
   getState,
   STATE_UPDATE_EVENT,
-  type PlayerConfig // <-- Import PlayerConfig type
+  type PlayerConfig
 } from '../control_panel/stateManager';
 
 // --- Get Element References ---
@@ -38,9 +38,13 @@ const playersListHeaderB = document.getElementById('players-list-header-b') as H
 const playersListA = document.getElementById('players-list-a') as HTMLTableSectionElement;
 const playersListB = document.getElementById('players-list-b') as HTMLTableSectionElement;
 
-// --- New Game Report Goal List Refs ---
+// --- Game Report Goal List Refs ---
 const gameReportGoalsA = document.getElementById('game-report-goals-a') as HTMLDivElement;
 const gameReportGoalsB = document.getElementById('game-report-goals-b') as HTMLDivElement;
+
+// --- Updated Extra Time Refs ---
+const extraTimeBox = document.getElementById('extra-time-box') as HTMLDivElement;
+const extraTimeDisplay = document.getElementById('extra-time-display') as HTMLSpanElement;
 
 
 // --- Utility Functions ---
@@ -97,7 +101,7 @@ const renderPlayerList = (players: PlayerConfig[]): string => {
     `).join('');
 };
 
-// --- New Goal Scorer Render Function ---
+// --- Goal Scorer Render Function ---
 const renderGoalScorers = (players: PlayerConfig[]): string => {
   const scorers = players
     .filter(p => p.goals.length > 0)
@@ -120,7 +124,7 @@ const renderGoalScorers = (players: PlayerConfig[]): string => {
 // --- Main UI Update Function ---
 function updateUI() {
   // Get all relevant state
-  const { config, timer, scoreboardStyle, isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
+  const { config, timer, extraTime, scoreboardStyle, isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
   const SCROLL_TRIGGER_LIMIT = 15;
   
   // --- Update Player List ---
@@ -129,11 +133,11 @@ function updateUI() {
     playersListHeaderB.textContent = config.teamB.name;
     
     const teamAPlayers = config.teamA.players;
-    playersListA.innerHTML = renderPlayerList(teamAPlayers).slice(0, 20); // Still respect 20 player limit
+    playersListA.innerHTML = renderPlayerList(teamAPlayers).slice(0, 20);
     playersListA.closest('.players-table-wrapper')?.classList.toggle('scrolling', teamAPlayers.length > SCROLL_TRIGGER_LIMIT);
       
     const teamBPlayers = config.teamB.players;
-    playersListB.innerHTML = renderPlayerList(teamBPlayers).slice(0, 20); // Still respect 20 player limit
+    playersListB.innerHTML = renderPlayerList(teamBPlayers).slice(0, 20);
     playersListB.closest('.players-table-wrapper')?.classList.toggle('scrolling', teamBPlayers.length > SCROLL_TRIGGER_LIMIT);
   }
 
@@ -162,7 +166,7 @@ function updateUI() {
     if (reportStripBPrimary) reportStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportStripBSecondary) reportStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
     
-    // --- New: Goal Scorer List ---
+    // Goal Scorer List
     gameReportGoalsA.innerHTML = renderGoalScorers(config.teamA.players);
     gameReportGoalsB.innerHTML = renderGoalScorers(config.teamB.players);
   }
@@ -170,6 +174,17 @@ function updateUI() {
   // Update timers
   timerDisplay.textContent = formatTime(timer.seconds);
   if (reportTimerDisplay) reportTimerDisplay.textContent = formatTime(timer.seconds);
+  
+  // --- Updated Extra Time Logic ---
+  if (extraTimeBox && extraTimeDisplay) {
+    if (extraTime.isVisible && extraTime.minutes > 0) {
+      extraTimeDisplay.textContent = `+${extraTime.minutes}'`;
+      extraTimeBox.style.display = 'flex';
+    } else {
+      extraTimeBox.style.display = 'none';
+    }
+  }
+
 
   // Apply scoreboard styles (colors, opacity, scale)
   if (scoreboardStyle) {
@@ -179,6 +194,7 @@ function updateUI() {
     // Apply to main scoreboard elements
     if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.secondary; }
     if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.secondary; }
+    if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; } // Color is already gold
     if (scoreboardContainer) { scoreboardContainer.style.transform = `scale(${scaleValue})`; }
 
     // Apply to game report container
@@ -199,6 +215,7 @@ function updateUI() {
     // Fallback styles
     if (scoreRow) { scoreRow.style.backgroundColor = ''; scoreRow.style.color = ''; }
     if (timerRow) { timerRow.style.backgroundColor = ''; timerRow.style.color = ''; }
+    if (extraTimeBox) { extraTimeBox.style.backgroundColor = ''; }
     if (scoreboardContainer) { scoreboardContainer.style.transform = 'scale(1)'; }
     if (gameReportContainer) { gameReportContainer.style.backgroundColor = ''; gameReportContainer.style.color = ''; gameReportContainer.style.transform = 'translateX(-50%) scale(1)'; }
     if (playersListContainer) { playersListContainer.style.backgroundColor = ''; playersListContainer.style.color = ''; playersListContainer.style.transform = 'translate(-50%, -50%) scale(1)'; }

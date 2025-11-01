@@ -20,13 +20,12 @@ from data_manager import (
     ToggleOnFieldUpdate,
     EditPlayerUpdate,
     ResetStatsUpdate,
-    ReplacePlayerUpdate # <-- Import new model
+    ReplacePlayerUpdate
 )
 from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ... (no change)
     print("Application starting up...")
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
@@ -40,7 +39,6 @@ origins = [
 ]
 app.add_middleware(
     CORSMiddleware,
-    # ... (no change)
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
@@ -49,7 +47,6 @@ app.add_middleware(
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # ... (no change)
     await websocket_manager.connect(websocket)
     
     try:
@@ -75,12 +72,11 @@ async def websocket_endpoint(websocket: WebSocket):
         print("Client disconnected")
 
 # --- Timer Control ---
-# ... (no changes in this section)
 @app.post("/api/timer/start")
 async def start_timer():
     websocket_manager.start()
     return {"message": "Timer started"}
-# ... (stop, reset, set) ...
+
 @app.post("/api/timer/stop")
 async def stop_timer():
     websocket_manager.stop()
@@ -99,9 +95,23 @@ async def set_timer(update: SetTimeUpdate):
     websocket_manager.set_time(update.seconds)
     return {"message": f"Timer set to {update.seconds} seconds"}
 
+# --- New Model & Endpoints ---
+class SetExtraTimeUpdate(BaseModel):
+    minutes: int
+
+@app.post("/api/extra-time/set")
+async def set_extra_time(update: SetExtraTimeUpdate):
+    websocket_manager.set_extra_time(update.minutes)
+    return {"message": f"Extra time set to {update.minutes} minutes"}
+
+@app.post("/api/extra-time/toggle")
+async def toggle_extra_time():
+    status = await websocket_manager.toggle_extra_time_visibility()
+    return status
+# -----------------------------
+
 
 # --- Data Control ---
-# ... (no changes in this section)
 @app.get("/api/config")
 async def get_full_config() -> ScoreboardConfig:
     return data_manager.get_config()
@@ -111,7 +121,7 @@ async def set_score(update: SetScoreUpdate) -> ScoreboardConfig:
     config = await data_manager.set_score(update)
     await websocket_manager.broadcast_config(config)
     return config
-# ... (team-info, customization) ...
+
 @app.post("/api/team-info")
 async def update_team_info(update: TeamInfoUpdate) -> ScoreboardConfig:
     config = await data_manager.update_team_info(update)
@@ -123,7 +133,6 @@ async def update_customization(update: CustomizationUpdate) -> ScoreboardConfig:
     config = await data_manager.update_colors(update)
     await websocket_manager.broadcast_config(config)
     return config
-
 
 @app.post("/api/game-report/toggle")
 async def toggle_game_report():
@@ -150,12 +159,8 @@ async def add_player(update: AddPlayerUpdate):
         print(f"Error adding player: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-# --- New Endpoint ---
 @app.post("/api/player/replace")
 async def replace_player(update: ReplacePlayerUpdate):
-    """
-    Replaces an existing player's name and resets their stats.
-    """
     try:
         config = await data_manager.replace_player(update)
         await websocket_manager.broadcast_config(config)
