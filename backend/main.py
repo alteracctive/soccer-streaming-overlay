@@ -35,9 +35,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-origins = [
-    "http://localhost:5173",
-]
+# Allow all origins, which is safe for a local desktop app
+origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -125,7 +125,6 @@ async def update_match_info(update: MatchInfoUpdate):
         print(f"Error updating match info: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- New Endpoint ---
 @app.post("/api/match-info/toggle")
 async def toggle_match_info():
     status = await websocket_manager.toggle_match_info_visibility()
@@ -266,4 +265,7 @@ async def update_scoreboard_style(style: ScoreboardStyleConfig):
         raise HTTPException(status_code=500, detail="Failed to save scoreboard style.")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # --- THIS IS THE FIX ---
+    # 1. Pass the 'app' object directly, not the string "main:app"
+    # 2. Ensure reload=False (which is the default, so we just remove it)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

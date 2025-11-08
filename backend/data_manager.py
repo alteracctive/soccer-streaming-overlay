@@ -1,19 +1,33 @@
 import asyncio
 import aiofiles
 import json
+import sys  # <-- Add this
+import os   # <-- Add this
 from pydantic import BaseModel, Field
 from typing import Literal, List
 
-CONFIG_FILE = "team-info-config.json"
-# Ensure this filename is exactly correct
-SCOREBOARD_STYLE_FILE = "scoreboard-customization.json"
+# --- New Helper Function ---
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # Not in a PyInstaller bundle, use normal path
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+# --- Use the helper function for your paths ---
+CONFIG_FILE = resource_path("team-info-config.json")
+SCOREBOARD_STYLE_FILE = resource_path("scoreboard-customization.json")
 
 class ScoreboardStyleConfig(BaseModel):
     primary: str
     secondary: str
     opacity: int = Field(default=75, ge=50, le=100)
     scale: int = Field(default=100, ge=50, le=150)
-    matchInfo: str = "" # <-- New field
+    matchInfo: str = ""
 
 class ColorConfig(BaseModel):
     primary: str
@@ -94,7 +108,6 @@ class ReplacePlayerUpdate(BaseModel):
     number: int
     name: str
 
-# --- New Model ---
 class MatchInfoUpdate(BaseModel):
     info: str
 
@@ -116,7 +129,7 @@ class DataManager:
                     self.config = ScoreboardConfig.model_validate_json(content)
                 print("Config loaded successfully.")
             except FileNotFoundError:
-                print(f"{self.file_path} not found, creating default config.")
+                print(f"CRITICAL: {self.file_path} not found.")
                 raise
             except Exception as e:
                 print(f"Error loading config: {e}. Check {self.file_path}.")
@@ -124,9 +137,24 @@ class DataManager:
 
     async def save_config(self):
         if self.config is None: return
+        # --- This path needs to be absolute, not from resource_path ---
+        # We will use the original non-helper path for SAVING
+        save_path = os.path.join(os.path.abspath("."), "team-info-config.json")
+        if not os.path.exists(os.path.abspath(".")):
+             save_path = self.file_path # Fallback
+             
         async with self._config_lock:
-            async with aiofiles.open(self.file_path, mode='w') as f:
-                await f.write(self.config.model_dump_json(indent=2))
+             try:
+                 async with aiofiles.open(save_path, mode='w') as f:
+                     await f.write(self.config.model_dump_json(indent=2))
+                 print(f"Config saved to {save_path}")
+             except Exception as e:
+                 print(f"!!! Critical Error saving config to {save_path}: {e}")
+                 # Try saving to the original path as a last resort
+                 async with aiofiles.open(self.file_path, mode='w') as f:
+                     await f.write(self.config.model_dump_json(indent=2))
+                 print(f"Config saved to fallback path {self.file_path}")
+
 
     async def load_scoreboard_style(self):
         async with self._style_lock:
@@ -157,28 +185,37 @@ class DataManager:
                  print("Falling back to default style due to invalid data.")
                  self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
 
+        # --- This path also needs to be absolute for saving ---
+        save_path = os.path.join(os.path.abspath("."), "scoreboard-customization.json")
+        if not os.path.exists(os.path.abspath(".")):
+             save_path = self.scoreboard_style_path # Fallback
+
         try:
             json_data = self.scoreboard_style.model_dump_json(indent=2)
             
             async with self._style_lock:
+                 async with aiofiles.open(save_path, mode='w') as f:
+                    await f.write(json_data)
+            print(f"Scoreboard style successfully saved to {save_path}")
+        except Exception as e:
+            print(f"!!! Critical Error saving scoreboard style to {save_path}: {e}")
+            # Try saving to the original path as a last resort
+            async with self._style_lock:
                 async with aiofiles.open(self.scoreboard_style_path, mode='w') as f:
                     await f.write(json_data)
-            print(f"Scoreboard style successfully saved to {self.scoreboard_style_path}")
-        except Exception as e:
-            print(f"!!! Critical Error saving scoreboard style to {self.scoreboard_style_path}: {e}")
+            print(f"Scoreboard style saved to fallback path {self.scoreboard_style_path}")
+
 
     def get_scoreboard_style(self) -> ScoreboardStyleConfig:
         if self.scoreboard_style is None: raise Exception("Scoreboard style not loaded")
         return self.scoreboard_style
 
     async def update_scoreboard_style(self, style: ScoreboardStyleConfig) -> ScoreboardStyleConfig:
-        # Ensure matchInfo is preserved if not included in a partial update
         style.matchInfo = style.matchInfo if style.matchInfo is not None else self.scoreboard_style.matchInfo
         self.scoreboard_style = style
         await self.save_scoreboard_style()
         return self.scoreboard_style
 
-    # --- New Method ---
     async def update_match_info(self, info: str) -> ScoreboardStyleConfig:
         style = self.get_scoreboard_style()
         style.matchInfo = info
@@ -189,6 +226,7 @@ class DataManager:
         if self.config is None: raise Exception("Config not loaded")
         return self.config
 
+    # ... (all other methods: update_team_info, update_colors, set_score, etc. are unchanged) ...
     async def update_team_info(self, info: TeamInfoUpdate) -> ScoreboardConfig:
         config = self.get_config()
         config.teamA.name = info.teamA.get('name', config.teamA.name)

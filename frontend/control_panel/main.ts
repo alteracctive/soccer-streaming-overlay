@@ -1,3 +1,4 @@
+// frontend/control_panel/main.ts
 import { render as renderDashboard } from './pages/dashboard';
 import { render as renderBroadcast } from './pages/broadcast';
 import { render as renderCustomization } from './pages/customization';
@@ -107,7 +108,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const copyBtn = document.getElementById('copy-overlay-link');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
-      const overlayUrl = `${window.location.origin}/overlay/`;
+      // --- THIS LINE IS FIXED ---
+      const overlayUrl = 'http://localhost:8001/overlay/index.html';
+      
       navigator.clipboard
         .writeText(overlayUrl)
         .then(() => {
@@ -126,7 +129,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Listen for connection status changes from the state manager
     stateEmitter.addEventListener(CONNECTION_STATUS_EVENT, (event) => {
       try {
-        // *** ADDED THIS LOG ***
         console.log('Status listener fired!', event);
         
         const isConnected = (event as CustomEvent).detail;
@@ -166,7 +168,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         miniScoreA.textContent = formatScore(config.teamA.score);
         miniScoreB.textContent = formatScore(config.teamB.score);
 
-        // *** 2. SET STRIP COLORS ***
         if (stripAPrimary) stripAPrimary.style.backgroundColor = config.teamA.colors.primary;
         if (stripASecondary) stripASecondary.style.backgroundColor = config.teamA.colors.secondary;
         if (stripBPrimary) stripBPrimary.style.backgroundColor = config.teamB.colors.primary;

@@ -1,0 +1,22 @@
+{
+  "teamA": {
+    "name": "TEAM A",
+    "abbreviation": "FCB",
+    "score": 0,
+    "colors": {
+      "primary": "#ff0000",
+      "secondary": "#800000"
+    },
+    "players": []
+  },
+  "teamB": {
+    "name": "TEAM B",
+    "abbreviation": "BAR",
+    "score": 0,
+    "colors": {
+      "primary": "#0000ff",
+      "secondary": "#00125c"
+    },
+    "players": []
+  }
+}
