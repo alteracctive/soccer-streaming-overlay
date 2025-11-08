@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Control Panel</title>
+    <link rel="stylesheet" href="./control_panel/control-panel.css" />
+  </head>
+  <body>
+    <div class="control-panel-container">
+      <nav class="sidebar">
+        <h3>Soccer Overlay</h3>
+        
+        <div class="server-status-container">
+          <span>Server Status</span>
+          <div id="status-indicator" class="disconnected" title="Disconnected"></div>
+        </div>
+        <div class="overlay-link-container">
+          <a href="http://localhost:8001/overlay/index.html" target="_blank" title="Open overlay in new tab">
+            🔗 Overlay Link
+          </a>
+          <button id="copy-overlay-link" title="Copy URL to clipboard">
+            Copy
+          </button>
+        </div>
+        <div class="mini-scoreboard">
+          <div class="mini-score-row">
+            <div class="team-color-strip" id="mini-strip-a">
+              <div id="mini-strip-a-primary"></div>
+              <div id="mini-strip-a-secondary"></div>
+            </div>
+            <span id="mini-score-a">00</span>
+            <span class="dash">-</span>
+            <span id="mini-score-b">00</span>
+            <div class="team-color-strip" id="mini-strip-b">
+              <div id="mini-strip-b-primary"></div>
+              <div id="mini-strip-b-secondary"></div>
+            </div>
+          </div>
+          <div class="mini-timer-row">
+            <span id="mini-timer">00:00</span>
+          </div>
+        </div>
+        <ul>
+          <li>
+            <a href="#" class="nav-link active" data-page="dashboard"
+              >📊 Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="#" class="nav-link" data-page="broadcast"
+              >📡 Broadcast</a
+            >
+          </li>
+          <li>
+            <a href="#" class="nav-link" data-page="customization"
+              >🎨 Customization</a
+            >
+          </li>
+          <li>
+            <a href="#" class="nav-link" data-page="team-info"
+              >⚽ Team Info</a
+            >
+          </li>
+          <li>
+            <a href="#" class="nav-link" data-page="setting">⚙️ Setting</a>
+          </li>
+        </ul>
+      </nav>
+
+      <main class="subpage-content" id="app-content"></main>
+    </div>
+    <script type="module" src="./control_panel/main.ts"></script>
+  </body>
+</html>

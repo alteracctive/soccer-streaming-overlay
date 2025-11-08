@@ -1,0 +1,81 @@
+# =============================================================================
+# General / OS
+# =============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Binary Files (Global ignore to prevent accidental commits of heavy executables)
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+
+# =============================================================================
+# Environment & Local Configs (Sensitive Data)
+# =============================================================================
+.env
+.env.*
+!.env.example
+/backend/config.json
+/backend/team-info-config.json
+/backend/scoreboard-customization.json
+
+# =============================================================================
+# Backend (Python / FastAPI)
+# =============================================================================
+# Virtual environment
+/backend/venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.cpython-*.pyc
+
+# PyInstaller / Builds
+/backend/build/
+/backend/dist/
+/backend/*.spec
+
+# =============================================================================
+# Frontend (Vite / TypeScript / Node.js)
+# =============================================================================
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+
+# =============================================================================
+# Desktop App (Electron)
+# =============================================================================
+/desktop-app/node_modules/
+
+# Intermediate build (copied from frontend)
+/desktop-app/dist/
+
+# Final packaged releases (VERY HEAVY - DO NOT COMMIT)
+/desktop-app/release/
+
+# Resources (contains the backend .exe)
+/desktop-app/resources/*.exe

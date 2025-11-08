@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Overlay</title>
+    <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+
+    <div class="scoreboard-container">
+        <div class="match-info-row" id="match-info-row">
+          <div class="scrolling-text-wrapper">
+            <span class="scrolling-text" id="match-info-text"></span>
+          </div>
+        </div>
+        
+        <div class="score-row">
+            <span class="abbr" id="team-a-abbr">TMA</span>
+            <div class="score-block" id="score-block-a">
+                <div class="team-color-strip" id="overlay-strip-a">
+                    <div id="overlay-strip-a-primary"></div>
+                    <div id="overlay-strip-a-secondary"></div>
+                </div>
+                <span class="score" id="team-a-score">0</span>
+            </div>
+            <span class="separator">-</span>
+            <div class="score-block" id="score-block-b">
+                <span class="score" id="team-b-score">0</span>
+                <div class="team-color-strip" id="overlay-strip-b">
+                    <div id="overlay-strip-b-primary"></div>
+                    <div id="overlay-strip-b-secondary"></div>
+                </div>
+            </div>
+            <span class="abbr" id="team-b-abbr">TMB</span>
+        </div>
+        
+        <div class="timer-section-row">
+          <div class="timer-row">
+              <span id="timer-display">00:00</span>
+          </div>
+          <div class="extra-time-row" id="extra-time-box" style="display: none;">
+              <span id="extra-time-display">+0'</span>
+          </div>
+        </div>
+        
+    </div>
+
+    <div class="game-report-container">
+        <div class="game-report-header">
+            <div class="team-info-left">
+                <span class="report-team-name" id="report-team-a-name">Team A Full Name</span>
+                <div class="team-color-strip">
+                    <div id="report-strip-a-primary"></div>
+                    <div id="report-strip-a-secondary"></div>
+                </div>
+                <span class="report-score" id="report-team-a-score">0</span>
+            </div>
+
+            <div class="report-timer" id="report-timer-display">00:00</div>
+
+            <div class="team-info-right">
+                <span class="report-score" id="report-team-b-score">0</span>
+                <div class="team-color-strip">
+                    <div id="report-strip-b-primary"></div>
+                    <div id="report-strip-b-secondary"></div>
+                </div>
+                <span class="report-team-name" id="report-team-b-name">Team B Full Name</span>
+            </div>
+        </div>
+        
+        <div class="game-report-content">
+          <div class="goal-list-column" id="game-report-goals-a">
+            </div>
+          <div class="game-report-divider"></div>  
+          <div class="goal-list-column" id="game-report-goals-b">
+            </div>
+        </div>
+        
+    </div>
+
+    <div class="players-list-container" id="players-list-container">
+      <div class="players-list-team">
+        <h4 id="players-list-header-a">Team A</h4>
+        <div class="players-table-wrapper">
+          <table class="players-table">
+            <tbody id="players-list-a">
+              </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="players-list-divider"></div>
+      <div class="players-list-team">
+        <h4 id="players-list-header-b">Team B</h4>
+        <div class="players-table-wrapper">
+          <table class="players-table">
+            <tbody id="players-list-b">
+              </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script src="main.ts" type="module"></script>
+</body>
+</html>
