@@ -15,7 +15,7 @@ body {
   left: 20px;
   display: flex;
   flex-direction: column;
-  align-items: center; 
+  align-items: flex-start;
   gap: 8px;
   transform-origin: top left;
   /* Scale is controlled by JS */
@@ -32,12 +32,20 @@ body {
   color: #ffffff;
   border-radius: 8px;
   padding: 4px 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
   min-width: 400px;
   height: 34px;
   box-sizing: border-box;
   overflow: hidden; 
   white-space: nowrap;
+}
+
+/* --- New Content Wrapper --- */
+.scoreboard-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Top row styles (Scoreboard) */
@@ -51,7 +59,7 @@ body {
   color: #ffffff; /* Default */
   border-radius: 8px;
   padding: 8px 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
   min-width: 400px;
   height: 50px;
   box-sizing: border-box;
@@ -117,14 +125,14 @@ body {
 
 /* Timer row styles (Scoreboard) */
 .timer-row {
-  font-size: 28px;
+  font-size: 24px; /* Shrunk by ~15% */
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
   background-color: rgba(0, 0, 0, 0.75); /* Default */
   color: #ffffff; /* Default */
   border-radius: 8px;
-  padding: 5px 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  padding: 4px 16px; /* Shrunk by ~15% */
+  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -134,20 +142,47 @@ body {
 
 /* New box for extra time */
 .extra-time-row {
-  font-size: 28px; /* Match timer */
+  font-size: 24px; /* Shrunk by ~15% */
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
   background-color: rgba(0, 0, 0, 0.75); /* Default */
   color: #ffd700; /* Gold color */
   border-radius: 8px;
-  padding: 5px 12px; /* Slightly less horizontal padding */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  padding: 4px 10px; /* Shrunk by ~15% */
+  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
   display: flex;
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
 }
 /* ----------------------------- */
+
+/* --- Updated Layout Logic --- */
+.scoreboard-container.timer-position-right .scoreboard-content-wrapper {
+  flex-direction: row; 
+  align-items: stretch; 
+  gap: 8px;
+}
+
+.scoreboard-container.timer-position-right .timer-section-row {
+  flex-direction: row; 
+  width: auto;
+  height: 100%; 
+}
+
+.scoreboard-container.timer-position-right .timer-row,
+.scoreboard-container.timer-position-right .extra-time-row {
+  width: auto; 
+  min-width: 0;
+  padding: 5px 12px;
+  height: 50px; /* Explicitly match score-row height */
+  box-sizing: border-box; 
+  font-size: 28px; /* Restore original font size */
+}
+
+.scoreboard-container.timer-position-right .timer-row {
+  width: 150px; /* Restore original width */
+}
 
 
 /* --- GAME REPORT STYLES --- */
@@ -159,7 +194,7 @@ body {
     transform-origin: bottom center;
     width: 960px;
     min-height: 200px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); -- Removed */
     border-radius: 15px;
     overflow: hidden;
     display: flex;
@@ -313,7 +348,7 @@ body {
   color: #FFFFFF;
   border-radius: 10px;
   padding: 15px 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
   display: flex;
   gap: 20px;
   max-height: 80vh; 

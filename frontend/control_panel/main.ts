@@ -13,11 +13,16 @@ import {
 } from './stateManager';
 import { showNotification } from './notification';
 
+// --- Updated Function ---
 function formatTime(totalSeconds: number): string {
-  const min = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, '0');
+  const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
+  
+  // Only pad minutes if less than 100
+  const min = (totalMinutes < 100) 
+    ? totalMinutes.toString().padStart(2, '0') 
+    : totalMinutes.toString();
+    
   return `${min}:${sec}`;
 }
 
@@ -108,7 +113,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const copyBtn = document.getElementById('copy-overlay-link');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
-      // --- THIS LINE IS FIXED ---
       const overlayUrl = 'http://localhost:8001/overlay/index.html';
       
       navigator.clipboard

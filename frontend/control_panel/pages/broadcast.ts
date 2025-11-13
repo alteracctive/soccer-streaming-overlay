@@ -6,11 +6,9 @@ import {
   toggleGameReport,
   toggleScoreboard,
   togglePlayersList,
-  saveMatchInfo,
-  toggleMatchInfoVisibility,
   type PlayerConfig,
 } from '../stateManager';
-import { showNotification } from '../notification';
+// Removed: saveMatchInfo, toggleMatchInfoVisibility, showNotification
 
 /**
  * Helper function to generate the HTML for a team's goal list
@@ -36,19 +34,7 @@ function renderGoalList(players: PlayerConfig[]): string {
 
 export function render(container: HTMLElement) {
   
-  const { scoreboardStyle, isMatchInfoVisible } = getState(); // Get initial state
-
   container.innerHTML = `
-    <style>
-      .unsaved-indicator {
-        opacity: 0.7;
-        font-weight: normal;
-        font-size: 0.8em;
-        margin-left: 8px;
-        font-style: italic;
-      }
-    </style>
-
     <div style="display: flex; flex-direction: column; gap: 16px;">
       <div class="card">
         <h4>Broadcast Controls</h4>
@@ -76,21 +62,6 @@ export function render(container: HTMLElement) {
       </div>
 
       <div class="card">
-        <h4>Match Info <span id="match-info-unsaved" class="unsaved-indicator"></span></h4>
-        <div class="form-group inline-form-group" style="align-items: end;">
-          <div class="form-group" style="flex-grow: 1;">
-            <label id="match-info-label" for="match-info-input">Text</label>
-            <input type="text" id="match-info-input" value="${scoreboardStyle?.matchInfo ?? ''}">
-          </div>
-          <button id="save-match-info" style="flex-shrink: 0;">Save</button>
-          <button id="toggle-match-info" style="min-width: 100px; flex-shrink: 0;">
-            ${isMatchInfoVisible ? 'Showing' : 'Hidden'}
-          </button>
-        </div>
-      </div>
-
-
-      <div class="card">
         <h4>Game Report</h4>
         <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start;">
           <div>
@@ -113,9 +84,6 @@ export function render(container: HTMLElement) {
     </div>
   `;
 
-  // --- Local State ---
-  let isMatchInfoUnsaved = false;
-
   // --- Get Element Refs ---
   const gameReportToggleButton = container.querySelector(
     '#toggle-game-report',
@@ -129,23 +97,7 @@ export function render(container: HTMLElement) {
     '#toggle-players-list',
   ) as HTMLButtonElement;
 
-  // --- Match Info Refs ---
-  const matchInfoInput = container.querySelector(
-    '#match-info-input',
-  ) as HTMLInputElement;
-  const saveMatchInfoBtn = container.querySelector(
-    '#save-match-info',
-  ) as HTMLButtonElement;
-  const toggleMatchInfoBtn = container.querySelector(
-    '#toggle-match-info',
-  ) as HTMLButtonElement;
-  const matchInfoUnsaved = container.querySelector(
-    '#match-info-unsaved',
-  ) as HTMLSpanElement;
-  const matchInfoLabel = container.querySelector(
-    '#match-info-label',
-  ) as HTMLLabelElement;
-
+  // --- Removed Match Info Refs ---
 
   // --- Report Display Elements ---
   const reportHeaderA = container.querySelector('#cp-report-header-a') as HTMLHeadingElement;
@@ -154,20 +106,13 @@ export function render(container: HTMLElement) {
   const reportListB = container.querySelector('#cp-report-list-b') as HTMLDivElement;
 
   
-  // --- Helper Function ---
-  const updateUnsavedMatchInfo = () => {
-    if (matchInfoUnsaved) {
-      matchInfoUnsaved.textContent = isMatchInfoUnsaved ? '(unsaved data)' : ''; // <-- Updated text
-    }
-    if (matchInfoLabel) {
-      matchInfoLabel.style.fontStyle = isMatchInfoUnsaved ? 'italic' : 'normal';
-    }
-  };
+  // --- Removed UnsavedMatchInfo helper ---
 
 
   // Function to update the UI (buttons and report display)
   const updateUI = () => {
-    const { config, scoreboardStyle, isGameReportVisible, isScoreboardVisible, isPlayersListVisible, isMatchInfoVisible } = getState();
+    // Removed isMatchInfoVisible from destructuring
+    const { config, isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
     
     // Update Toggle Buttons
     if (gameReportToggleButton) {
@@ -204,18 +149,7 @@ export function render(container: HTMLElement) {
         }
     }
     
-    // --- Toggle Button UI ---
-    if (toggleMatchInfoBtn) {
-        if (isMatchInfoVisible) {
-          toggleMatchInfoBtn.textContent = 'Showing';
-          toggleMatchInfoBtn.classList.remove('btn-red', 'btn-secondary');
-          toggleMatchInfoBtn.classList.add('btn-green');
-        } else {
-          toggleMatchInfoBtn.textContent = 'Hidden';
-          toggleMatchInfoBtn.classList.remove('btn-green', 'btn-secondary');
-          toggleMatchInfoBtn.classList.add('btn-red');
-        }
-    }
+    // --- Removed Match Info Toggle Button UI ---
 
     // --- Update Report Display ---
     if (config) {
@@ -225,10 +159,7 @@ export function render(container: HTMLElement) {
       reportListB.innerHTML = renderGoalList(config.teamB.players);
     }
     
-    // --- Update Match Info Input (in case it changes elsewhere) ---
-    if (scoreboardStyle && matchInfoInput && !isMatchInfoUnsaved) {
-      matchInfoInput.value = scoreboardStyle.matchInfo;
-    }
+    // --- Removed Match Info Input update ---
   };
 
   // --- Add click listeners ---
@@ -244,28 +175,7 @@ export function render(container: HTMLElement) {
     togglePlayersList();
   });
 
-  // --- Match Info Listener ---
-  saveMatchInfoBtn.addEventListener('click', async () => {
-    try {
-      await saveMatchInfo(matchInfoInput.value);
-      isMatchInfoUnsaved = false;
-      updateUnsavedMatchInfo();
-      showNotification('Match info saved!');
-    } catch (error: any) {
-      showNotification(`Error: ${error.message}`, 'error');
-    }
-  });
-  
-  // --- Toggle Listener ---
-  toggleMatchInfoBtn.addEventListener('click', () => {
-    toggleMatchInfoVisibility();
-  });
-  
-  // --- Unsaved Listener ---
-  matchInfoInput.addEventListener('input', () => {
-    isMatchInfoUnsaved = true;
-    updateUnsavedMatchInfo();
-  });
+  // --- Removed Match Info Listeners ---
 
 
   // Subscribe to state changes

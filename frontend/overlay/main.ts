@@ -8,7 +8,7 @@ import {
 } from '../control_panel/stateManager';
 
 // --- Get Element References ---
-const scoreboardContainer = document.querySelector('.scoreboard-container') as HTMLDivElement;
+const scoreboardContainer = document.getElementById('scoreboard-container') as HTMLDivElement;
 const gameReportContainer = document.querySelector('.game-report-container') as HTMLDivElement;
 const scoreRow = document.querySelector('.score-row') as HTMLDivElement;
 const timerRow = document.querySelector('.timer-row') as HTMLDivElement;
@@ -52,11 +52,16 @@ const matchInfoText = document.getElementById('match-info-text') as HTMLSpanElem
 
 
 // --- Utility Functions ---
+// --- Updated Function ---
 function formatTime(totalSeconds: number): string {
-  const min = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, '0');
+  const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
+  
+  // Only pad minutes if less than 100
+  const min = (totalMinutes < 100) 
+    ? totalMinutes.toString().padStart(2, '0') 
+    : totalMinutes.toString();
+    
   return `${min}:${sec}`;
 }
 
@@ -69,25 +74,21 @@ function hexToRgba(hex: string, opacityPercent: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// --- Updated Scroll Check Function ---
 function checkAndApplyScroll(wrapper: HTMLElement | null, textContent: string) {
   if (!wrapper) return;
   
   const textSpan = wrapper.querySelector('.scrolling-text') as HTMLSpanElement;
-  if (!textSpan) { // Fallback for elements without the wrapper
+  if (!textSpan) { 
     wrapper.textContent = textContent;
     return;
   }
   
-  // Update text content
   if (textSpan.textContent !== textContent) {
     textSpan.textContent = textContent;
   }
   
-  // Check for overflow
-  // Force a reflow to get accurate scrollWidth after text change
   textSpan.style.display = 'none';
-  void textSpan.offsetWidth; // This forces a reflow
+  void textSpan.offsetWidth; 
   textSpan.style.display = 'inline-block';
   
   const isOverflowing = textSpan.scrollWidth > wrapper.clientWidth;
@@ -144,7 +145,7 @@ function updateUI() {
     isGameReportVisible, 
     isScoreboardVisible, 
     isPlayersListVisible,
-    isMatchInfoVisible // <-- New state
+    isMatchInfoVisible
   } = getState();
   
   const SCROLL_TRIGGER_LIMIT = 15;
@@ -177,7 +178,6 @@ function updateUI() {
 
   // Update Game Report
   if (config && gameReportContainer) {
-    // Team Info
     checkAndApplyScroll(reportTeamAName.parentElement, config.teamA.name); // Pass wrapper
     if (reportTeamAScore) reportTeamAScore.textContent = config.teamA.score.toString();
     if (reportStripAPrimary) reportStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
@@ -188,7 +188,6 @@ function updateUI() {
     if (reportStripBPrimary) reportStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportStripBSecondary) reportStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
     
-    // Goal Scorer List
     gameReportGoalsA.innerHTML = renderGoalScorers(config.teamA.players);
     gameReportGoalsB.innerHTML = renderGoalScorers(config.teamB.players);
   }
@@ -213,28 +212,26 @@ function updateUI() {
     const backgroundColorWithOpacity = hexToRgba(scoreboardStyle.primary, scoreboardStyle.opacity);
     const scaleValue = Math.max(0.5, Math.min(1.5, scoreboardStyle.scale / 100));
 
-    // --- Updated Match Info Logic ---
     if (matchInfoRow && matchInfoText) {
-      // Use the *wrapper* for the scroll check
       checkAndApplyScroll(matchInfoRow.querySelector('.scrolling-text-wrapper'), scoreboardStyle.matchInfo);
       matchInfoRow.style.backgroundColor = backgroundColorWithOpacity;
       matchInfoRow.style.color = scoreboardStyle.secondary;
     }
 
-    // Apply to main scoreboard elements
     if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.secondary; }
     if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.secondary; }
     if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; } 
-    if (scoreboardContainer) { scoreboardContainer.style.transform = `scale(${scaleValue})`; }
+    if (scoreboardContainer) { 
+      scoreboardContainer.style.transform = `scale(${scaleValue})`;
+      scoreboardContainer.classList.toggle('timer-position-right', scoreboardStyle.timerPosition === 'Right');
+    }
 
-    // Apply to game report container
     if (gameReportContainer) {
         gameReportContainer.style.backgroundColor = backgroundColorWithOpacity;
         gameReportContainer.style.color = scoreboardStyle.secondary;
         gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`;
     }
     
-    // Apply to new players list
     if (playersListContainer) {
         playersListContainer.style.backgroundColor = backgroundColorWithOpacity;
         playersListContainer.style.color = scoreboardStyle.secondary;
@@ -256,7 +253,6 @@ function updateUI() {
   
   // Apply visibility to the scoreboard container
   if (scoreboardContainer) {
-      // Show the main container if either the scoreboard OR the match info is visible
       scoreboardContainer.style.display = (isScoreboardVisible || isMatchInfoVisible) ? 'flex' : 'none';
   }
   
@@ -265,7 +261,6 @@ function updateUI() {
     scoreRow.style.display = isScoreboardVisible ? 'flex' : 'none';
   }
   if (timerRow) {
-    // The parent .timer-section-row handles the flex layout
     (timerRow.parentElement as HTMLElement).style.display = isScoreboardVisible ? 'flex' : 'none';
   }
 

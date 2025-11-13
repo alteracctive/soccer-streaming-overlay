@@ -44,6 +44,7 @@ export interface ScoreboardStyleConfig {
   opacity: number;
   scale: number;
   matchInfo: string;
+  timerPosition: "Under" | "Right"; // <-- New field
 }
 
 // --- API and WebSocket URLs ---
@@ -62,19 +63,19 @@ let appState: {
   isAutoAddScoreOn: boolean;
   isAutoConvertYellowToRedOn: boolean;
   extraTime: ExtraTimeStatus;
-  isMatchInfoVisible: boolean; // <-- New state
+  isMatchInfoVisible: boolean;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
-  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "" },
+  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "", timerPosition: "Under" }, // <-- Default
   isGameReportVisible: false, 
   isScoreboardVisible: true,
   isPlayersListVisible: false,
   isAutoAddScoreOn: false,
   isAutoConvertYellowToRedOn: false,
   extraTime: { minutes: 0, isVisible: false },
-  isMatchInfoVisible: false, // <-- Default
+  isMatchInfoVisible: false,
 };
 
 export const stateEmitter = new EventTarget();
@@ -128,7 +129,6 @@ function updateExtraTimeStatus(status: ExtraTimeStatus) {
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
-// --- New Function ---
 function updateMatchInfoVisibility(isVisible: boolean) {
   appState.isMatchInfoVisible = isVisible;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
@@ -187,7 +187,6 @@ function connectWebSocket() {
     else if (message.type === 'extra_time_status') {
       updateExtraTimeStatus(message as ExtraTimeStatus);
     }
-    // --- New Case ---
     else if (message.type === 'match_info_visibility') {
       updateMatchInfoVisibility(message.isVisible as boolean);
     }
@@ -267,12 +266,17 @@ export async function saveColors(teamA: object, teamB: object) {
   await post('/api/customization', { teamA, teamB });
 }
 
-export async function saveScoreboardStyle(style: ScoreboardStyleConfig) {
+export async function saveScoreboardStyle(style: Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>) {
   await post('/api/scoreboard-style', style);
 }
 
 export async function saveMatchInfo(info: string) {
   await post('/api/match-info', { info });
+}
+
+// --- New Function ---
+export async function saveTimerPosition(position: 'Under' | 'Right') {
+  await post('/api/timer-position', { position });
 }
 
 export async function toggleGameReport() {
@@ -287,7 +291,6 @@ export async function togglePlayersList() {
   await post('/api/players-list/toggle', {});
 }
 
-// --- New Function ---
 export async function toggleMatchInfoVisibility() {
   await post('/api/match-info/toggle', {});
 }

@@ -5,17 +5,21 @@ import {
   unsubscribe,
   timerControls,
   setScore,
-  setExtraTime, // <-- New import
-  toggleExtraTimeVisibility, // <-- New import
+  setExtraTime,
+  toggleExtraTimeVisibility,
 } from '../stateManager';
 import { showNotification } from '../notification';
 
 // Utility function to format time
 function formatTime(totalSeconds: number): string {
-  const min = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, '0');
+  const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
+  
+  // Only pad minutes if less than 100
+  const min = (totalMinutes < 100) 
+    ? totalMinutes.toString().padStart(2, '0') 
+    : totalMinutes.toString();
+    
   return `${min}:${sec}`;
 }
 
@@ -99,14 +103,13 @@ export function render(container: HTMLElement) {
         <h4>Additional Time</h4>
         <div class="form-group" style="padding: 10px 0;">
           <label for="extra-time-input" style="font-weight: 500;">Minutes</label>
-          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+          <div class="inline-form-group" style="margin-top: 4px; justify-content: center;">
             <input type="number" id="extra-time-input" min="0" max="99" value="${extraTime.minutes}" style="width: 100px; text-align: center; margin: 0 auto;">
-            <button id="set-extra-time" class="btn-secondary">Set</button>
+            <button id="extra-time-action-btn" class="btn-secondary" style="min-width: 110px;">
+              ${extraTime.isVisible ? 'Showing' : 'Set and Show'}
+            </button>
           </div>
         </div>
-        <button id="toggle-extra-time" style="width: 100%;">
-          ${extraTime.isVisible ? 'Showing' : 'Hidden'}
-        </button>
       </div>
     </div>
   `;
@@ -138,15 +141,12 @@ export function render(container: HTMLElement) {
   const teamBSwatchP = container.querySelector('#team-b-swatch-primary') as HTMLSpanElement;
   const teamBSwatchS = container.querySelector('#team-b-swatch-secondary') as HTMLSpanElement;
 
-  // --- New Extra Time Refs ---
+  // --- Updated Extra Time Refs ---
   const extraTimeInput = container.querySelector(
     '#extra-time-input',
   ) as HTMLInputElement;
-  const setExtraTimeBtn = container.querySelector(
-    '#set-extra-time',
-  ) as HTMLButtonElement;
-  const toggleExtraTimeBtn = container.querySelector(
-    '#toggle-extra-time',
+  const extraTimeActionBtn = container.querySelector(
+    '#extra-time-action-btn',
   ) as HTMLButtonElement;
 
 
@@ -188,18 +188,20 @@ export function render(container: HTMLElement) {
     }
     
     // --- Update Extra Time UI ---
-    if (extraTimeInput) {
-      extraTimeInput.value = extraTime.minutes.toString();
-    }
-    if (toggleExtraTimeBtn) {
+    if (extraTimeActionBtn) {
+      // Don't update the input value if the user is typing
+      if (document.activeElement !== extraTimeInput) {
+        extraTimeInput.value = extraTime.minutes.toString();
+      }
+      
       if (extraTime.isVisible) {
-        toggleExtraTimeBtn.textContent = 'Showing';
-        toggleExtraTimeBtn.classList.remove('btn-red');
-        toggleExtraTimeBtn.classList.add('btn-green');
+        extraTimeActionBtn.textContent = 'Showing';
+        extraTimeActionBtn.classList.remove('btn-secondary');
+        extraTimeActionBtn.classList.add('btn-green');
       } else {
-        toggleExtraTimeBtn.textContent = 'Hidden';
-        toggleExtraTimeBtn.classList.remove('btn-green');
-        toggleExtraTimeBtn.classList.add('btn-red');
+        extraTimeActionBtn.textContent = 'Set and Show';
+        extraTimeActionBtn.classList.remove('btn-green');
+        extraTimeActionBtn.classList.add('btn-secondary');
       }
     }
   };
@@ -220,8 +222,11 @@ export function render(container: HTMLElement) {
     }
   });
 
-  // Reset and Set Time Listeners
-  container.querySelector('#reset-timer')?.addEventListener('click', timerControls.reset);
+  // --- Updated Reset Listener ---
+  container.querySelector('#reset-timer')?.addEventListener('click', () => {
+    timerControls.stop();   // Stop the timer
+    timerControls.reset();  // Reset the timer
+  });
   
   container.querySelector('#show-set-time')?.addEventListener('click', () => {
     if (setTimePopup) {
@@ -251,17 +256,24 @@ export function render(container: HTMLElement) {
     }
   });
   
-  // --- New Extra Time Listeners ---
-  setExtraTimeBtn.addEventListener('click', () => {
-    let minutes = parseInt(extraTimeInput.value, 10) || 0;
-    if (minutes < 0) minutes = 0;
-    if (minutes > 99) minutes = 99;
-    extraTimeInput.value = minutes.toString();
-    setExtraTime(minutes);
-  });
-  
-  toggleExtraTimeBtn.addEventListener('click', () => {
-    toggleExtraTimeVisibility();
+  // --- Extra Time Listener ---
+  extraTimeActionBtn.addEventListener('click', () => {
+    const { extraTime } = getState();
+    
+    if (extraTime.isVisible) {
+      // If it's currently showing, just hide it
+      toggleExtraTimeVisibility();
+    } else {
+      // If it's hidden, set the time AND show it
+      let minutes = parseInt(extraTimeInput.value, 10) || 0;
+      if (minutes < 0) minutes = 0;
+      if (minutes > 99) minutes = 99;
+      extraTimeInput.value = minutes.toString();
+      
+      // Send both commands
+      setExtraTime(minutes);
+      toggleExtraTimeVisibility();
+    }
   });
 
 

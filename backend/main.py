@@ -12,6 +12,7 @@ from data_manager import (
     CustomizationUpdate,
     SetScoreUpdate,
     ScoreboardStyleConfig,
+    StyleUpdate, # <-- Import new model
     AddPlayerUpdate,
     ClearPlayersUpdate,
     DeletePlayerUpdate,
@@ -21,7 +22,8 @@ from data_manager import (
     EditPlayerUpdate,
     ResetStatsUpdate,
     ReplacePlayerUpdate,
-    MatchInfoUpdate
+    MatchInfoUpdate,
+    TimerPositionUpdate
 )
 from websocket_manager import websocket_manager
 
@@ -35,7 +37,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Allow all origins, which is safe for a local desktop app
 origins = ["*"]
 
 app.add_middleware(
@@ -129,6 +130,16 @@ async def update_match_info(update: MatchInfoUpdate):
 async def toggle_match_info():
     status = await websocket_manager.toggle_match_info_visibility()
     return status
+
+@app.post("/api/timer-position")
+async def update_timer_position(update: TimerPositionUpdate):
+    try:
+        new_style = await data_manager.update_timer_position(update.position)
+        await websocket_manager.broadcast_scoreboard_style(new_style)
+        return new_style
+    except Exception as e:
+        print(f"Error updating timer position: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/score/set")
 async def set_score(update: SetScoreUpdate) -> ScoreboardConfig:
@@ -254,10 +265,11 @@ async def reset_player_stats(update: ResetStatsUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- THIS ENDPOINT IS UPDATED ---
 @app.post("/api/scoreboard-style")
-async def update_scoreboard_style(style: ScoreboardStyleConfig):
+async def update_scoreboard_style(style: StyleUpdate): # <-- Use new StyleUpdate model
     try:
-        new_style = await data_manager.update_scoreboard_style(style)
+        new_style = await data_manager.update_scoreboard_style(style) # <-- Pass partial style
         await websocket_manager.broadcast_scoreboard_style(new_style)
         return new_style
     except Exception as e:
@@ -265,7 +277,4 @@ async def update_scoreboard_style(style: ScoreboardStyleConfig):
         raise HTTPException(status_code=500, detail="Failed to save scoreboard style.")
 
 if __name__ == "__main__":
-    # --- THIS IS THE FIX ---
-    # 1. Pass the 'app' object directly, not the string "main:app"
-    # 2. Ensure reload=False (which is the default, so we just remove it)
     uvicorn.run(app, host="0.0.0.0", port=8000)

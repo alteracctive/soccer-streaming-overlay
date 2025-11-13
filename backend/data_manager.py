@@ -1,12 +1,12 @@
 import asyncio
 import aiofiles
 import json
-import sys  # <-- Add this
-import os   # <-- Add this
+import sys
+import os
 from pydantic import BaseModel, Field
 from typing import Literal, List
 
-# --- New Helper Function ---
+# --- Helper Function ---
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -18,7 +18,6 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-# --- Use the helper function for your paths ---
 CONFIG_FILE = resource_path("team-info-config.json")
 SCOREBOARD_STYLE_FILE = resource_path("scoreboard-customization.json")
 
@@ -28,6 +27,7 @@ class ScoreboardStyleConfig(BaseModel):
     opacity: int = Field(default=75, ge=50, le=100)
     scale: int = Field(default=100, ge=50, le=150)
     matchInfo: str = ""
+    timerPosition: Literal["Under", "Right"] = "Under"
 
 class ColorConfig(BaseModel):
     primary: str
@@ -111,6 +111,16 @@ class ReplacePlayerUpdate(BaseModel):
 class MatchInfoUpdate(BaseModel):
     info: str
 
+class TimerPositionUpdate(BaseModel):
+    position: Literal["Under", "Right"]
+
+# --- New Model for Partial Style Updates ---
+class StyleUpdate(BaseModel):
+    primary: str
+    secondary: str
+    opacity: int
+    scale: int
+
 
 class DataManager:
     def __init__(self, file_path: str, scoreboard_style_path: str):
@@ -137,11 +147,9 @@ class DataManager:
 
     async def save_config(self):
         if self.config is None: return
-        # --- This path needs to be absolute, not from resource_path ---
-        # We will use the original non-helper path for SAVING
         save_path = os.path.join(os.path.abspath("."), "team-info-config.json")
         if not os.path.exists(os.path.abspath(".")):
-             save_path = self.file_path # Fallback
+             save_path = self.file_path 
              
         async with self._config_lock:
              try:
@@ -150,7 +158,6 @@ class DataManager:
                  print(f"Config saved to {save_path}")
              except Exception as e:
                  print(f"!!! Critical Error saving config to {save_path}: {e}")
-                 # Try saving to the original path as a last resort
                  async with aiofiles.open(self.file_path, mode='w') as f:
                      await f.write(self.config.model_dump_json(indent=2))
                  print(f"Config saved to fallback path {self.file_path}")
@@ -161,15 +168,22 @@ class DataManager:
             try:
                 async with aiofiles.open(self.scoreboard_style_path, mode='r') as f:
                     content = await f.read()
-                    self.scoreboard_style = ScoreboardStyleConfig.model_validate_json(content)
+                    # Manually check for timerPosition for migration
+                    data = json.loads(content)
+                    if 'timerPosition' not in data:
+                        data['timerPosition'] = 'Under'
+                    if 'matchInfo' not in data:
+                        data['matchInfo'] = ''
+                        
+                    self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
                 print("Scoreboard style loaded.")
             except FileNotFoundError:
                  print(f"{self.scoreboard_style_path} not found, using default.")
-                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
+                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
                  await self.save_scoreboard_style()
             except Exception as e:
                 print(f"Error loading scoreboard style: {e}, using default.")
-                self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
+                self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
 
 
     async def save_scoreboard_style(self):
@@ -183,12 +197,11 @@ class DataManager:
                  self.scoreboard_style = ScoreboardStyleConfig.model_validate(self.scoreboard_style)
              except Exception:
                  print("Falling back to default style due to invalid data.")
-                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
+                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
 
-        # --- This path also needs to be absolute for saving ---
         save_path = os.path.join(os.path.abspath("."), "scoreboard-customization.json")
         if not os.path.exists(os.path.abspath(".")):
-             save_path = self.scoreboard_style_path # Fallback
+             save_path = self.scoreboard_style_path
 
         try:
             json_data = self.scoreboard_style.model_dump_json(indent=2)
@@ -199,7 +212,6 @@ class DataManager:
             print(f"Scoreboard style successfully saved to {save_path}")
         except Exception as e:
             print(f"!!! Critical Error saving scoreboard style to {save_path}: {e}")
-            # Try saving to the original path as a last resort
             async with self._style_lock:
                 async with aiofiles.open(self.scoreboard_style_path, mode='w') as f:
                     await f.write(json_data)
@@ -210,9 +222,20 @@ class DataManager:
         if self.scoreboard_style is None: raise Exception("Scoreboard style not loaded")
         return self.scoreboard_style
 
-    async def update_scoreboard_style(self, style: ScoreboardStyleConfig) -> ScoreboardStyleConfig:
-        style.matchInfo = style.matchInfo if style.matchInfo is not None else self.scoreboard_style.matchInfo
-        self.scoreboard_style = style
+    # --- THIS METHOD IS UPDATED ---
+    async def update_scoreboard_style(self, style_update: StyleUpdate) -> ScoreboardStyleConfig:
+        # Get the full, current style object
+        current_style = self.get_scoreboard_style()
+        
+        # Update only the fields from the partial model
+        current_style.primary = style_update.primary
+        current_style.secondary = style_update.secondary
+        current_style.opacity = style_update.opacity
+        current_style.scale = style_update.scale
+        
+        # self.scoreboard_style is now the updated full object
+        self.scoreboard_style = current_style 
+        
         await self.save_scoreboard_style()
         return self.scoreboard_style
 
@@ -222,11 +245,18 @@ class DataManager:
         await self.save_scoreboard_style()
         return style
 
+    async def update_timer_position(self, position: Literal["Under", "Right"]) -> ScoreboardStyleConfig:
+        style = self.get_scoreboard_style()
+        style.timerPosition = position
+        await self.save_scoreboard_style()
+        return style
+
     def get_config(self) -> ScoreboardConfig:
         if self.config is None: raise Exception("Config not loaded")
         return self.config
+        
+    # ... (all other methods are unchanged) ...
 
-    # ... (all other methods: update_team_info, update_colors, set_score, etc. are unchanged) ...
     async def update_team_info(self, info: TeamInfoUpdate) -> ScoreboardConfig:
         config = self.get_config()
         config.teamA.name = info.teamA.get('name', config.teamA.name)
