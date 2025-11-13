@@ -1,8 +1,8 @@
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Literal
 
 from data_manager import (
@@ -12,7 +12,7 @@ from data_manager import (
     CustomizationUpdate,
     SetScoreUpdate,
     ScoreboardStyleConfig,
-    StyleUpdate, # <-- Import new model
+    StyleUpdate, 
     AddPlayerUpdate,
     ClearPlayersUpdate,
     DeletePlayerUpdate,
@@ -159,6 +159,39 @@ async def update_customization(update: CustomizationUpdate) -> ScoreboardConfig:
     await websocket_manager.broadcast_config(config)
     return config
 
+# --- JSON Import/Export Endpoints ---
+@app.get("/api/json/{file_name}")
+async def get_json_file(file_name: str):
+    try:
+        content = await data_manager.get_raw_json(file_name)
+        return Response(content=content, media_type="application/json")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class UploadData(BaseModel):
+    file_name: Literal["team-info-config.json", "scoreboard-customization.json"]
+    json_data: str
+
+@app.post("/api/json/upload")
+async def upload_json_file(data: UploadData):
+    try:
+        # This method validates AND saves the file
+        await data_manager.set_raw_json(data.file_name, data.json_data)
+        
+        # Broadcast all changes to all clients
+        await websocket_manager.broadcast_config(data_manager.get_config())
+        await websocket_manager.broadcast_scoreboard_style(data_manager.get_scoreboard_style())
+        
+        return {"message": "File imported successfully and configuration reloaded."}
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON structure: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+
+# ----------------------------------------
+
 @app.post("/api/game-report/toggle")
 async def toggle_game_report():
     status = await websocket_manager.toggle_game_report()
@@ -265,11 +298,10 @@ async def reset_player_stats(update: ResetStatsUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# --- THIS ENDPOINT IS UPDATED ---
 @app.post("/api/scoreboard-style")
-async def update_scoreboard_style(style: StyleUpdate): # <-- Use new StyleUpdate model
+async def update_scoreboard_style(style: StyleUpdate): 
     try:
-        new_style = await data_manager.update_scoreboard_style(style) # <-- Pass partial style
+        new_style = await data_manager.update_scoreboard_style(style) 
         await websocket_manager.broadcast_scoreboard_style(new_style)
         return new_style
     except Exception as e:

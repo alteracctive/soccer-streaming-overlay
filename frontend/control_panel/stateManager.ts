@@ -44,8 +44,12 @@ export interface ScoreboardStyleConfig {
   opacity: number;
   scale: number;
   matchInfo: string;
-  timerPosition: "Under" | "Right"; // <-- New field
+  timerPosition: "Under" | "Right";
 }
+
+// --- Type for partial style updates ---
+export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>;
+
 
 // --- API and WebSocket URLs ---
 const API_URL = 'http://localhost:8000';
@@ -68,7 +72,7 @@ let appState: {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
-  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "", timerPosition: "Under" }, // <-- Default
+  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "", timerPosition: "Under" },
   isGameReportVisible: false, 
   isScoreboardVisible: true,
   isPlayersListVisible: false,
@@ -266,7 +270,8 @@ export async function saveColors(teamA: object, teamB: object) {
   await post('/api/customization', { teamA, teamB });
 }
 
-export async function saveScoreboardStyle(style: Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>) {
+// --- Updated Function ---
+export async function saveScoreboardStyle(style: ScoreboardStyleOnly) {
   await post('/api/scoreboard-style', style);
 }
 
@@ -274,7 +279,6 @@ export async function saveMatchInfo(info: string) {
   await post('/api/match-info', { info });
 }
 
-// --- New Function ---
 export async function saveTimerPosition(position: 'Under' | 'Right') {
   await post('/api/timer-position', { position });
 }
@@ -363,4 +367,17 @@ export async function editPlayer(
 
 export async function resetTeamStats(team: 'teamA' | 'teamB') {
   await post('/api/player/resetstats', { team });
+}
+
+// --- New Functions for Import/Export ---
+export async function downloadJson(fileName: string): Promise<Blob> {
+  const response = await fetch(`${API_URL}/api/json/${fileName}`);
+  if (!response.ok) {
+    throw new Error('File not found or backend error.');
+  }
+  return await response.blob();
+}
+
+export async function uploadJson(fileName: string, jsonData: string) {
+  await post('/api/json/upload', { file_name: fileName, json_data: jsonData });
 }

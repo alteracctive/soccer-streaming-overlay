@@ -844,3 +844,48 @@ button.btn-red {
   border-radius: 0 0 6px 6px;
   border-top: none;
 }
+
+/* --- New Import/Export Modal Styles --- */
+.import-export-modal .modal-content {
+  max-width: 600px; /* Wider modal */
+}
+
+.import-export-modal textarea {
+  width: 100%;
+  height: 250px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px;
+  resize: vertical;
+}
+
+.import-export-modal .divider-text {
+  text-align: center;
+  font-weight: 500;
+  color: var(--text-color);
+  opacity: 0.8;
+  margin: 12px 0;
+}
+
+/* Style the "Upload File" button */
+.import-export-modal input[type="file"] {
+  display: none; /* Hide the default ugly input */
+}
+
+.import-export-modal .btn-file-upload {
+  width: 100%;
+  text-align: center;
+  background-color: var(--sidebar-bg);
+  border: 2px dashed var(--border-color);
+  color: var(--text-color);
+  padding: 20px;
+}
+.import-export-modal .btn-file-upload:hover {
+  background-color: var(--bg-color);
+  border-color: var(--accent-color);
+  opacity: 1;
+}

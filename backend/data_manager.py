@@ -3,7 +3,7 @@ import aiofiles
 import json
 import sys
 import os
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from typing import Literal, List
 
 # --- Helper Function ---
@@ -18,8 +18,16 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-CONFIG_FILE = resource_path("team-info-config.json")
-SCOREBOARD_STYLE_FILE = resource_path("scoreboard-customization.json")
+# --- Path Definitions ---
+# The *writable* path is in the current working directory (where the .exe runs)
+WRITABLE_DIR = os.path.abspath(".")
+WRITABLE_CONFIG_FILE = os.path.join(WRITABLE_DIR, "team-info-config.json")
+WRITABLE_STYLE_FILE = os.path.join(WRITABLE_DIR, "scoreboard-customization.json")
+
+# The *bundled* (read-only) path is found by resource_path()
+BUNDLED_CONFIG_FILE = resource_path("team-info-config.json")
+BUNDLED_STYLE_FILE = resource_path("scoreboard-customization.json")
+
 
 class ScoreboardStyleConfig(BaseModel):
     primary: str
@@ -114,7 +122,7 @@ class MatchInfoUpdate(BaseModel):
 class TimerPositionUpdate(BaseModel):
     position: Literal["Under", "Right"]
 
-# --- New Model for Partial Style Updates ---
+# --- Model for Partial Style Updates ---
 class StyleUpdate(BaseModel):
     primary: str
     secondary: str
@@ -124,8 +132,8 @@ class StyleUpdate(BaseModel):
 
 class DataManager:
     def __init__(self, file_path: str, scoreboard_style_path: str):
-        self.file_path = file_path
-        self.scoreboard_style_path = scoreboard_style_path
+        self.file_path = file_path # Writable config path
+        self.scoreboard_style_path = scoreboard_style_path # Writable style path
         self.config: ScoreboardConfig | None = None
         self.scoreboard_style: ScoreboardStyleConfig | None = None
         self._config_lock = asyncio.Lock()
@@ -134,89 +142,123 @@ class DataManager:
     async def load_config(self):
         async with self._config_lock:
             try:
+                # 1. Try to read the writable file
                 async with aiofiles.open(self.file_path, mode='r') as f:
                     content = await f.read()
                     self.config = ScoreboardConfig.model_validate_json(content)
-                print("Config loaded successfully.")
-            except FileNotFoundError:
-                print(f"CRITICAL: {self.file_path} not found.")
-                raise
-            except Exception as e:
-                print(f"Error loading config: {e}. Check {self.file_path}.")
-                raise
+                print("Config loaded successfully from writable file.")
+            except (FileNotFoundError, ValidationError):
+                print(f"Writable config '{self.file_path}' not found or invalid. Loading from bundled default.")
+                try:
+                    # 2. If it fails, read the bundled read-only file
+                    async with aiofiles.open(BUNDLED_CONFIG_FILE, mode='r') as f:
+                        content = await f.read()
+                        self.config = ScoreboardConfig.model_validate_json(content)
+                    # 3. Save it to the writable location for future use
+                    await self.save_config() 
+                    print("Loaded from bundled default and created new writable config.")
+                except Exception as e:
+                    print(f"CRITICAL: Could not load bundled config '{BUNDLED_CONFIG_FILE}': {e}")
+                    raise
 
     async def save_config(self):
         if self.config is None: return
-        save_path = os.path.join(os.path.abspath("."), "team-info-config.json")
-        if not os.path.exists(os.path.abspath(".")):
-             save_path = self.file_path 
-             
         async with self._config_lock:
-             try:
-                 async with aiofiles.open(save_path, mode='w') as f:
-                     await f.write(self.config.model_dump_json(indent=2))
-                 print(f"Config saved to {save_path}")
-             except Exception as e:
-                 print(f"!!! Critical Error saving config to {save_path}: {e}")
-                 async with aiofiles.open(self.file_path, mode='w') as f:
-                     await f.write(self.config.model_dump_json(indent=2))
-                 print(f"Config saved to fallback path {self.file_path}")
+            async with aiofiles.open(self.file_path, mode='w') as f:
+                await f.write(self.config.model_dump_json(indent=2))
+        print(f"Config saved to {self.file_path}")
 
 
     async def load_scoreboard_style(self):
         async with self._style_lock:
             try:
+                # 1. Try to read the writable file
                 async with aiofiles.open(self.scoreboard_style_path, mode='r') as f:
                     content = await f.read()
-                    # Manually check for timerPosition for migration
+                    # Manually check for fields for migration
                     data = json.loads(content)
                     if 'timerPosition' not in data:
                         data['timerPosition'] = 'Under'
                     if 'matchInfo' not in data:
                         data['matchInfo'] = ''
-                        
                     self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
-                print("Scoreboard style loaded.")
-            except FileNotFoundError:
-                 print(f"{self.scoreboard_style_path} not found, using default.")
-                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
-                 await self.save_scoreboard_style()
-            except Exception as e:
-                print(f"Error loading scoreboard style: {e}, using default.")
-                self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+                print("Scoreboard style loaded successfully from writable file.")
+            except (FileNotFoundError, ValidationError):
+                print(f"Writable style '{self.scoreboard_style_path}' not found or invalid. Loading from bundled default.")
+                try:
+                    # 2. If it fails, read the bundled read-only file
+                    async with aiofiles.open(BUNDLED_STYLE_FILE, mode='r') as f:
+                        content = await f.read()
+                        data = json.loads(content)
+                        if 'timerPosition' not in data:
+                            data['timerPosition'] = 'Under'
+                        if 'matchInfo' not in data:
+                            data['matchInfo'] = ''
+                        self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
+                    # 3. Save it to the writable location
+                    await self.save_scoreboard_style()
+                    print("Loaded from bundled default and created new writable style file.")
+                except Exception as e:
+                    print(f"CRITICAL: Could not load bundled style '{BUNDLED_STYLE_FILE}': {e}")
+                    self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+                    await self.save_scoreboard_style()
 
 
     async def save_scoreboard_style(self):
         if self.scoreboard_style is None:
-            print("Error: Attempted to save scoreboard style, but it's None.")
-            return
+            self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
             
         if not isinstance(self.scoreboard_style, ScoreboardStyleConfig):
-             print("Error: scoreboard_style is not a valid ScoreboardStyleConfig instance.")
-             try:
-                 self.scoreboard_style = ScoreboardStyleConfig.model_validate(self.scoreboard_style)
-             except Exception:
-                 print("Falling back to default style due to invalid data.")
-                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+             print("Error: scoreboard_style is not a valid ScoreboardStyleConfig instance. Resetting.")
+             self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
 
-        save_path = os.path.join(os.path.abspath("."), "scoreboard-customization.json")
-        if not os.path.exists(os.path.abspath(".")):
-             save_path = self.scoreboard_style_path
+        async with self._style_lock:
+            async with aiofiles.open(self.scoreboard_style_path, mode='w') as f:
+                await f.write(self.scoreboard_style.model_dump_json(indent=2))
+        print(f"Scoreboard style successfully saved to {self.scoreboard_style_path}")
 
+    # --- New Method (for user's "Import" / download) ---
+    async def get_raw_json(self, file_name: str) -> str:
+        path_to_read = None
+        if file_name == "team-info-config.json":
+            path_to_read = self.file_path
+        elif file_name == "scoreboard-customization.json":
+            path_to_read = self.scoreboard_style_path
+        
+        if path_to_read and os.path.exists(path_to_read):
+            async with aiofiles.open(path_to_read, mode='r') as f:
+                return await f.read()
+        raise FileNotFoundError(f"{file_name} not found.")
+
+    # --- New Method (for user's "Export" / upload) ---
+    async def set_raw_json(self, file_name: str, raw_json_data: str):
+        path_to_write = None
+        
         try:
-            json_data = self.scoreboard_style.model_dump_json(indent=2)
-            
-            async with self._style_lock:
-                 async with aiofiles.open(save_path, mode='w') as f:
-                    await f.write(json_data)
-            print(f"Scoreboard style successfully saved to {save_path}")
-        except Exception as e:
-            print(f"!!! Critical Error saving scoreboard style to {save_path}: {e}")
-            async with self._style_lock:
-                async with aiofiles.open(self.scoreboard_style_path, mode='w') as f:
-                    await f.write(json_data)
-            print(f"Scoreboard style saved to fallback path {self.scoreboard_style_path}")
+            # 1. Validate the JSON data
+            if file_name == "team-info-config.json":
+                ScoreboardConfig.model_validate_json(raw_json_data) # This raises error if invalid
+                path_to_write = self.file_path
+            elif file_name == "scoreboard-customization.json":
+                ScoreboardStyleConfig.model_validate_json(raw_json_data) # This raises error if invalid
+                path_to_write = self.scoreboard_style_path
+            else:
+                raise Exception("Invalid file name specified.")
 
+            # 2. If validation passed, write the file
+            async with aiofiles.open(path_to_write, mode='w') as f:
+                await f.write(raw_json_data)
+            
+            # 3. Reload the new data into memory
+            await self.load_config()
+            await self.load_scoreboard_style()
+            
+        except ValidationError as e:
+            print(f"JSON validation failed: {e}")
+            raise Exception(f"Invalid JSON structure. {str(e)}")
+        except Exception as e:
+            print(f"Error setting raw JSON: {e}")
+            raise e
 
     def get_scoreboard_style(self) -> ScoreboardStyleConfig:
         if self.scoreboard_style is None: raise Exception("Scoreboard style not loaded")
@@ -233,7 +275,6 @@ class DataManager:
         current_style.opacity = style_update.opacity
         current_style.scale = style_update.scale
         
-        # self.scoreboard_style is now the updated full object
         self.scoreboard_style = current_style 
         
         await self.save_scoreboard_style()
@@ -466,4 +507,4 @@ class DataManager:
         await self.save_config()
         return config
 
-data_manager = DataManager(CONFIG_FILE, SCOREBOARD_STYLE_FILE)
+data_manager = DataManager(WRITABLE_CONFIG_FILE, WRITABLE_STYLE_FILE)
