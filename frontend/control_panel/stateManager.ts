@@ -10,8 +10,8 @@ export interface PlayerConfig {
   number: number;
   name: string;
   onField: boolean;
-  yellowCards: number;
-  redCards: number;
+  yellowCards: number[]; // <-- Updated
+  redCards: number[];   // <-- Updated
   goals: number[];
 }
 
@@ -47,7 +47,6 @@ export interface ScoreboardStyleConfig {
   timerPosition: "Under" | "Right";
 }
 
-// --- Type for partial style updates ---
 export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>;
 
 
@@ -270,7 +269,6 @@ export async function saveColors(teamA: object, teamB: object) {
   await post('/api/customization', { teamA, teamB });
 }
 
-// --- Updated Function ---
 export async function saveScoreboardStyle(style: ScoreboardStyleOnly) {
   await post('/api/scoreboard-style', style);
 }
@@ -340,12 +338,14 @@ export async function addGoal(
   }
 }
 
+// --- Updated Function ---
 export async function addCard(
   team: 'teamA' | 'teamB',
   number: number,
   cardType: 'yellow' | 'red',
+  minute: number, // <-- Added minute
 ) {
-  await post('/api/player/card', { team, number, card_type: cardType });
+  await post('/api/player/card', { team, number, card_type: cardType, minute });
 }
 
 export async function toggleOnField(team: 'teamA' | 'teamB', number: number) {
@@ -369,7 +369,6 @@ export async function resetTeamStats(team: 'teamA' | 'teamB') {
   await post('/api/player/resetstats', { team });
 }
 
-// --- New Functions for Import/Export ---
 export async function downloadJson(fileName: string): Promise<Blob> {
   const response = await fetch(`${API_URL}/api/json/${fileName}`);
   if (!response.ok) {

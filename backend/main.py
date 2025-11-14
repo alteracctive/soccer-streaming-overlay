@@ -177,10 +177,8 @@ class UploadData(BaseModel):
 @app.post("/api/json/upload")
 async def upload_json_file(data: UploadData):
     try:
-        # This method validates AND saves the file
         await data_manager.set_raw_json(data.file_name, data.json_data)
         
-        # Broadcast all changes to all clients
         await websocket_manager.broadcast_config(data_manager.get_config())
         await websocket_manager.broadcast_scoreboard_style(data_manager.get_scoreboard_style())
         
