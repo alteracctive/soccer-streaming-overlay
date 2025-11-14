@@ -12,7 +12,7 @@ body {
 .scoreboard-container {
   position: fixed;
   top: 20px;
-  left: 20px;
+  left: 40px; /* Spacing */
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -32,7 +32,6 @@ body {
   color: #ffffff;
   border-radius: 8px;
   padding: 4px 16px;
-  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
   min-width: 400px;
   height: 34px;
   box-sizing: border-box;
@@ -40,12 +39,62 @@ body {
   white-space: nowrap;
 }
 
-/* --- New Content Wrapper --- */
+/* --- Content Wrapper --- */
 .scoreboard-content-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+}
+
+/* --- Updated Wrapper for Score Row + Cards --- */
+.score-row-with-cards {
+  display: flex; /* This is no longer needed but harmless */
+  position: relative; /* This is the ANCHOR for the red cards */
+  align-items: center;
+}
+
+/* --- Updated Red Card Styles --- */
+.red-card-container {
+  display: flex;
+  flex-direction: column; /* Stack vertically */
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+  width: 16px;
+  height: 50px; /* Match score-row height */
+  position: absolute; /* Position relative to .score-row-with-cards */
+  top: 0;
+  box-sizing: border-box;
+}
+#team-a-red-cards {
+  left: 0;
+  transform: translateX(calc(-100% - 6px)); /* Move left, with 6px gap */
+}
+#team-b-red-cards {
+  right: 0;
+  transform: translateX(calc(100% + 6px)); /* Move right, with 6px gap */
+}
+.red-card-box {
+  width: 10px;
+  height: 11px; /* 4 * 11px + 3 * 2px = 50px */
+  background-color: #DC3545;
+  border: 1px solid rgba(0,0,0,0.5);
+  border-radius: 1px;
+}
+.red-card-count {
+  background-color: #DC3545;
+  border: 1px solid rgba(0,0,0,0.5);
+  border-radius: 4px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 2px 6px;
+  width: 28px;
+  height: 28px;
+  line-height: 24px;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 /* Top row styles (Scoreboard) */
@@ -55,11 +104,10 @@ body {
   justify-content: space-between;
   font-size: 32px;
   font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.75); /* Default */
-  color: #ffffff; /* Default */
+  background-color: rgba(0, 0, 0, 0.75); 
+  color: #ffffff; 
   border-radius: 8px;
   padding: 8px 16px;
-  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
   min-width: 400px;
   height: 50px;
   box-sizing: border-box;
@@ -121,18 +169,18 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%; 
+  transition: margin-left 0.3s ease; /* For pushing */
 }
 
 /* Timer row styles (Scoreboard) */
 .timer-row {
-  font-size: 24px; /* Shrunk by ~15% */
+  font-size: 24px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.75); /* Default */
-  color: #ffffff; /* Default */
+  background-color: rgba(0, 0, 0, 0.75); 
+  color: #ffffff; 
   border-radius: 8px;
-  padding: 4px 16px; /* Shrunk by ~15% */
-  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
+  padding: 4px 16px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -142,14 +190,13 @@ body {
 
 /* New box for extra time */
 .extra-time-row {
-  font-size: 24px; /* Shrunk by ~15% */
+  font-size: 24px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.75); /* Default */
+  background-color: rgba(0, 0, 0, 0.75); 
   color: #ffd700; /* Gold color */
   border-radius: 8px;
-  padding: 4px 10px; /* Shrunk by ~15% */
-  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
+  padding: 4px 10px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -160,14 +207,26 @@ body {
 /* --- Updated Layout Logic --- */
 .scoreboard-container.timer-position-right .scoreboard-content-wrapper {
   flex-direction: row; 
-  align-items: stretch; 
+  align-items: stretch; /* Make children full height */
   gap: 8px;
 }
+
+.scoreboard-container.timer-position-right .score-row-with-cards {
+  height: 50px;
+}
+
+/* Red cards in Right mode stay absolute, but we need to move Team B's */
+.scoreboard-container.timer-position-right #team-b-red-cards {
+  /* It's already positioned relative to score-row-with-cards, which is correct */
+  /* We just need to make sure the timer section moves out of its way */
+  /* This is handled by JS now */
+}
+
 
 .scoreboard-container.timer-position-right .timer-section-row {
   flex-direction: row; 
   width: auto;
-  height: 100%; 
+  height: 50px; /* Match the score row height */
 }
 
 .scoreboard-container.timer-position-right .timer-row,
@@ -175,7 +234,7 @@ body {
   width: auto; 
   min-width: 0;
   padding: 5px 12px;
-  height: 50px; /* Explicitly match score-row height */
+  height: 100%; /* Fill parent */
   box-sizing: border-box; 
   font-size: 28px; /* Restore original font size */
 }
@@ -190,17 +249,16 @@ body {
     position: fixed;
     bottom: 30px;
     left: 50%;
-    transform: translateX(-50%) scale(1); /* JS controls scale */
+    transform: translateX(-50%) scale(1); 
     transform-origin: bottom center;
     width: 960px;
     min-height: 200px;
-    /* box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); -- Removed */
     border-radius: 15px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background-color: rgba(0, 0, 0, 0.75); /* Default */
-    color: #FFFFFF; /* Default */
+    background-color: rgba(0, 0, 0, 0.75); 
+    color: #FFFFFF; 
 }
 
 .game-report-header {
@@ -348,7 +406,6 @@ body {
   color: #FFFFFF;
   border-radius: 10px;
   padding: 15px 20px;
-  /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); -- Removed */
   display: flex;
   gap: 20px;
   max-height: 80vh; 

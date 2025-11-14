@@ -9,6 +9,7 @@
 <body>
 
     <div class="scoreboard-container" id="scoreboard-container">
+        
         <div class="match-info-row" id="match-info-row">
           <div class="scrolling-text-wrapper">
             <span class="scrolling-text" id="match-info-text"></span>
@@ -16,27 +17,34 @@
         </div>
         
         <div class="scoreboard-content-wrapper" id="scoreboard-content-wrapper">
-          <div class="score-row">
-              <span class="abbr" id="team-a-abbr">TMA</span>
-              <div class="score-block" id="score-block-a">
-                  <div class="team-color-strip" id="overlay-strip-a">
-                      <div id="overlay-strip-a-primary"></div>
-                      <div id="overlay-strip-a-secondary"></div>
-                  </div>
-                  <span class="score" id="team-a-score">0</span>
+          
+          <div class="score-row-with-cards">
+            <div id="team-a-red-cards" class="red-card-container">
               </div>
-              <span class="separator">-</span>
-              <div class="score-block" id="score-block-b">
-                  <span class="score" id="team-b-score">0</span>
-                  <div class="team-color-strip" id="overlay-strip-b">
-                      <div id="overlay-strip-b-primary"></div>
-                      <div id="overlay-strip-b-secondary"></div>
-                  </div>
+            <div class="score-row">
+                <span class="abbr" id="team-a-abbr">TMA</span>
+                <div class="score-block" id="score-block-a">
+                    <div class="team-color-strip" id="overlay-strip-a">
+                        <div id="overlay-strip-a-primary"></div>
+                        <div id="overlay-strip-a-secondary"></div>
+                    </div>
+                    <span class="score" id="team-a-score">0</span>
+                </div>
+                <span class="separator">-</span>
+                <div class="score-block" id="score-block-b">
+                    <span class="score" id="team-b-score">0</span>
+                    <div class="team-color-strip" id="overlay-strip-b">
+                        <div id="overlay-strip-b-primary"></div>
+                        <div id="overlay-strip-b-secondary"></div>
+                    </div>
+                </div>
+                <span class="abbr" id="team-b-abbr">TMB</span>
+            </div>
+            <div id="team-b-red-cards" class="red-card-container">
               </div>
-              <span class="abbr" id="team-b-abbr">TMB</span>
           </div>
           
-          <div class="timer-section-row">
+          <div class="timer-section-row" id="timer-section-row">
             <div class="timer-row">
                 <span id="timer-display">00:00</span>
             </div>

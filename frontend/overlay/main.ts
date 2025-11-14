@@ -50,14 +50,19 @@ const extraTimeDisplay = document.getElementById('extra-time-display') as HTMLSp
 const matchInfoRow = document.getElementById('match-info-row') as HTMLDivElement;
 const matchInfoText = document.getElementById('match-info-text') as HTMLSpanElement;
 
+// --- Red Card Refs ---
+const teamARedCards = document.getElementById('team-a-red-cards') as HTMLDivElement;
+const teamBRedCards = document.getElementById('team-b-red-cards') as HTMLDivElement;
+
+// --- New Timer Section Ref ---
+const timerSectionRow = document.getElementById('timer-section-row') as HTMLDivElement;
+
 
 // --- Utility Functions ---
-// --- Updated Function ---
 function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
   
-  // Only pad minutes if less than 100
   const min = (totalMinutes < 100) 
     ? totalMinutes.toString().padStart(2, '0') 
     : totalMinutes.toString();
@@ -133,6 +138,17 @@ const renderGoalScorers = (players: PlayerConfig[]): string => {
   `).join('');
 };
 
+// --- Red Card Render Function ---
+const renderRedCards = (count: number): string => {
+  if (count === 0) {
+    return '';
+  }
+  if (count >= 5) {
+    return `<div class="red-card-count">${count}</div>`;
+  }
+  return Array(count).fill('').map(() => `<div class="red-card-box"></div>`).join('');
+};
+
 
 // --- Main UI Update Function ---
 function updateUI() {
@@ -149,6 +165,7 @@ function updateUI() {
   } = getState();
   
   const SCROLL_TRIGGER_LIMIT = 15;
+  let teamBRedCount = 0; // <-- New variable to track red cards
   
   // --- Update Player List ---
   if (config && playersListContainer) {
@@ -174,16 +191,23 @@ function updateUI() {
     if (stripASecondary) stripASecondary.style.backgroundColor = config.teamA.colors.secondary;
     if (stripBPrimary) stripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (stripBSecondary) stripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
+    
+    // --- Red Card Logic ---
+    const teamARedCount = config.teamA.players.filter(p => p.onField && p.redCards.length > 0).length;
+    teamBRedCount = config.teamB.players.filter(p => p.onField && p.redCards.length > 0).length;
+    
+    teamARedCards.innerHTML = renderRedCards(teamARedCount);
+    teamBRedCards.innerHTML = renderRedCards(teamBRedCount);
   }
 
   // Update Game Report
   if (config && gameReportContainer) {
-    checkAndApplyScroll(reportTeamAName.parentElement, config.teamA.name); // Pass wrapper
+    checkAndApplyScroll(reportTeamAName.parentElement, config.teamA.name); 
     if (reportTeamAScore) reportTeamAScore.textContent = config.teamA.score.toString();
     if (reportStripAPrimary) reportStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
     if (reportStripASecondary) reportStripASecondary.style.backgroundColor = config.teamA.colors.secondary;
 
-    checkAndApplyScroll(reportTeamBName.parentElement, config.teamB.name); // Pass wrapper
+    checkAndApplyScroll(reportTeamBName.parentElement, config.teamB.name); 
     if (reportTeamBScore) reportTeamBScore.textContent = config.teamB.score.toString();
     if (reportStripBPrimary) reportStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportStripBSecondary) reportStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
@@ -223,7 +247,19 @@ function updateUI() {
     if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; } 
     if (scoreboardContainer) { 
       scoreboardContainer.style.transform = `scale(${scaleValue})`;
-      scoreboardContainer.classList.toggle('timer-position-right', scoreboardStyle.timerPosition === 'Right');
+      
+      const isRightLayout = scoreboardStyle.timerPosition === 'Right';
+      scoreboardContainer.classList.toggle('timer-position-right', isRightLayout);
+      
+      // --- New Logic to push timer ---
+      if (timerSectionRow) {
+        if (isRightLayout && teamBRedCount > 0) {
+          // Calculate width of red card box (16px width + 8px gap)
+          timerSectionRow.style.marginLeft = `${16 + 8}px`; 
+        } else {
+          timerSectionRow.style.marginLeft = '0';
+        }
+      }
     }
 
     if (gameReportContainer) {
@@ -256,12 +292,11 @@ function updateUI() {
       scoreboardContainer.style.display = (isScoreboardVisible || isMatchInfoVisible) ? 'flex' : 'none';
   }
   
-  // Apply visibility to the individual scoreboard elements
-  if (scoreRow) {
-    scoreRow.style.display = isScoreboardVisible ? 'flex' : 'none';
-  }
-  if (timerRow) {
-    (timerRow.parentElement as HTMLElement).style.display = isScoreboardVisible ? 'flex' : 'none';
+  // --- This is the fix ---
+  // Apply visibility to the wrapper, not the individual elements
+  const contentWrapper = document.getElementById('scoreboard-content-wrapper');
+  if (contentWrapper) {
+    contentWrapper.style.display = isScoreboardVisible ? 'flex' : 'none';
   }
 
   // Apply visibility to the match info row
