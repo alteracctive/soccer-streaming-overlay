@@ -448,7 +448,7 @@ body {
 }
 
 .players-table-wrapper {
-  max-height: 495px;
+  max-height: 495px; /* 15 rows * 33px */
   overflow: hidden;
 }
 
@@ -457,9 +457,10 @@ body {
   border-collapse: collapse;
 }
 
+/* --- Updated Scrolling animation --- */
 .players-table-wrapper.scrolling .players-table {
   --scroll-duration: 30s; 
-  animation: scroll-up var(--scroll-duration) linear infinite;
+  animation: scroll-up var(--scroll-duration) linear 3s infinite; /* <-- Added 3s delay */
 }
 
 @keyframes scroll-up {
