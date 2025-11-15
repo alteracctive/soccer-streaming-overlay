@@ -559,7 +559,7 @@ button.btn-red {
 .team-header {
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Changed */
+  justify-content: flex-start; 
   margin-bottom: 12px;
 }
 .team-header h4 {
@@ -570,7 +570,7 @@ button.btn-red {
 .color-swatch-container {
   display: inline-flex;
   gap: 4px;
-  margin-right: 10px; /* Changed */
+  margin-right: 10px; 
   flex-shrink: 0;
 }
 .color-swatch {
@@ -950,6 +950,8 @@ button.btn-red {
 }
 
 .import-export-modal .btn-file-upload {
+  display: block; /* <-- Added */
+  cursor: pointer; /* <-- Added */
   width: 100%;
   text-align: center;
   background-color: var(--sidebar-bg);
