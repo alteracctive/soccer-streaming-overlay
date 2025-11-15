@@ -8,7 +8,7 @@ import {
 } from '../control_panel/stateManager';
 
 // --- Get Element References ---
-const scoreboardContainer = document.querySelector('.scoreboard-container') as HTMLDivElement;
+const scoreboardContainer = document.getElementById('scoreboard-container') as HTMLDivElement;
 const gameReportContainer = document.querySelector('.game-report-container') as HTMLDivElement;
 const scoreRow = document.querySelector('.score-row') as HTMLDivElement;
 const timerRow = document.querySelector('.timer-row') as HTMLDivElement;
@@ -21,7 +21,7 @@ const stripAPrimary = document.getElementById('overlay-strip-a-primary') as HTML
 const stripASecondary = document.getElementById('overlay-strip-a-secondary') as HTMLDivElement;
 const stripBPrimary = document.getElementById('overlay-strip-b-primary') as HTMLDivElement;
 const stripBSecondary = document.getElementById('overlay-strip-b-secondary') as HTMLDivElement;
-const reportTimerDisplay = document.getElementById('report-timer-display')!;
+// const reportTimerDisplay = document.getElementById('report-timer-display')!; // <-- Removed
 const reportTeamAName = document.getElementById('report-team-a-name')!;
 const reportTeamAScore = document.getElementById('report-team-a-score')!;
 const reportStripAPrimary = document.getElementById('report-strip-a-primary') as HTMLDivElement;
@@ -31,12 +31,26 @@ const reportTeamBScore = document.getElementById('report-team-b-score')!;
 const reportStripBPrimary = document.getElementById('report-strip-b-primary') as HTMLDivElement;
 const reportStripBSecondary = document.getElementById('report-strip-b-secondary') as HTMLDivElement;
 
+// --- New Game Report Middle Score Refs ---
+const reportMiddleScoreA = document.getElementById('report-middle-score-a') as HTMLSpanElement;
+const reportMiddleScoreB = document.getElementById('report-middle-score-b') as HTMLSpanElement;
+const reportMiddleStripAPrimary = document.getElementById('report-middle-strip-a-primary') as HTMLDivElement;
+const reportMiddleStripASecondary = document.getElementById('report-middle-strip-a-secondary') as HTMLDivElement;
+const reportMiddleStripBPrimary = document.getElementById('report-middle-strip-b-primary') as HTMLDivElement;
+const reportMiddleStripBSecondary = document.getElementById('report-middle-strip-b-secondary') as HTMLDivElement;
+
+
 // --- Player List Refs ---
 const playersListContainer = document.getElementById('players-list-container') as HTMLDivElement;
 const playersListHeaderA = document.getElementById('players-list-header-a') as HTMLHeadingElement;
 const playersListHeaderB = document.getElementById('players-list-header-b') as HTMLHeadingElement;
 const playersListA = document.getElementById('players-list-a') as HTMLTableSectionElement;
 const playersListB = document.getElementById('players-list-b') as HTMLTableSectionElement;
+const playersListStripAPrimary = document.getElementById('players-list-strip-a-primary') as HTMLDivElement;
+const playersListStripASecondary = document.getElementById('players-list-strip-a-secondary') as HTMLDivElement;
+const playersListStripBPrimary = document.getElementById('players-list-strip-b-primary') as HTMLDivElement;
+const playersListStripBSecondary = document.getElementById('players-list-strip-b-secondary') as HTMLDivElement;
+
 
 // --- Game Report Goal List Refs ---
 const gameReportGoalsA = document.getElementById('game-report-goals-a') as HTMLDivElement;
@@ -50,13 +64,23 @@ const extraTimeDisplay = document.getElementById('extra-time-display') as HTMLSp
 const matchInfoRow = document.getElementById('match-info-row') as HTMLDivElement;
 const matchInfoText = document.getElementById('match-info-text') as HTMLSpanElement;
 
+// --- Red Card Refs ---
+const teamARedCards = document.getElementById('team-a-red-cards') as HTMLDivElement;
+const teamBRedCards = document.getElementById('team-b-red-cards') as HTMLDivElement;
+
+// --- Timer Section Ref ---
+const timerSectionRow = document.getElementById('timer-section-row') as HTMLDivElement;
+
 
 // --- Utility Functions ---
 function formatTime(totalSeconds: number): string {
-  const min = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, '0');
+  const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
+  
+  const min = (totalMinutes < 100) 
+    ? totalMinutes.toString().padStart(2, '0') 
+    : totalMinutes.toString();
+    
   return `${min}:${sec}`;
 }
 
@@ -69,25 +93,21 @@ function hexToRgba(hex: string, opacityPercent: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// --- Updated Scroll Check Function ---
 function checkAndApplyScroll(wrapper: HTMLElement | null, textContent: string) {
   if (!wrapper) return;
   
   const textSpan = wrapper.querySelector('.scrolling-text') as HTMLSpanElement;
-  if (!textSpan) { // Fallback for elements without the wrapper
+  if (!textSpan) { 
     wrapper.textContent = textContent;
     return;
   }
   
-  // Update text content
   if (textSpan.textContent !== textContent) {
     textSpan.textContent = textContent;
   }
   
-  // Check for overflow
-  // Force a reflow to get accurate scrollWidth after text change
   textSpan.style.display = 'none';
-  void textSpan.offsetWidth; // This forces a reflow
+  void textSpan.offsetWidth; 
   textSpan.style.display = 'inline-block';
   
   const isOverflowing = textSpan.scrollWidth > wrapper.clientWidth;
@@ -95,7 +115,13 @@ function checkAndApplyScroll(wrapper: HTMLElement | null, textContent: string) {
 }
 
 // --- Player List Sort and Render Function ---
-const renderPlayerList = (players: PlayerConfig[]): string => {
+const renderPlayerList = (
+  players: PlayerConfig[],
+  targetLength: number,
+  isScrolling: boolean,
+  teamId: 'teamA' | 'teamB'
+): string => {
+  
   const onField = players
     .filter(p => p.onField)
     .sort((a, b) => a.number - b.number);
@@ -104,13 +130,44 @@ const renderPlayerList = (players: PlayerConfig[]): string => {
     .filter(p => !p.onField)
     .sort((a, b) => a.number - b.number);
 
-  return [...onField, ...offField]
-    .map(player => `
-      <tr class="${player.onField ? '' : 'not-on-field'}">
-        <td>${player.number}</td>
-        <td>${player.name}</td>
-      </tr>
-    `).join('');
+  const sortedPlayers = [...onField, ...offField];
+
+  let listHtml = sortedPlayers
+    .map(player => {
+      const rowClass = player.onField ? '' : 'not-on-field';
+      if (teamId === 'teamB') {
+        // Team B: Name first (right-aligned), Number second (left-aligned)
+        return `
+          <tr class="${rowClass}">
+            <td>${player.name}</td>
+            <td>${player.number}</td>
+          </tr>
+        `;
+      } else {
+        // Team A: Number first (right-aligned), Name second (left-aligned)
+        return `
+          <tr class="${rowClass}">
+            <td>${player.number}</td>
+            <td>${player.name}</td>
+          </tr>
+        `;
+      }
+    }).join('');
+
+  const paddingNeeded = targetLength - sortedPlayers.length;
+  if (paddingNeeded > 0) {
+    listHtml += Array(paddingNeeded).fill('<tr class="player-padding-row"><td>&nbsp;</td><td>&nbsp;</td></tr>').join('');
+  }
+  
+  if (isScrolling) {
+    listHtml += '<tr class="player-padding-row"><td>&nbsp;</td><td>&nbsp;</td></tr>';
+  }
+
+  if (isScrolling) {
+    return listHtml + listHtml;
+  } else {
+    return listHtml;
+  }
 };
 
 // --- Goal Scorer Render Function ---
@@ -132,10 +189,20 @@ const renderGoalScorers = (players: PlayerConfig[]): string => {
   `).join('');
 };
 
+// --- Red Card Render Function ---
+const renderRedCards = (count: number): string => {
+  if (count === 0) {
+    return '';
+  }
+  if (count >= 5) {
+    return `<div class="red-card-count">${count}</div>`;
+  }
+  return Array(count).fill('').map(() => `<div class="red-card-box"></div>`).join('');
+};
+
 
 // --- Main UI Update Function ---
 function updateUI() {
-  // Get all relevant state
   const { 
     config, 
     timer, 
@@ -144,23 +211,46 @@ function updateUI() {
     isGameReportVisible, 
     isScoreboardVisible, 
     isPlayersListVisible,
-    isMatchInfoVisible // <-- New state
+    isMatchInfoVisible
   } = getState();
   
   const SCROLL_TRIGGER_LIMIT = 15;
+  let teamBRedCount = 0;
   
   // --- Update Player List ---
   if (config && playersListContainer) {
-    playersListHeaderA.textContent = config.teamA.name;
-    playersListHeaderB.textContent = config.teamB.name;
+    const headerASpan = playersListHeaderA.querySelector('span');
+    if (headerASpan) headerASpan.textContent = config.teamA.name;
+    const headerBSpan = playersListHeaderB.querySelector('span');
+    if (headerBSpan) headerBSpan.textContent = config.teamB.name;
+    
+    if (playersListStripAPrimary) playersListStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
+    if (playersListStripASecondary) playersListStripASecondary.style.backgroundColor = config.teamA.colors.secondary;
+    if (playersListStripBPrimary) playersListStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
+    if (playersListStripBSecondary) playersListStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
+
     
     const teamAPlayers = config.teamA.players;
-    playersListA.innerHTML = renderPlayerList(teamAPlayers).slice(0, 20);
-    playersListA.closest('.players-table-wrapper')?.classList.toggle('scrolling', teamAPlayers.length > SCROLL_TRIGGER_LIMIT);
-      
     const teamBPlayers = config.teamB.players;
-    playersListB.innerHTML = renderPlayerList(teamBPlayers).slice(0, 20);
-    playersListB.closest('.players-table-wrapper')?.classList.toggle('scrolling', teamBPlayers.length > SCROLL_TRIGGER_LIMIT);
+    
+    const maxLength = Math.max(teamAPlayers.length, teamBPlayers.length);
+    const isScrolling = maxLength > SCROLL_TRIGGER_LIMIT;
+    
+    playersListA.innerHTML = renderPlayerList(teamAPlayers, maxLength, isScrolling, 'teamA');
+    playersListB.innerHTML = renderPlayerList(teamBPlayers, maxLength, isScrolling, 'teamB');
+
+    const duration = isScrolling ? (maxLength + 1) * 1.5 : 0; 
+    const wrapperA = playersListA.closest('.players-table-wrapper') as HTMLElement;
+    const wrapperB = playersListB.closest('.players-table-wrapper') as HTMLElement;
+    
+    if (wrapperA) {
+      wrapperA.classList.toggle('scrolling', isScrolling);
+      wrapperA.style.setProperty('--scroll-duration', `${duration}s`);
+    }
+    if (wrapperB) {
+      wrapperB.classList.toggle('scrolling', isScrolling);
+      wrapperB.style.setProperty('--scroll-duration', `${duration}s`);
+    }
   }
 
   // Update main scoreboard team info
@@ -173,29 +263,42 @@ function updateUI() {
     if (stripASecondary) stripASecondary.style.backgroundColor = config.teamA.colors.secondary;
     if (stripBPrimary) stripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (stripBSecondary) stripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
+    
+    const teamARedCount = config.teamA.players.filter(p => p.onField && p.redCards.length > 0).length;
+    teamBRedCount = config.teamB.players.filter(p => p.onField && p.redCards.length > 0).length;
+    
+    teamARedCards.innerHTML = renderRedCards(teamARedCount);
+    teamBRedCards.innerHTML = renderRedCards(teamBRedCount);
   }
 
   // Update Game Report
   if (config && gameReportContainer) {
-    // Team Info
-    checkAndApplyScroll(reportTeamAName.parentElement, config.teamA.name); // Pass wrapper
+    checkAndApplyScroll(reportTeamAName.parentElement, config.teamA.name); 
     if (reportTeamAScore) reportTeamAScore.textContent = config.teamA.score.toString();
     if (reportStripAPrimary) reportStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
     if (reportStripASecondary) reportStripASecondary.style.backgroundColor = config.teamA.colors.secondary;
 
-    checkAndApplyScroll(reportTeamBName.parentElement, config.teamB.name); // Pass wrapper
+    checkAndApplyScroll(reportTeamBName.parentElement, config.teamB.name); 
     if (reportTeamBScore) reportTeamBScore.textContent = config.teamB.score.toString();
     if (reportStripBPrimary) reportStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportStripBSecondary) reportStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
     
-    // Goal Scorer List
+    // --- Update Middle Score Display ---
+    if (reportMiddleScoreA) reportMiddleScoreA.textContent = config.teamA.score.toString();
+    if (reportMiddleScoreB) reportMiddleScoreB.textContent = config.teamB.score.toString();
+    if (reportMiddleStripAPrimary) reportMiddleStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
+    if (reportMiddleStripASecondary) reportMiddleStripASecondary.style.backgroundColor = config.teamA.colors.secondary;
+    if (reportMiddleStripBPrimary) reportMiddleStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
+    if (reportMiddleStripBSecondary) reportMiddleStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
+
+    
     gameReportGoalsA.innerHTML = renderGoalScorers(config.teamA.players);
     gameReportGoalsB.innerHTML = renderGoalScorers(config.teamB.players);
   }
 
   // Update timers
   timerDisplay.textContent = formatTime(timer.seconds);
-  if (reportTimerDisplay) reportTimerDisplay.textContent = formatTime(timer.seconds);
+  // if (reportTimerDisplay) reportTimerDisplay.textContent = formatTime(timer.seconds); // <-- Removed
   
   // Extra Time Logic
   if (extraTimeBox && extraTimeDisplay) {
@@ -213,28 +316,37 @@ function updateUI() {
     const backgroundColorWithOpacity = hexToRgba(scoreboardStyle.primary, scoreboardStyle.opacity);
     const scaleValue = Math.max(0.5, Math.min(1.5, scoreboardStyle.scale / 100));
 
-    // --- Updated Match Info Logic ---
     if (matchInfoRow && matchInfoText) {
-      // Use the *wrapper* for the scroll check
       checkAndApplyScroll(matchInfoRow.querySelector('.scrolling-text-wrapper'), scoreboardStyle.matchInfo);
       matchInfoRow.style.backgroundColor = backgroundColorWithOpacity;
       matchInfoRow.style.color = scoreboardStyle.secondary;
     }
 
-    // Apply to main scoreboard elements
     if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.secondary; }
     if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.secondary; }
     if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; } 
-    if (scoreboardContainer) { scoreboardContainer.style.transform = `scale(${scaleValue})`; }
+    if (scoreboardContainer) { 
+      scoreboardContainer.style.transform = `scale(${scaleValue})`;
+      
+      const isRightLayout = scoreboardStyle.timerPosition === 'Right';
+      scoreboardContainer.classList.toggle('timer-position-right', isRightLayout);
+      
+      if (timerSectionRow) {
+        if (isRightLayout && teamBRedCount > 0) {
+          const redCardWidth = (teamBRedCount >= 5 ? 28 : 16) + 8;
+          timerSectionRow.style.marginLeft = `${redCardWidth}px`; 
+        } else {
+          timerSectionRow.style.marginLeft = '0';
+        }
+      }
+    }
 
-    // Apply to game report container
     if (gameReportContainer) {
         gameReportContainer.style.backgroundColor = backgroundColorWithOpacity;
         gameReportContainer.style.color = scoreboardStyle.secondary;
         gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`;
     }
     
-    // Apply to new players list
     if (playersListContainer) {
         playersListContainer.style.backgroundColor = backgroundColorWithOpacity;
         playersListContainer.style.color = scoreboardStyle.secondary;
@@ -254,32 +366,23 @@ function updateUI() {
 
   // --- UPDATED VISIBILITY LOGIC ---
   
-  // Apply visibility to the scoreboard container
   if (scoreboardContainer) {
-      // Show the main container if either the scoreboard OR the match info is visible
       scoreboardContainer.style.display = (isScoreboardVisible || isMatchInfoVisible) ? 'flex' : 'none';
   }
   
-  // Apply visibility to the individual scoreboard elements
-  if (scoreRow) {
-    scoreRow.style.display = isScoreboardVisible ? 'flex' : 'none';
-  }
-  if (timerRow) {
-    // The parent .timer-section-row handles the flex layout
-    (timerRow.parentElement as HTMLElement).style.display = isScoreboardVisible ? 'flex' : 'none';
+  const contentWrapper = document.getElementById('scoreboard-content-wrapper');
+  if (contentWrapper) {
+    contentWrapper.style.display = isScoreboardVisible ? 'flex' : 'none';
   }
 
-  // Apply visibility to the match info row
   if (matchInfoRow) {
       matchInfoRow.style.display = isMatchInfoVisible ? 'flex' : 'none';
   }
 
-  // Apply visibility to the game report container
   if (gameReportContainer) {
       gameReportContainer.style.display = isGameReportVisible ? 'flex' : 'none';
   }
   
-  // Apply visibility to the players list container
   if (playersListContainer) {
       playersListContainer.style.display = isPlayersListVisible ? 'flex' : 'none';
   }

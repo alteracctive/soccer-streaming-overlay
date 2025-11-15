@@ -1,8 +1,8 @@
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Literal
 
 from data_manager import (
@@ -12,6 +12,7 @@ from data_manager import (
     CustomizationUpdate,
     SetScoreUpdate,
     ScoreboardStyleConfig,
+    StyleUpdate, 
     AddPlayerUpdate,
     ClearPlayersUpdate,
     DeletePlayerUpdate,
@@ -21,7 +22,8 @@ from data_manager import (
     EditPlayerUpdate,
     ResetStatsUpdate,
     ReplacePlayerUpdate,
-    MatchInfoUpdate
+    MatchInfoUpdate,
+    TimerPositionUpdate
 )
 from websocket_manager import websocket_manager
 
@@ -35,7 +37,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Allow all origins, which is safe for a local desktop app
 origins = ["*"]
 
 app.add_middleware(
@@ -130,6 +131,16 @@ async def toggle_match_info():
     status = await websocket_manager.toggle_match_info_visibility()
     return status
 
+@app.post("/api/timer-position")
+async def update_timer_position(update: TimerPositionUpdate):
+    try:
+        new_style = await data_manager.update_timer_position(update.position)
+        await websocket_manager.broadcast_scoreboard_style(new_style)
+        return new_style
+    except Exception as e:
+        print(f"Error updating timer position: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/score/set")
 async def set_score(update: SetScoreUpdate) -> ScoreboardConfig:
     config = await data_manager.set_score(update)
@@ -147,6 +158,37 @@ async def update_customization(update: CustomizationUpdate) -> ScoreboardConfig:
     config = await data_manager.update_colors(update)
     await websocket_manager.broadcast_config(config)
     return config
+
+# --- JSON Import/Export Endpoints ---
+@app.get("/api/json/{file_name}")
+async def get_json_file(file_name: str):
+    try:
+        content = await data_manager.get_raw_json(file_name)
+        return Response(content=content, media_type="application/json")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class UploadData(BaseModel):
+    file_name: Literal["team-info-config.json", "scoreboard-customization.json"]
+    json_data: str
+
+@app.post("/api/json/upload")
+async def upload_json_file(data: UploadData):
+    try:
+        await data_manager.set_raw_json(data.file_name, data.json_data)
+        
+        await websocket_manager.broadcast_config(data_manager.get_config())
+        await websocket_manager.broadcast_scoreboard_style(data_manager.get_scoreboard_style())
+        
+        return {"message": "File imported successfully and configuration reloaded."}
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON structure: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+
+# ----------------------------------------
 
 @app.post("/api/game-report/toggle")
 async def toggle_game_report():
@@ -255,9 +297,9 @@ async def reset_player_stats(update: ResetStatsUpdate):
 
 
 @app.post("/api/scoreboard-style")
-async def update_scoreboard_style(style: ScoreboardStyleConfig):
+async def update_scoreboard_style(style: StyleUpdate): 
     try:
-        new_style = await data_manager.update_scoreboard_style(style)
+        new_style = await data_manager.update_scoreboard_style(style) 
         await websocket_manager.broadcast_scoreboard_style(new_style)
         return new_style
     except Exception as e:
@@ -265,7 +307,4 @@ async def update_scoreboard_style(style: ScoreboardStyleConfig):
         raise HTTPException(status_code=500, detail="Failed to save scoreboard style.")
 
 if __name__ == "__main__":
-    # --- THIS IS THE FIX ---
-    # 1. Pass the 'app' object directly, not the string "main:app"
-    # 2. Ensure reload=False (which is the default, so we just remove it)
     uvicorn.run(app, host="0.0.0.0", port=8000)

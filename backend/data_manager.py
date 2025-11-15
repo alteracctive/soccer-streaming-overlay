@@ -1,12 +1,12 @@
 import asyncio
 import aiofiles
 import json
-import sys  # <-- Add this
-import os   # <-- Add this
-from pydantic import BaseModel, Field
+import sys
+import os
+from pydantic import BaseModel, Field, ValidationError
 from typing import Literal, List
 
-# --- New Helper Function ---
+# --- Helper Function ---
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -18,9 +18,14 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-# --- Use the helper function for your paths ---
-CONFIG_FILE = resource_path("team-info-config.json")
-SCOREBOARD_STYLE_FILE = resource_path("scoreboard-customization.json")
+# --- Path Definitions ---
+WRITABLE_DIR = os.path.abspath(".")
+WRITABLE_CONFIG_FILE = os.path.join(WRITABLE_DIR, "team-info-config.json")
+WRITABLE_STYLE_FILE = os.path.join(WRITABLE_DIR, "scoreboard-customization.json")
+
+BUNDLED_CONFIG_FILE = resource_path("team-info-config.json")
+BUNDLED_STYLE_FILE = resource_path("scoreboard-customization.json")
+
 
 class ScoreboardStyleConfig(BaseModel):
     primary: str
@@ -28,6 +33,7 @@ class ScoreboardStyleConfig(BaseModel):
     opacity: int = Field(default=75, ge=50, le=100)
     scale: int = Field(default=100, ge=50, le=150)
     matchInfo: str = ""
+    timerPosition: Literal["Under", "Right"] = "Under"
 
 class ColorConfig(BaseModel):
     primary: str
@@ -37,8 +43,8 @@ class PlayerConfig(BaseModel):
     number: int
     name: str
     onField: bool = False
-    yellowCards: int = 0
-    redCards: int = 0
+    yellowCards: List[int] = [] # <-- Updated
+    redCards: List[int] = []   # <-- Updated
     goals: List[int] = []
 
 class TeamConfig(BaseModel):
@@ -83,7 +89,9 @@ class AddGoalUpdate(BaseModel):
 
 class AddCardUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
+    number: int
     card_type: Literal["yellow", "red"]
+    minute: int # <-- Updated
 
 class ToggleOnFieldUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
@@ -96,8 +104,8 @@ class EditPlayerUpdate(BaseModel):
     number: int
     name: str
     onField: bool
-    yellowCards: int
-    redCards: int
+    yellowCards: List[int] # <-- Updated
+    redCards: List[int]   # <-- Updated
     goals: List[int]
 
 class ResetStatsUpdate(BaseModel):
@@ -111,6 +119,15 @@ class ReplacePlayerUpdate(BaseModel):
 class MatchInfoUpdate(BaseModel):
     info: str
 
+class TimerPositionUpdate(BaseModel):
+    position: Literal["Under", "Right"]
+
+class StyleUpdate(BaseModel):
+    primary: str
+    secondary: str
+    opacity: int
+    scale: int
+
 
 class DataManager:
     def __init__(self, file_path: str, scoreboard_style_path: str):
@@ -121,98 +138,158 @@ class DataManager:
         self._config_lock = asyncio.Lock()
         self._style_lock = asyncio.Lock()
 
+    # --- Internal save method, assumes lock is already held ---
+    async def _save_config_nolock(self):
+        if self.config is None: return
+        try:
+            async with aiofiles.open(self.file_path, mode='w') as f:
+                await f.write(self.config.model_dump_json(indent=2))
+            print(f"Config saved to {self.file_path}")
+        except Exception as e:
+            print(f"!!! Critical Error saving config to {self.file_path}: {e}")
+
+    # --- Public-facing save method, acquires lock ---
+    async def save_config(self):
+        async with self._config_lock:
+            await self._save_config_nolock()
+
+    # --- Internal style save method, assumes lock is already held ---
+    async def _save_scoreboard_style_nolock(self):
+        if self.scoreboard_style is None:
+            self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+            
+        if not isinstance(self.scoreboard_style, ScoreboardStyleConfig):
+             print("Error: scoreboard_style is not a valid ScoreboardStyleConfig instance. Resetting.")
+             self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+        
+        try:
+            async with aiofiles.open(self.scoreboard_style_path, mode='w') as f:
+                await f.write(self.scoreboard_style.model_dump_json(indent=2))
+            print(f"Scoreboard style successfully saved to {self.scoreboard_style_path}")
+        except Exception as e:
+            print(f"!!! Critical Error saving scoreboard style to {self.scoreboard_style_path}: {e}")
+
+    # --- Public-facing style save method, acquires lock ---
+    async def save_scoreboard_style(self):
+        async with self._style_lock:
+            await self._save_scoreboard_style_nolock()
+
     async def load_config(self):
         async with self._config_lock:
             try:
                 async with aiofiles.open(self.file_path, mode='r') as f:
                     content = await f.read()
-                    self.config = ScoreboardConfig.model_validate_json(content)
-                print("Config loaded successfully.")
-            except FileNotFoundError:
-                print(f"CRITICAL: {self.file_path} not found.")
-                raise
-            except Exception as e:
-                print(f"Error loading config: {e}. Check {self.file_path}.")
-                raise
+                    data = json.loads(content)
+                    migrated = False
+                    for team_key in ['teamA', 'teamB']:
+                        if team_key in data and 'players' in data[team_key]:
+                            for player in data[team_key]['players']:
+                                if isinstance(player.get('yellowCards'), int):
+                                    player['yellowCards'] = []
+                                    migrated = True
+                                if isinstance(player.get('redCards'), int):
+                                    player['redCards'] = []
+                                    migrated = True
+                    self.config = ScoreboardConfig.model_validate(data)
+                print("Config loaded successfully from writable file.")
+                if migrated:
+                    print("Migrated old card data structure.")
+                    await self._save_config_nolock()
 
-    async def save_config(self):
-        if self.config is None: return
-        # --- This path needs to be absolute, not from resource_path ---
-        # We will use the original non-helper path for SAVING
-        save_path = os.path.join(os.path.abspath("."), "team-info-config.json")
-        if not os.path.exists(os.path.abspath(".")):
-             save_path = self.file_path # Fallback
-             
-        async with self._config_lock:
-             try:
-                 async with aiofiles.open(save_path, mode='w') as f:
-                     await f.write(self.config.model_dump_json(indent=2))
-                 print(f"Config saved to {save_path}")
-             except Exception as e:
-                 print(f"!!! Critical Error saving config to {save_path}: {e}")
-                 # Try saving to the original path as a last resort
-                 async with aiofiles.open(self.file_path, mode='w') as f:
-                     await f.write(self.config.model_dump_json(indent=2))
-                 print(f"Config saved to fallback path {self.file_path}")
-
+            except (FileNotFoundError, ValidationError):
+                print(f"Writable config '{self.file_path}' not found or invalid. Loading from bundled default.")
+                try:
+                    async with aiofiles.open(BUNDLED_CONFIG_FILE, mode='r') as f:
+                        content = await f.read()
+                        self.config = ScoreboardConfig.model_validate_json(content)
+                    await self._save_config_nolock() 
+                    print("Loaded from bundled default and created new writable config.")
+                except Exception as e:
+                    print(f"CRITICAL: Could not load bundled config '{BUNDLED_CONFIG_FILE}': {e}")
+                    raise
 
     async def load_scoreboard_style(self):
         async with self._style_lock:
             try:
                 async with aiofiles.open(self.scoreboard_style_path, mode='r') as f:
                     content = await f.read()
-                    self.scoreboard_style = ScoreboardStyleConfig.model_validate_json(content)
-                print("Scoreboard style loaded.")
-            except FileNotFoundError:
-                 print(f"{self.scoreboard_style_path} not found, using default.")
-                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
-                 await self.save_scoreboard_style()
-            except Exception as e:
-                print(f"Error loading scoreboard style: {e}, using default.")
-                self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
+                    data = json.loads(content)
+                    if 'timerPosition' not in data:
+                        data['timerPosition'] = 'Under'
+                    if 'matchInfo' not in data:
+                        data['matchInfo'] = ''
+                    self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
+                print("Scoreboard style loaded successfully from writable file.")
+            except (FileNotFoundError, ValidationError):
+                print(f"Writable style '{self.scoreboard_style_path}' not found or invalid. Loading from bundled default.")
+                try:
+                    async with aiofiles.open(BUNDLED_STYLE_FILE, mode='r') as f:
+                        content = await f.read()
+                        data = json.loads(content)
+                        if 'timerPosition' not in data:
+                            data['timerPosition'] = 'Under'
+                        if 'matchInfo' not in data:
+                            data['matchInfo'] = ''
+                        self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
+                    await self._save_scoreboard_style_nolock()
+                    print("Loaded from bundled default and created new writable style file.")
+                except Exception as e:
+                    print(f"CRITICAL: Could not load bundled style '{BUNDLED_STYLE_FILE}': {e}")
+                    self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+                    await self._save_scoreboard_style_nolock()
 
+    async def get_raw_json(self, file_name: str) -> str:
+        path_to_read = None
+        if file_name == "team-info-config.json":
+            path_to_read = self.file_path
+        elif file_name == "scoreboard-customization.json":
+            path_to_read = self.scoreboard_style_path
+        
+        if path_to_read and os.path.exists(path_to_read):
+            async with aiofiles.open(path_to_read, mode='r') as f:
+                return await f.read()
+        raise FileNotFoundError(f"{file_name} not found.")
 
-    async def save_scoreboard_style(self):
-        if self.scoreboard_style is None:
-            print("Error: Attempted to save scoreboard style, but it's None.")
-            return
-            
-        if not isinstance(self.scoreboard_style, ScoreboardStyleConfig):
-             print("Error: scoreboard_style is not a valid ScoreboardStyleConfig instance.")
-             try:
-                 self.scoreboard_style = ScoreboardStyleConfig.model_validate(self.scoreboard_style)
-             except Exception:
-                 print("Falling back to default style due to invalid data.")
-                 self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="")
-
-        # --- This path also needs to be absolute for saving ---
-        save_path = os.path.join(os.path.abspath("."), "scoreboard-customization.json")
-        if not os.path.exists(os.path.abspath(".")):
-             save_path = self.scoreboard_style_path # Fallback
-
+    async def set_raw_json(self, file_name: str, raw_json_data: str):
+        path_to_write = None
+        
         try:
-            json_data = self.scoreboard_style.model_dump_json(indent=2)
-            
-            async with self._style_lock:
-                 async with aiofiles.open(save_path, mode='w') as f:
-                    await f.write(json_data)
-            print(f"Scoreboard style successfully saved to {save_path}")
-        except Exception as e:
-            print(f"!!! Critical Error saving scoreboard style to {save_path}: {e}")
-            # Try saving to the original path as a last resort
-            async with self._style_lock:
-                async with aiofiles.open(self.scoreboard_style_path, mode='w') as f:
-                    await f.write(json_data)
-            print(f"Scoreboard style saved to fallback path {self.scoreboard_style_path}")
+            if file_name == "team-info-config.json":
+                ScoreboardConfig.model_validate_json(raw_json_data)
+                path_to_write = self.file_path
+            elif file_name == "scoreboard-customization.json":
+                ScoreboardStyleConfig.model_validate_json(raw_json_data)
+                path_to_write = self.scoreboard_style_path
+            else:
+                raise Exception("Invalid file name specified.")
 
+            async with aiofiles.open(path_to_write, mode='w') as f:
+                await f.write(raw_json_data)
+            
+            await self.load_config()
+            await self.load_scoreboard_style()
+            
+        except ValidationError as e:
+            print(f"JSON validation failed: {e}")
+            raise Exception(f"Invalid JSON structure. {str(e)}")
+        except Exception as e:
+            print(f"Error setting raw JSON: {e}")
+            raise e
 
     def get_scoreboard_style(self) -> ScoreboardStyleConfig:
         if self.scoreboard_style is None: raise Exception("Scoreboard style not loaded")
         return self.scoreboard_style
 
-    async def update_scoreboard_style(self, style: ScoreboardStyleConfig) -> ScoreboardStyleConfig:
-        style.matchInfo = style.matchInfo if style.matchInfo is not None else self.scoreboard_style.matchInfo
-        self.scoreboard_style = style
+    async def update_scoreboard_style(self, style_update: StyleUpdate) -> ScoreboardStyleConfig:
+        current_style = self.get_scoreboard_style()
+        
+        current_style.primary = style_update.primary
+        current_style.secondary = style_update.secondary
+        current_style.opacity = style_update.opacity
+        current_style.scale = style_update.scale
+        
+        self.scoreboard_style = current_style 
+        
         await self.save_scoreboard_style()
         return self.scoreboard_style
 
@@ -222,11 +299,16 @@ class DataManager:
         await self.save_scoreboard_style()
         return style
 
+    async def update_timer_position(self, position: Literal["Under", "Right"]) -> ScoreboardStyleConfig:
+        style = self.get_scoreboard_style()
+        style.timerPosition = position
+        await self.save_scoreboard_style()
+        return style
+
     def get_config(self) -> ScoreboardConfig:
         if self.config is None: raise Exception("Config not loaded")
         return self.config
-
-    # ... (all other methods: update_team_info, update_colors, set_score, etc. are unchanged) ...
+        
     async def update_team_info(self, info: TeamInfoUpdate) -> ScoreboardConfig:
         config = self.get_config()
         config.teamA.name = info.teamA.get('name', config.teamA.name)
@@ -328,12 +410,13 @@ class DataManager:
         data_changed = False
         for player in team.players:
             if player.number == update.number:
-                if update.card_type == "yellow" and player.yellowCards < 2:
-                    player.yellowCards += 1
+                if update.card_type == "yellow" and len(player.yellowCards) < 2:
+                    player.yellowCards.append(update.minute)
+                    player.yellowCards.sort()
                     data_changed = True
                     print(f"Yellow card added to player #{update.number} ({update.team}).")
-                elif update.card_type == "red" and player.redCards < 1:
-                    player.redCards += 1
+                elif update.card_type == "red" and len(player.redCards) < 1:
+                    player.redCards.append(update.minute)
                     data_changed = True
                     print(f"Red card added to player #{update.number} ({update.team}).")
                 else:
@@ -383,8 +466,8 @@ class DataManager:
                 player.number = update.number
                 player.name = update.name
                 player.onField = update.onField
-                player.yellowCards = min(update.yellowCards, 2)
-                player.redCards = min(update.redCards, 1)
+                player.yellowCards = sorted(update.yellowCards)[:2]
+                player.redCards = sorted(update.redCards)[:1]
                 player.goals = sorted(update.goals) 
                 player_found = True
                 break
@@ -405,8 +488,8 @@ class DataManager:
         
         for player in team.players:
             player.goals = []
-            player.yellowCards = 0
-            player.redCards = 0
+            player.yellowCards = []
+            player.redCards = []
             player.onField = False
             
         await self.save_config()
@@ -422,8 +505,8 @@ class DataManager:
             if player.number == update.number:
                 player.name = update.name
                 player.onField = False
-                player.yellowCards = 0
-                player.redCards = 0
+                player.yellowCards = []
+                player.redCards = []
                 player.goals = []
                 player_found = True
                 print(f"Player #{update.number} ({update.team}) replaced with {update.name} and stats reset.")
@@ -436,4 +519,4 @@ class DataManager:
         await self.save_config()
         return config
 
-data_manager = DataManager(CONFIG_FILE, SCOREBOARD_STYLE_FILE)
+data_manager = DataManager(WRITABLE_CONFIG_FILE, WRITABLE_STYLE_FILE)

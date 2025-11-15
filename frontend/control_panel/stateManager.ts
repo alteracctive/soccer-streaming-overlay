@@ -10,8 +10,8 @@ export interface PlayerConfig {
   number: number;
   name: string;
   onField: boolean;
-  yellowCards: number;
-  redCards: number;
+  yellowCards: number[]; // <-- Updated
+  redCards: number[];   // <-- Updated
   goals: number[];
 }
 
@@ -44,7 +44,12 @@ export interface ScoreboardStyleConfig {
   opacity: number;
   scale: number;
   matchInfo: string;
+  timerPosition: "Under" | "Right";
 }
+
+// --- Type for partial style updates ---
+export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>;
+
 
 // --- API and WebSocket URLs ---
 const API_URL = 'http://localhost:8000';
@@ -62,19 +67,19 @@ let appState: {
   isAutoAddScoreOn: boolean;
   isAutoConvertYellowToRedOn: boolean;
   extraTime: ExtraTimeStatus;
-  isMatchInfoVisible: boolean; // <-- New state
+  isMatchInfoVisible: boolean;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
-  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "" },
+  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "", timerPosition: "Under" },
   isGameReportVisible: false, 
   isScoreboardVisible: true,
   isPlayersListVisible: false,
   isAutoAddScoreOn: false,
   isAutoConvertYellowToRedOn: false,
   extraTime: { minutes: 0, isVisible: false },
-  isMatchInfoVisible: false, // <-- Default
+  isMatchInfoVisible: false,
 };
 
 export const stateEmitter = new EventTarget();
@@ -128,7 +133,6 @@ function updateExtraTimeStatus(status: ExtraTimeStatus) {
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
-// --- New Function ---
 function updateMatchInfoVisibility(isVisible: boolean) {
   appState.isMatchInfoVisible = isVisible;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
@@ -187,7 +191,6 @@ function connectWebSocket() {
     else if (message.type === 'extra_time_status') {
       updateExtraTimeStatus(message as ExtraTimeStatus);
     }
-    // --- New Case ---
     else if (message.type === 'match_info_visibility') {
       updateMatchInfoVisibility(message.isVisible as boolean);
     }
@@ -267,12 +270,16 @@ export async function saveColors(teamA: object, teamB: object) {
   await post('/api/customization', { teamA, teamB });
 }
 
-export async function saveScoreboardStyle(style: ScoreboardStyleConfig) {
+export async function saveScoreboardStyle(style: ScoreboardStyleOnly) {
   await post('/api/scoreboard-style', style);
 }
 
 export async function saveMatchInfo(info: string) {
   await post('/api/match-info', { info });
+}
+
+export async function saveTimerPosition(position: 'Under' | 'Right') {
+  await post('/api/timer-position', { position });
 }
 
 export async function toggleGameReport() {
@@ -287,7 +294,6 @@ export async function togglePlayersList() {
   await post('/api/players-list/toggle', {});
 }
 
-// --- New Function ---
 export async function toggleMatchInfoVisibility() {
   await post('/api/match-info/toggle', {});
 }
@@ -333,12 +339,14 @@ export async function addGoal(
   }
 }
 
+// --- Updated Function ---
 export async function addCard(
   team: 'teamA' | 'teamB',
   number: number,
   cardType: 'yellow' | 'red',
+  minute: number, // <-- Added minute
 ) {
-  await post('/api/player/card', { team, number, card_type: cardType });
+  await post('/api/player/card', { team, number, card_type: cardType, minute });
 }
 
 export async function toggleOnField(team: 'teamA' | 'teamB', number: number) {
@@ -360,4 +368,16 @@ export async function editPlayer(
 
 export async function resetTeamStats(team: 'teamA' | 'teamB') {
   await post('/api/player/resetstats', { team });
+}
+
+export async function downloadJson(fileName: string): Promise<Blob> {
+  const response = await fetch(`${API_URL}/api/json/${fileName}`);
+  if (!response.ok) {
+    throw new Error('File not found or backend error.');
+  }
+  return await response.blob();
+}
+
+export async function uploadJson(fileName: string, jsonData: string) {
+  await post('/api/json/upload', { file_name: fileName, json_data: jsonData });
 }

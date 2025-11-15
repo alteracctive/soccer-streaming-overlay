@@ -12,10 +12,10 @@ body {
 .scoreboard-container {
   position: fixed;
   top: 20px;
-  left: 20px;
+  left: 40px; 
   display: flex;
   flex-direction: column;
-  align-items: center; 
+  align-items: flex-start;
   gap: 8px;
   transform-origin: top left;
   /* Scale is controlled by JS */
@@ -32,12 +32,69 @@ body {
   color: #ffffff;
   border-radius: 8px;
   padding: 4px 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   min-width: 400px;
   height: 34px;
   box-sizing: border-box;
   overflow: hidden; 
   white-space: nowrap;
+}
+
+/* --- New Content Wrapper --- */
+.scoreboard-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Updated Wrapper for Score Row + Cards --- */
+.score-row-with-cards {
+  display: flex; 
+  position: relative; 
+  align-items: center;
+}
+
+/* --- Updated Red Card Styles --- */
+.red-card-container {
+  display: flex;
+  flex-direction: column; /* Stack vertically */
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+  width: 16px;
+  height: 50px; /* Match score-row height */
+  position: absolute; 
+  top: 0;
+  box-sizing: border-box;
+}
+#team-a-red-cards {
+  left: 0;
+  transform: translateX(calc(-100% - 6px)); 
+}
+#team-b-red-cards {
+  right: 0;
+  transform: translateX(calc(100% + 6px)); 
+}
+.red-card-box {
+  width: 10px;
+  height: 11px; 
+  background-color: #DC3545;
+  border: 1px solid rgba(0,0,0,0.5);
+  border-radius: 1px;
+}
+.red-card-count {
+  background-color: #DC3545;
+  border: 1px solid rgba(0,0,0,0.5);
+  border-radius: 4px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 2px 6px;
+  width: 28px;
+  height: 28px;
+  line-height: 24px;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 /* Top row styles (Scoreboard) */
@@ -47,11 +104,10 @@ body {
   justify-content: space-between;
   font-size: 32px;
   font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.75); /* Default */
-  color: #ffffff; /* Default */
+  background-color: rgba(0, 0, 0, 0.75); 
+  color: #ffffff; 
   border-radius: 8px;
   padding: 8px 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   min-width: 400px;
   height: 50px;
   box-sizing: border-box;
@@ -79,7 +135,6 @@ body {
 }
 
 .score-row .score {
-  font-family: 'Courier New', Courier, monospace;
   font-size: 36px;
   width: 40px;
   text-align: center;
@@ -113,18 +168,17 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%; 
+  transition: margin-left 0.3s ease; /* For pushing */
 }
 
 /* Timer row styles (Scoreboard) */
 .timer-row {
-  font-size: 28px;
-  font-family: 'Courier New', Courier, monospace;
+  font-size: 24px; 
   font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.75); /* Default */
-  color: #ffffff; /* Default */
+  background-color: rgba(0, 0, 0, 0.75); 
+  color: #ffffff; 
   border-radius: 8px;
-  padding: 5px 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  padding: 4px 16px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -134,14 +188,12 @@ body {
 
 /* New box for extra time */
 .extra-time-row {
-  font-size: 28px; /* Match timer */
-  font-family: 'Courier New', Courier, monospace;
+  font-size: 24px; 
   font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.75); /* Default */
+  background-color: rgba(0, 0, 0, 0.75); 
   color: #ffd700; /* Gold color */
   border-radius: 8px;
-  padding: 5px 12px; /* Slightly less horizontal padding */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  padding: 4px 10px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -149,23 +201,53 @@ body {
 }
 /* ----------------------------- */
 
+/* --- Updated Layout Logic --- */
+.scoreboard-container.timer-position-right .scoreboard-content-wrapper {
+  flex-direction: row; 
+  align-items: stretch; 
+  gap: 8px;
+}
+
+.scoreboard-container.timer-position-right .score-row-with-cards {
+  height: 50px;
+}
+
+.scoreboard-container.timer-position-right .timer-section-row {
+  flex-direction: row; 
+  width: auto;
+  height: 50px; 
+}
+
+.scoreboard-container.timer-position-right .timer-row,
+.scoreboard-container.timer-position-right .extra-time-row {
+  width: auto; 
+  min-width: 0;
+  padding: 5px 12px;
+  height: 100%; 
+  box-sizing: border-box; 
+  font-size: 28px; 
+}
+
+.scoreboard-container.timer-position-right .timer-row {
+  width: 150px; 
+}
+
 
 /* --- GAME REPORT STYLES --- */
 .game-report-container {
     position: fixed;
     bottom: 30px;
     left: 50%;
-    transform: translateX(-50%) scale(1); /* JS controls scale */
+    transform: translateX(-50%) scale(1); 
     transform-origin: bottom center;
     width: 960px;
     min-height: 200px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
     border-radius: 15px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background-color: rgba(0, 0, 0, 0.75); /* Default */
-    color: #FFFFFF; /* Default */
+    background-color: rgba(0, 0, 0, 0.75); 
+    color: #FFFFFF; 
 }
 
 .game-report-header {
@@ -178,11 +260,26 @@ body {
     border-bottom: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-.report-timer {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 38px;
-    flex-shrink: 0;
+/* --- Removed Timer, Added Middle Score --- */
+.report-score-middle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+.report-score-middle .report-score {
+  font-size: 38px;
+  font-weight: bold;
+}
+.report-score-middle .report-score-separator {
+  font-size: 38px;
+  font-weight: bold;
+  opacity: 0.8;
+}
+.game-report-header .report-score-middle .team-color-strip {
+  width: 12px;
+  height: 38px;
+}
+/* --------------------------------- */
 
 .team-info-left, .team-info-right {
     display: flex;
@@ -215,7 +312,6 @@ body {
 }
 
 .report-score {
-    font-family: 'Courier New', Courier, monospace;
     font-size: 43px;
     font-weight: bold;
     flex-shrink: 0;
@@ -269,7 +365,6 @@ body {
   margin-right: 10px;
 }
 .overlay-goal-scorer .goal-minutes {
-  font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
   font-size: 0.9em;
 }
@@ -313,7 +408,6 @@ body {
   color: #FFFFFF;
   border-radius: 10px;
   padding: 15px 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   display: flex;
   gap: 20px;
   max-height: 80vh; 
@@ -339,6 +433,18 @@ body {
   font-weight: bold;
   text-align: center; 
   flex-shrink: 0;
+  
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.players-list-team h4 span {
+  flex-grow: 1; 
+}
+.players-list-team .team-color-strip {
+  width: 12px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 .players-table-wrapper {
@@ -351,9 +457,10 @@ body {
   border-collapse: collapse;
 }
 
-/* Scrolling animation */
+/* --- Updated Scrolling animation --- */
 .players-table-wrapper.scrolling .players-table {
-  animation: scroll-up 30s linear infinite;
+  --scroll-duration: 30s; 
+  animation: scroll-up var(--scroll-duration) linear 3s infinite; /* <-- Added 3s delay */
 }
 
 @keyframes scroll-up {
@@ -361,13 +468,13 @@ body {
     transform: translateY(0);
   }
   90% {
-    transform: translateY(-50%); /* Scroll to the end of the first list */
+    transform: translateY(-50%); 
   }
   90.01% {
-    transform: translateY(0); /* Instant snap back to start */
+    transform: translateY(0); 
   }
   100% {
-    transform: translateY(0); /* Pause at start */
+    transform: translateY(0); 
   }
 }
 
@@ -380,13 +487,37 @@ body {
   white-space: nowrap;
 }
 
-.players-table td:first-child {
+/* Player List Layout */
+
+/* Team A (Left) */
+#players-list-a td:first-child { /* Number */
   width: 40px;
   text-align: right;
   padding-right: 10px;
 }
+#players-list-a td:last-child { /* Name */
+  text-align: left;
+}
+
+/* Team B (Right) - Mirrored */
+#players-list-b td:first-child { /* Name */
+  text-align: right;
+  padding-right: 10px;
+}
+#players-list-b td:last-child { /* Number */
+  width: 40px;
+  text-align: left;
+}
+
 
 .players-table tr.not-on-field {
   opacity: 0.8;
   font-style: italic;
+}
+
+.players-table tr.player-padding-row td {
+  padding: 6px;
+  font-size: 18px;
+  height: 33px; /* Match approximate row height */
+  box-sizing: border-box;
 }
