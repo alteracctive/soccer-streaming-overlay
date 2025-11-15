@@ -79,3 +79,6 @@ __pycache__/
 
 # Resources (contains the backend .exe)
 /desktop-app/resources/*.exe
+
+/backend/scoreboard-customization.json
+/backend/team-info-config.json
