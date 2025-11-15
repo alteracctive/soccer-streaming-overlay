@@ -47,6 +47,7 @@ export interface ScoreboardStyleConfig {
   timerPosition: "Under" | "Right";
 }
 
+// --- Type for partial style updates ---
 export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>;
 
 

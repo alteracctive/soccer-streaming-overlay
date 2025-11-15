@@ -7,6 +7,8 @@ import {
   setScore,
   setExtraTime,
   toggleExtraTimeVisibility,
+  addGoal,
+  type PlayerConfig,
 } from '../stateManager';
 import { showNotification } from '../notification';
 
@@ -15,7 +17,6 @@ function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
   
-  // Only pad minutes if less than 100
   const min = (totalMinutes < 100) 
     ? totalMinutes.toString().padStart(2, '0') 
     : totalMinutes.toString();
@@ -23,46 +24,99 @@ function formatTime(totalSeconds: number): string {
   return `${min}:${sec}`;
 }
 
+// --- Updated Function to Render Player Grid ---
+function renderPlayerGrid(players: PlayerConfig[]): string {
+  if (!players || players.length === 0) {
+    return '<p style="font-size: 13px; opacity: 0.7;">No players on roster.</p>';
+  }
+  
+  // Sort players: On Field first, then by number
+  const sortedPlayers = [...players].sort((a, b) => {
+    if (a.onField && !b.onField) return -1;
+    if (!a.onField && b.onField) return 1;
+    return a.number - b.number;
+  });
+
+  return sortedPlayers.map(player => {
+    let btnClass = '';
+    
+    // --- Updated Color Logic ---
+    if (player.redCards.length > 0) {
+      btnClass = 'btn-red'; // Red card overrides all
+    } else if (player.onField) {
+      btnClass = ''; // Active (default accent)
+    } else {
+      btnClass = 'btn-secondary'; // Inactive
+    }
+    
+    return `
+      <button 
+        class="player-btn ${btnClass}" 
+        title="${player.name}" 
+        data-number="${player.number}"
+      >
+        ${player.number}
+      </button>
+    `;
+  }).join('');
+}
+
+
 export function render(container: HTMLElement) {
   const { config, timer, extraTime } = getState();
 
   // --- Render HTML ---
   container.innerHTML = `
-    <div class="controller-grid">
+    <div class="controller-grid" id="dashboard-controller-grid">
       <div class="card team-control"> 
         <div class="team-header">
-          <h4>${config?.teamA.name || 'Team A'} (${
-    config?.teamA.abbreviation || 'TMA'
-  })</h4>
           <div class="color-swatch-container">
-            <span class="color-swatch" id="team-a-swatch-secondary"></span>
             <span class="color-swatch" id="team-a-swatch-primary"></span>
+            <span class="color-swatch" id="team-a-swatch-secondary"></span>
           </div>
+          <h4 id="team-a-header">Team A (TMA)</h4>
         </div>
-        <div class="team-score" id="team-a-score">${
-          config?.teamA.score ?? 0
-        }</div>
-        <div class="btn-group">
-          <button id="team-a-inc" style="flex-grow: 1;">+1</button>
-          <button id="team-a-dec" class="btn-secondary" style="flex-grow: 1;">-1</button>
+        
+        <div class="card-content">
+          <div class="score-side">
+            <div class="team-score" id="team-a-score">0</div>
+            <div class="score-control-row">
+              <button id="team-a-dec" class="btn-secondary score-btn">-</button>
+              <button id="team-a-inc" class="score-btn">+</button>
+            </div>
+          </div>
+          <div class="player-side">
+            <div class="player-grid-container" id="player-grid-container-a">
+              <div class="player-grid" id="player-grid-a" data-team="teamA">
+                </div>
+            </div>
+          </div>
         </div>
       </div>
+      
       <div class="card team-control">
         <div class="team-header">
-          <h4>${config?.teamB.name || 'Team B'} (${
-    config?.teamB.abbreviation || 'TMB'
-  })</h4>
           <div class="color-swatch-container">
-            <span class="color-swatch" id="team-b-swatch-secondary"></span>
             <span class="color-swatch" id="team-b-swatch-primary"></span>
+            <span class="color-swatch" id="team-b-swatch-secondary"></span>
           </div>
+          <h4 id="team-b-header">Team B (TMB)</h4>
         </div>
-        <div class="team-score" id="team-b-score">${
-          config?.teamB.score ?? 0
-        }</div>
-        <div class="btn-group">
-          <button id="team-b-inc" style="flex-grow: 1;">+1</button>
-          <button id="team-b-dec" class="btn-secondary" style="flex-grow: 1;">-1</button>
+        
+        <div class="card-content">
+          <div class="score-side">
+            <div class="team-score" id="team-b-score">0</div>
+            <div class="score-control-row">
+              <button id="team-b-dec" class="btn-secondary score-btn">-</button>
+              <button id="team-b-inc" class="score-btn">+</button>
+            </div>
+          </div>
+          <div class="player-side">
+            <div class="player-grid-container" id="player-grid-container-b">
+              <div class="player-grid" id="player-grid-b" data-team="teamB">
+                </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -141,13 +195,20 @@ export function render(container: HTMLElement) {
   const teamBSwatchP = container.querySelector('#team-b-swatch-primary') as HTMLSpanElement;
   const teamBSwatchS = container.querySelector('#team-b-swatch-secondary') as HTMLSpanElement;
 
-  // --- Updated Extra Time Refs ---
+  // Extra Time Refs
   const extraTimeInput = container.querySelector(
     '#extra-time-input',
   ) as HTMLInputElement;
   const extraTimeActionBtn = container.querySelector(
     '#extra-time-action-btn',
   ) as HTMLButtonElement;
+    
+  // Grid Refs
+  const controllerGrid = container.querySelector('#dashboard-controller-grid') as HTMLDivElement;
+  const teamAHeader = container.querySelector('#team-a-header') as HTMLHeadingElement;
+  const teamBHeader = container.querySelector('#team-b-header') as HTMLHeadingElement;
+  const playerGridA = container.querySelector('#player-grid-a') as HTMLDivElement;
+  const playerGridB = container.querySelector('#player-grid-b') as HTMLDivElement;
 
 
   // --- Update UI Function ---
@@ -159,14 +220,16 @@ export function render(container: HTMLElement) {
       teamAScoreEl.textContent = config.teamA.score.toString();
       teamBScoreEl.textContent = config.teamB.score.toString();
       
-      const headers = container.querySelectorAll('.team-header h4');
-      if (headers[0]) (headers[0] as HTMLElement).textContent = `${config.teamA.name} (${config.teamA.abbreviation})`;
-      if (headers[1]) (headers[1] as HTMLElement).textContent = `${config.teamB.name} (${config.teamB.abbreviation})`;
+      teamAHeader.textContent = `${config.teamA.name} (${config.teamA.abbreviation})`;
+      teamBHeader.textContent = `${config.teamB.name} (${config.teamB.abbreviation})`;
       
       if (teamASwatchP) teamASwatchP.style.backgroundColor = config.teamA.colors.primary;
       if (teamASwatchS) teamASwatchS.style.backgroundColor = config.teamA.colors.secondary;
       if (teamBSwatchP) teamBSwatchP.style.backgroundColor = config.teamB.colors.primary;
       if (teamBSwatchS) teamBSwatchS.style.backgroundColor = config.teamB.colors.secondary;
+      
+      playerGridA.innerHTML = renderPlayerGrid(config.teamA.players);
+      playerGridB.innerHTML = renderPlayerGrid(config.teamB.players);
     }
 
     // Update timer display
@@ -187,9 +250,8 @@ export function render(container: HTMLElement) {
       }
     }
     
-    // --- Update Extra Time UI ---
+    // Update Extra Time UI
     if (extraTimeActionBtn) {
-      // Don't update the input value if the user is typing
       if (document.activeElement !== extraTimeInput) {
         extraTimeInput.value = extraTime.minutes.toString();
       }
@@ -206,14 +268,62 @@ export function render(container: HTMLElement) {
     }
   };
 
-  // --- Add Event Listeners ---
-  // Score buttons
-  container.querySelector('#team-a-inc')?.addEventListener('click', () => setScore('teamA', (getState().config?.teamA.score ?? 0) + 1));
-  container.querySelector('#team-a-dec')?.addEventListener('click', () => setScore('teamA', (getState().config?.teamA.score ?? 0) - 1));
-  container.querySelector('#team-b-inc')?.addEventListener('click', () => setScore('teamB', (getState().config?.teamB.score ?? 0) + 1));
-  container.querySelector('#team-b-dec')?.addEventListener('click', () => setScore('teamB', (getState().config?.teamB.score ?? 0) - 1));
+  // --- Updated Delegated Click Listener ---
+  const handleGridClick = async (e: Event) => {
+    const target = e.target as HTMLElement;
+    
+    // Handle score buttons
+    const scoreBtnId = target.id;
+    if (scoreBtnId === 'team-a-inc') {
+      setScore('teamA', (getState().config?.teamA.score ?? 0) + 1);
+      return;
+    }
+    if (scoreBtnId === 'team-a-dec') {
+      setScore('teamA', (getState().config?.teamA.score ?? 0) - 1);
+      return;
+    }
+    if (scoreBtnId === 'team-b-inc') {
+      setScore('teamB', (getState().config?.teamB.score ?? 0) + 1);
+      return;
+    }
+    if (scoreBtnId === 'team-b-dec') {
+      setScore('teamB', (getState().config?.teamB.score ?? 0) - 1);
+      return;
+    }
 
-  // Toggle button listener
+    // Handle player grid buttons
+    if (target.classList.contains('player-btn')) {
+      const grid = target.closest('.player-grid') as HTMLDivElement;
+      const team = grid?.dataset.team as 'teamA' | 'teamB';
+      const number = parseInt(target.dataset.number || '', 10);
+      
+      if (!team || isNaN(number)) return;
+
+      const { config, timer } = getState();
+      if (!config) return;
+
+      const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
+      if (!player) return;
+
+      const minute = Math.floor(timer.seconds / 60) + 1;
+      
+      // 1. Add goal to player
+      await addGoal(team, number, minute);
+      
+      // 2. Add goal to scorekeeper (bypassing setting)
+      const currentScore = (team === 'teamA') ? config.teamA.score : config.teamB.score;
+      await setScore(team, currentScore + 1);
+      
+      // --- Updated Notification ---
+      showNotification(`Goal given to #${player.number} ${player.name} at ${minute}'`);
+    }
+  };
+
+
+  // --- Add Event Listeners ---
+  
+  controllerGrid.addEventListener('click', handleGridClick);
+
   startStopToggle.addEventListener('click', () => {
     if (getState().timer.isRunning) {
       timerControls.stop();
@@ -222,10 +332,9 @@ export function render(container: HTMLElement) {
     }
   });
 
-  // --- Updated Reset Listener ---
   container.querySelector('#reset-timer')?.addEventListener('click', () => {
-    timerControls.stop();   // Stop the timer
-    timerControls.reset();  // Reset the timer
+    timerControls.stop();
+    timerControls.reset();
   });
   
   container.querySelector('#show-set-time')?.addEventListener('click', () => {
@@ -256,21 +365,17 @@ export function render(container: HTMLElement) {
     }
   });
   
-  // --- Extra Time Listener ---
   extraTimeActionBtn.addEventListener('click', () => {
     const { extraTime } = getState();
     
     if (extraTime.isVisible) {
-      // If it's currently showing, just hide it
       toggleExtraTimeVisibility();
     } else {
-      // If it's hidden, set the time AND show it
       let minutes = parseInt(extraTimeInput.value, 10) || 0;
       if (minutes < 0) minutes = 0;
       if (minutes > 99) minutes = 99;
       extraTimeInput.value = minutes.toString();
       
-      // Send both commands
       setExtraTime(minutes);
       toggleExtraTimeVisibility();
     }
@@ -284,5 +389,6 @@ export function render(container: HTMLElement) {
   // Return a cleanup function
   return () => {
     unsubscribe(updateUI);
+    controllerGrid.removeEventListener('click', handleGridClick);
   };
 }

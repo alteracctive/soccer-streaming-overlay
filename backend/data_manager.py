@@ -43,8 +43,8 @@ class PlayerConfig(BaseModel):
     number: int
     name: str
     onField: bool = False
-    yellowCards: List[int] = []
-    redCards: List[int] = []
+    yellowCards: List[int] = [] # <-- Updated
+    redCards: List[int] = []   # <-- Updated
     goals: List[int] = []
 
 class TeamConfig(BaseModel):
@@ -89,8 +89,9 @@ class AddGoalUpdate(BaseModel):
 
 class AddCardUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
+    number: int
     card_type: Literal["yellow", "red"]
-    minute: int
+    minute: int # <-- Updated
 
 class ToggleOnFieldUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
@@ -103,8 +104,8 @@ class EditPlayerUpdate(BaseModel):
     number: int
     name: str
     onField: bool
-    yellowCards: List[int]
-    redCards: List[int]
+    yellowCards: List[int] # <-- Updated
+    redCards: List[int]   # <-- Updated
     goals: List[int]
 
 class ResetStatsUpdate(BaseModel):
@@ -173,7 +174,6 @@ class DataManager:
         async with self._style_lock:
             await self._save_scoreboard_style_nolock()
 
-    # --- Updated to call internal _save_config_nolock ---
     async def load_config(self):
         async with self._config_lock:
             try:
@@ -194,7 +194,7 @@ class DataManager:
                 print("Config loaded successfully from writable file.")
                 if migrated:
                     print("Migrated old card data structure.")
-                    await self._save_config_nolock() # <-- Fixed
+                    await self._save_config_nolock()
 
             except (FileNotFoundError, ValidationError):
                 print(f"Writable config '{self.file_path}' not found or invalid. Loading from bundled default.")
@@ -202,13 +202,12 @@ class DataManager:
                     async with aiofiles.open(BUNDLED_CONFIG_FILE, mode='r') as f:
                         content = await f.read()
                         self.config = ScoreboardConfig.model_validate_json(content)
-                    await self._save_config_nolock() # <-- Fixed
+                    await self._save_config_nolock() 
                     print("Loaded from bundled default and created new writable config.")
                 except Exception as e:
                     print(f"CRITICAL: Could not load bundled config '{BUNDLED_CONFIG_FILE}': {e}")
                     raise
 
-    # --- Updated to call internal _save_scoreboard_style_nolock ---
     async def load_scoreboard_style(self):
         async with self._style_lock:
             try:
@@ -232,15 +231,13 @@ class DataManager:
                         if 'matchInfo' not in data:
                             data['matchInfo'] = ''
                         self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
-                    await self._save_scoreboard_style_nolock() # <-- Fixed
+                    await self._save_scoreboard_style_nolock()
                     print("Loaded from bundled default and created new writable style file.")
                 except Exception as e:
                     print(f"CRITICAL: Could not load bundled style '{BUNDLED_STYLE_FILE}': {e}")
                     self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
-                    await self._save_scoreboard_style_nolock() # <-- Fixed
+                    await self._save_scoreboard_style_nolock()
 
-
-    # --- New Method (for user's "Import" / download) ---
     async def get_raw_json(self, file_name: str) -> str:
         path_to_read = None
         if file_name == "team-info-config.json":
@@ -253,12 +250,10 @@ class DataManager:
                 return await f.read()
         raise FileNotFoundError(f"{file_name} not found.")
 
-    # --- New Method (for user's "Export" / upload) ---
     async def set_raw_json(self, file_name: str, raw_json_data: str):
         path_to_write = None
         
         try:
-            # 1. Validate the JSON data
             if file_name == "team-info-config.json":
                 ScoreboardConfig.model_validate_json(raw_json_data)
                 path_to_write = self.file_path
@@ -268,11 +263,9 @@ class DataManager:
             else:
                 raise Exception("Invalid file name specified.")
 
-            # 2. If validation passed, write the file
             async with aiofiles.open(path_to_write, mode='w') as f:
                 await f.write(raw_json_data)
             
-            # 3. Reload the new data into memory
             await self.load_config()
             await self.load_scoreboard_style()
             

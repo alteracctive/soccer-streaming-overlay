@@ -202,16 +202,76 @@ button.btn-red {
   margin-bottom: 16px;
 }
 
+/* --- Updated Team Control Layout --- */
 .team-control {
   text-align: center;
+  display: flex; /* Added */
+  flex-direction: column; /* Added */
+  min-height: 220px; /* <-- Increased height */
 }
-
+.team-control .card-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr; /* 1/3 for score, 2/3 for players */
+  gap: 16px;
+  flex-grow: 1; /* <-- Added */
+}
+.score-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.player-side {
+  display: flex;
+  flex-direction: column;
+}
+.score-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+}
 .team-score {
   font-size: 48px;
   font-weight: bold;
-  margin: 10px 0;
   color: var(--accent-color);
+  min-width: 60px;
+  text-align: center;
 }
+.score-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* --- New Player Grid Styles --- */
+.player-grid-container {
+  max-height: 110px; 
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px;
+  flex-grow: 1; /* <-- Added */
+}
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.player-btn {
+  width: 100%;
+  height: 34px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+/* ----------------------------- */
+
 
 .timer-control {
   text-align: center;
@@ -226,16 +286,16 @@ button.btn-red {
 
 .timer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* <-- Updated rule */
+  grid-template-columns: 2fr 1fr; 
   gap: 16px;
 }
-/* Make timer controls fit in their grid */
 .timer-control {
   margin-bottom: 0;
 }
 
 
 /* Setting Page Specifics */
+/* ... (all other styles are unchanged) ... */
 .theme-toggle {
   display: flex;
   align-items: center;
@@ -312,7 +372,7 @@ button.btn-red {
   padding: 4px 8px;
   font-size: 12px;
   font-weight: 500;
-  flex-shrink: 0; /* Prevent button from shrinking */
+  flex-shrink: 0; 
 }
 
 /* Server Status Indicator */
@@ -361,7 +421,7 @@ button.btn-red {
 .sidebar .mini-score-row {
   display: flex;
   justify-content: center;
-  align-items: center; /* This correctly aligns the strips and text */
+  align-items: center; 
   font-size: 24px;
   font-weight: bold;
   gap: 8px;
@@ -379,11 +439,11 @@ button.btn-red {
 
 .sidebar .mini-score-row span:first-child {
   text-align: right;
-  color: var(--accent-color); /* <-- RE-ADDED NEUTRAL COLOR */
+  color: var(--accent-color); 
 }
 .sidebar .mini-score-row span:last-child {
   text-align: left;
-  color: var(--accent-color); /* <-- RE-ADDED NEUTRAL COLOR */
+  color: var(--accent-color); 
 }
 
 .sidebar .mini-timer-row {
@@ -423,8 +483,8 @@ button.btn-red {
   display: flex;
   gap: 6px;
   margin-bottom: 12px;
-  flex-wrap: wrap; /* Allows presets to wrap if needed */
-  justify-content: flex-start; /* Aligns left */
+  flex-wrap: wrap; 
+  justify-content: flex-start; 
 }
 
 .preset-btn-wrapper {
@@ -450,15 +510,14 @@ button.btn-red {
   border: 1px solid white;
   font-size: 14px;
   font-weight: bold;
-  line-height: 18px; /* Center the 'x' */
+  line-height: 18px; 
   text-align: center;
   padding: 0;
   cursor: pointer;
   z-index: 10;
-  display: none; /* Hidden by default */
+  display: none; 
 }
 
-/* "Delete Mode" - show the 'x' buttons */
 .delete-mode .preset-btn-delete {
   display: block;
 }
@@ -466,10 +525,9 @@ button.btn-red {
 .inline-form-group {
   display: flex;
   gap: 12px;
-  align-items: flex-end; /* Aligns inputs nicely if labels wrap */
+  align-items: flex-end; 
 }
 
-/* Remove the default bottom margin when inputs are inline */
 .inline-form-group .form-group {
   margin-bottom: 0;
 }
@@ -480,24 +538,27 @@ button.btn-red {
   gap: 12px;
 }
 .color-input-row .form-group {
-  flex: 1; /* Make them share space equally */
+  flex: 1; 
   margin-bottom: 0;
 }
 
-/* Dashboard Color Swatches */
+/* Updated Dashboard Color Swatches */
 .team-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start; /* Changed */
   margin-bottom: 12px;
 }
 .team-header h4 {
-  margin-bottom: 0; /* Remove default margin from h4 */
+  margin-bottom: 0; 
+  flex-grow: 1;
+  text-align: left;
 }
 .color-swatch-container {
   display: inline-flex;
   gap: 4px;
-  margin-left: 10px;
+  margin-right: 10px; /* Changed */
+  flex-shrink: 0;
 }
 .color-swatch {
   width: 20px;
@@ -505,18 +566,20 @@ button.btn-red {
   border: 1px solid var(--border-color);
   border-radius: 4px;
 }
+/* ------------------------------------- */
+
 
 .color-picker-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px; /* Space between primary/secondary rows */
+  margin-bottom: 8px; 
 }
 .color-picker-row label {
-  margin-bottom: 0; /* Remove default margin */
+  margin-bottom: 0; 
 }
 .color-picker-row input[type='color'] {
-  width: 60px; /* Make the color input smaller */
+  width: 60px; 
   height: 30px;
   padding: 2px;
 }
@@ -576,17 +639,17 @@ button.btn-red {
 /* Customization Page - Sliders Side-by-Side */
 .slider-row {
   display: flex;
-  gap: 16px; /* Space between the sliders */
-  align-items: flex-start; /* Align tops if labels wrap differently */
+  gap: 16px; 
+  align-items: flex-start; 
 }
 .slider-row .form-group {
-  flex: 1; /* Make sliders share space equally */
-  margin-top: 0; /* Remove top margin if added previously */
+  flex: 1; 
+  margin-top: 0; 
 }
 
 /* Modal Styles */
 .modal-overlay {
-  display: none; /* Hidden by default */
+  display: none; 
   position: fixed;
   top: 0;
   left: 0;
@@ -632,15 +695,14 @@ button.btn-red {
   gap: 12px;
   flex-shrink: 0; 
 }
-/* Style for delete button in modal */
 .modal-buttons .btn-red {
-  margin-right: auto; /* Pushes delete button to the left */
+  margin-right: auto; 
 }
 
 
 /* Player Table Styles */
 .player-list-container {
-  max-height: 490px; /* 1 header (30) + 15 rows (30.5*15=457.5) */
+  max-height: 490px;
   overflow-y: auto;
 }
 
@@ -838,16 +900,15 @@ button.btn-red {
   font-size: 13px;
   font-weight: bold;
 }
-/* Make table have sharp bottom corners when totals row is present */
 .player-list-table {
   margin-top: 0;
   border-radius: 0 0 6px 6px;
   border-top: none;
 }
 
-/* --- New Import/Export Modal Styles --- */
+/* Import/Export Modal Styles */
 .import-export-modal .modal-content {
-  max-width: 600px; /* Wider modal */
+  max-width: 600px; 
 }
 
 .import-export-modal textarea {
@@ -871,9 +932,8 @@ button.btn-red {
   margin: 12px 0;
 }
 
-/* Style the "Upload File" button */
 .import-export-modal input[type="file"] {
-  display: none; /* Hide the default ugly input */
+  display: none; 
 }
 
 .import-export-modal .btn-file-upload {
