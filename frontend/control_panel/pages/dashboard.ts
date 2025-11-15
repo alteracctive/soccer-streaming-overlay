@@ -90,6 +90,7 @@ export function render(container: HTMLElement) {
               <div class="player-grid" id="player-grid-a" data-team="teamA">
                 </div>
             </div>
+            <div class="player-info-display" id="team-a-info-display">&nbsp;</div>
           </div>
         </div>
       </div>
@@ -116,6 +117,7 @@ export function render(container: HTMLElement) {
               <div class="player-grid" id="player-grid-b" data-team="teamB">
                 </div>
             </div>
+            <div class="player-info-display" id="team-b-info-display">&nbsp;</div>
           </div>
         </div>
       </div>
@@ -209,6 +211,10 @@ export function render(container: HTMLElement) {
   const teamBHeader = container.querySelector('#team-b-header') as HTMLHeadingElement;
   const playerGridA = container.querySelector('#player-grid-a') as HTMLDivElement;
   const playerGridB = container.querySelector('#player-grid-b') as HTMLDivElement;
+  
+  // --- New Info Display Refs ---
+  const teamAInfoDisplay = container.querySelector('#team-a-info-display') as HTMLDivElement;
+  const teamBInfoDisplay = container.querySelector('#team-b-info-display') as HTMLDivElement;
 
 
   // --- Update UI Function ---
@@ -268,7 +274,7 @@ export function render(container: HTMLElement) {
     }
   };
 
-  // --- Updated Delegated Click Listener ---
+  // --- Delegated Click Listener ---
   const handleGridClick = async (e: Event) => {
     const target = e.target as HTMLElement;
     
@@ -314,8 +320,49 @@ export function render(container: HTMLElement) {
       const currentScore = (team === 'teamA') ? config.teamA.score : config.teamB.score;
       await setScore(team, currentScore + 1);
       
-      // --- Updated Notification ---
       showNotification(`Goal given to #${player.number} ${player.name} at ${minute}'`);
+    }
+  };
+
+  // --- Delegated Mouseover Listener ---
+  const handleGridMouseOver = (e: Event) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('player-btn')) {
+      const grid = target.closest('.player-grid') as HTMLDivElement;
+      const team = grid?.dataset.team as 'teamA' | 'teamB';
+      const number = parseInt(target.dataset.number || '', 10);
+      
+      if (!team || isNaN(number)) return;
+
+      const { config } = getState();
+      if (!config) return;
+
+      const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
+      if (!player) return;
+
+      const goalText = player.goals.length === 1 ? '1 goal' : `${player.goals.length} goals`;
+      const displayText = `#${player.number} ${player.name} (${goalText})`;
+      
+      if (team === 'teamA') {
+        teamAInfoDisplay.textContent = displayText;
+      } else {
+        teamBInfoDisplay.textContent = displayText;
+      }
+    }
+  };
+  
+  // --- Delegated Mouseout Listener ---
+  const handleGridMouseOut = (e: Event) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('player-btn')) {
+      const grid = target.closest('.player-grid') as HTMLDivElement;
+      const team = grid?.dataset.team as 'teamA' | 'teamB';
+      
+      if (team === 'teamA') {
+        teamAInfoDisplay.innerHTML = '&nbsp;'; // Use &nbsp; to maintain height
+      } else {
+        teamBInfoDisplay.innerHTML = '&nbsp;';
+      }
     }
   };
 
@@ -323,6 +370,8 @@ export function render(container: HTMLElement) {
   // --- Add Event Listeners ---
   
   controllerGrid.addEventListener('click', handleGridClick);
+  controllerGrid.addEventListener('mouseover', handleGridMouseOver);
+  controllerGrid.addEventListener('mouseout', handleGridMouseOut);
 
   startStopToggle.addEventListener('click', () => {
     if (getState().timer.isRunning) {
@@ -390,5 +439,7 @@ export function render(container: HTMLElement) {
   return () => {
     unsubscribe(updateUI);
     controllerGrid.removeEventListener('click', handleGridClick);
+    controllerGrid.removeEventListener('mouseover', handleGridMouseOver);
+    controllerGrid.removeEventListener('mouseout', handleGridMouseOut);
   };
 }
