@@ -10,8 +10,8 @@ export interface PlayerConfig {
   number: number;
   name: string;
   onField: boolean;
-  yellowCards: number[]; // <-- Updated
-  redCards: number[];   // <-- Updated
+  yellowCards: number[];
+  redCards: number[];
   goals: number[];
 }
 
@@ -47,7 +47,6 @@ export interface ScoreboardStyleConfig {
   timerPosition: "Under" | "Right";
 }
 
-// --- Type for partial style updates ---
 export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>;
 
 
@@ -327,7 +326,6 @@ export async function addGoal(
   number: number,
   minute: number,
 ) {
-  // First, add the goal to the player's stats
   await post('/api/player/goal', { team, number, minute });
   
   if (appState.isAutoAddScoreOn) {
@@ -339,12 +337,11 @@ export async function addGoal(
   }
 }
 
-// --- Updated Function ---
 export async function addCard(
   team: 'teamA' | 'teamB',
   number: number,
   cardType: 'yellow' | 'red',
-  minute: number, // <-- Added minute
+  minute: number,
 ) {
   await post('/api/player/card', { team, number, card_type: cardType, minute });
 }
@@ -370,8 +367,10 @@ export async function resetTeamStats(team: 'teamA' | 'teamB') {
   await post('/api/player/resetstats', { team });
 }
 
+// --- Updated Import/Export Functions ---
 export async function downloadJson(fileName: string): Promise<Blob> {
-  const response = await fetch(`${API_URL}/api/json/${fileName}`);
+  const url = `${API_URL}/api/json/${fileName}`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('File not found or backend error.');
   }

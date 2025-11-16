@@ -8,6 +8,18 @@ import {
   uploadJson
 } from '../stateManager';
 
+// --- Helper Function ---
+function getFriendlyFileName(fileName: string): string {
+  switch (fileName) {
+    case 'team-info-config.json':
+      return 'Team Info & Rosters';
+    case 'scoreboard-customization.json':
+      return 'Scoreboard Style & Layout';
+    default:
+      return fileName;
+  }
+}
+
 export function render(container: HTMLElement) {
   // Get initial state from the manager
   const { isAutoAddScoreOn, isAutoConvertYellowToRedOn } = getState();
@@ -138,7 +150,7 @@ export function render(container: HTMLElement) {
           <div class="form-group" style="flex-grow: 1;">
             <label for="json-file-select">Configuration File</label>
             <select id="json-file-select" style="padding: 8px; border-radius: 4px; width: 100%;">
-              <option value="team-info-config.json">Team Info & Rosters</option>
+              <option value="team-info-config.json">All Team Info</option>
               <option value="scoreboard-customization.json">Scoreboard Style & Layout</option>
             </select>
           </div>
@@ -225,18 +237,19 @@ export function render(container: HTMLElement) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showNotification(`Downloaded ${fileName}!`);
+      showNotification(`Exported ${getFriendlyFileName(fileName)}!`);
     } catch (error: any) {
-      showNotification(`Error downloading: ${error.message}`, 'error');
+      showNotification(`Error exporting: ${error.message}`, 'error');
     }
   });
   
   // "Import" (Upload) Button - Show Modal
   importBtn.addEventListener('click', () => {
     const fileName = fileSelect.value;
-    importModalTitle.textContent = `Import (Upload) to ${fileName}`;
+    importModalTitle.textContent = `Import (Upload) to ${getFriendlyFileName(fileName)}`;
     importTextarea.value = '';
     importFileName.textContent = 'No file chosen';
+    importFileInput.value = ''; // <-- This is the fix
     importModal.style.display = 'flex';
   });
   
@@ -276,7 +289,7 @@ export function render(container: HTMLElement) {
       
       await uploadJson(fileName, jsonData);
       
-      showNotification(`Successfully imported ${fileName}! Data is now active.`);
+      showNotification(`Successfully imported ${getFriendlyFileName(fileName)}! Data is now active.`);
       importModal.style.display = 'none';
     } catch (error: any) {
       console.error(error);

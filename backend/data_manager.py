@@ -28,35 +28,35 @@ BUNDLED_STYLE_FILE = resource_path("scoreboard-customization.json")
 
 
 class ScoreboardStyleConfig(BaseModel):
-    primary: str
-    secondary: str
+    primary: str = "#000000"
+    secondary: str = "#FFFFFF"
     opacity: int = Field(default=75, ge=50, le=100)
     scale: int = Field(default=100, ge=50, le=150)
     matchInfo: str = ""
     timerPosition: Literal["Under", "Right"] = "Under"
 
 class ColorConfig(BaseModel):
-    primary: str
-    secondary: str
+    primary: str = "#FF0000"
+    secondary: str = "#FFFFFF"
 
 class PlayerConfig(BaseModel):
     number: int
     name: str
     onField: bool = False
-    yellowCards: List[int] = [] # <-- Updated
-    redCards: List[int] = []   # <-- Updated
+    yellowCards: List[int] = []
+    redCards: List[int] = []
     goals: List[int] = []
 
 class TeamConfig(BaseModel):
-    name: str
-    abbreviation: str
-    score: int
-    colors: ColorConfig
+    name: str = "TEAM"
+    abbreviation: str = "TMA"
+    score: int = 0
+    colors: ColorConfig = Field(default_factory=ColorConfig)
     players: List[PlayerConfig] = []
 
 class ScoreboardConfig(BaseModel):
-    teamA: TeamConfig
-    teamB: TeamConfig
+    teamA: TeamConfig = Field(default_factory=TeamConfig)
+    teamB: TeamConfig = Field(default_factory=TeamConfig)
 
 class TeamInfoUpdate(BaseModel):
     teamA: dict
@@ -91,7 +91,7 @@ class AddCardUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
     number: int
     card_type: Literal["yellow", "red"]
-    minute: int # <-- Updated
+    minute: int
 
 class ToggleOnFieldUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
@@ -104,8 +104,8 @@ class EditPlayerUpdate(BaseModel):
     number: int
     name: str
     onField: bool
-    yellowCards: List[int] # <-- Updated
-    redCards: List[int]   # <-- Updated
+    yellowCards: List[int]
+    redCards: List[int]
     goals: List[int]
 
 class ResetStatsUpdate(BaseModel):
@@ -138,7 +138,6 @@ class DataManager:
         self._config_lock = asyncio.Lock()
         self._style_lock = asyncio.Lock()
 
-    # --- Internal save method, assumes lock is already held ---
     async def _save_config_nolock(self):
         if self.config is None: return
         try:
@@ -148,19 +147,17 @@ class DataManager:
         except Exception as e:
             print(f"!!! Critical Error saving config to {self.file_path}: {e}")
 
-    # --- Public-facing save method, acquires lock ---
     async def save_config(self):
         async with self._config_lock:
             await self._save_config_nolock()
 
-    # --- Internal style save method, assumes lock is already held ---
     async def _save_scoreboard_style_nolock(self):
         if self.scoreboard_style is None:
-            self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+            self.scoreboard_style = ScoreboardStyleConfig()
             
         if not isinstance(self.scoreboard_style, ScoreboardStyleConfig):
              print("Error: scoreboard_style is not a valid ScoreboardStyleConfig instance. Resetting.")
-             self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+             self.scoreboard_style = ScoreboardStyleConfig()
         
         try:
             async with aiofiles.open(self.scoreboard_style_path, mode='w') as f:
@@ -169,7 +166,6 @@ class DataManager:
         except Exception as e:
             print(f"!!! Critical Error saving scoreboard style to {self.scoreboard_style_path}: {e}")
 
-    # --- Public-facing style save method, acquires lock ---
     async def save_scoreboard_style(self):
         async with self._style_lock:
             await self._save_scoreboard_style_nolock()
@@ -235,8 +231,9 @@ class DataManager:
                     print("Loaded from bundled default and created new writable style file.")
                 except Exception as e:
                     print(f"CRITICAL: Could not load bundled style '{BUNDLED_STYLE_FILE}': {e}")
-                    self.scoreboard_style = ScoreboardStyleConfig(primary="#000000", secondary="#FFFFFF", matchInfo="", timerPosition="Under")
+                    self.scoreboard_style = ScoreboardStyleConfig()
                     await self._save_scoreboard_style_nolock()
+
 
     async def get_raw_json(self, file_name: str) -> str:
         path_to_read = None
