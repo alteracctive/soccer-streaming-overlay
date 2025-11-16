@@ -271,7 +271,7 @@ button.btn-red {
   font-weight: bold;
 }
 
-/* --- New Player Info Display --- */
+/* --- Player Info Display --- */
 .player-info-display {
   font-size: 13px;
   font-weight: 500;
@@ -605,10 +605,8 @@ button.btn-red {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-
-  /* Add CSS variables */
-  --scoreboard-bg: rgba(0, 0, 0, 0.75); /* Default background */
-  --scoreboard-text: #FFFFFF; /* Default text */
+  --scoreboard-bg: rgba(0, 0, 0, 0.75);
+  --scoreboard-text: #FFFFFF;
 }
 
 .score-row {
@@ -617,11 +615,8 @@ button.btn-red {
   justify-content: space-between;
   font-size: 32px;
   font-weight: bold;
-
-  /* Use CSS variables */
   background-color: var(--scoreboard-bg);
   color: var(--scoreboard-text);
-
   border-radius: 8px;
   padding: 8px 16px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -634,11 +629,8 @@ button.btn-red {
   font-size: 28px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
-
-  /* Use CSS variables */
   background-color: var(--scoreboard-bg);
   color: var(--scoreboard-text);
-
   border-radius: 8px;
   padding: 5px 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -734,10 +726,12 @@ button.btn-red {
   vertical-align: middle;
 }
 
+/* --- This is the FIX --- */
 .player-list-table th {
   background-color: var(--bg-color);
   position: sticky;
   top: 0;
+  z-index: 1; /* <-- This line fixes the bug */
 }
 
 .player-list-table th:nth-child(1), .player-list-table td:nth-child(1) { width: 40px; text-align: center; } /* Number */
@@ -950,8 +944,8 @@ button.btn-red {
 }
 
 .import-export-modal .btn-file-upload {
-  display: block; /* <-- Added */
-  cursor: pointer; /* <-- Added */
+  display: block; 
+  cursor: pointer; 
   width: 100%;
   text-align: center;
   background-color: var(--sidebar-bg);
