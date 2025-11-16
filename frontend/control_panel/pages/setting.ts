@@ -5,14 +5,16 @@ import {
   setAutoAddScore, 
   setAutoConvertYellowToRed,
   downloadJson,
-  uploadJson
+  uploadJson,
+  getRawJson, // <-- New import
+  type ScoreboardConfig,
+  type TeamConfig
 } from '../stateManager';
 
-// --- Helper Function ---
 function getFriendlyFileName(fileName: string): string {
   switch (fileName) {
     case 'team-info-config.json':
-      return 'Team Info & Rosters';
+      return 'All Team Info';
     case 'scoreboard-customization.json':
       return 'Scoreboard Style & Layout';
     default:
@@ -20,8 +22,39 @@ function getFriendlyFileName(fileName: string): string {
   }
 }
 
+function createPartialConfig(config: ScoreboardConfig, team: 'teamA' | 'teamB'): object {
+  const teamToKeep = (team === 'teamA') ? config.teamA : config.teamB;
+  
+  const emptyTeam = {
+    name: "TEAM B",
+    abbreviation: "TMB",
+    score: -1, // <-- The key identifier
+    colors: {
+      primary: "#0000FF",
+      secondary: "#FFFFFF"
+    },
+    players: []
+  };
+
+  return {
+    teamA: teamToKeep,
+    teamB: emptyTeam
+  };
+}
+
+function triggerDownload(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+
 export function render(container: HTMLElement) {
-  // Get initial state from the manager
   const { isAutoAddScoreOn, isAutoConvertYellowToRedOn } = getState();
   const isDarkMode = document.body.classList.contains('dark-mode');
 
@@ -103,6 +136,43 @@ export function render(container: HTMLElement) {
         </div>
       </div>
     </div>
+    
+    <div class="modal-overlay export-options-modal" id="export-options-modal" style="display: none;">
+      <div class="modal-content">
+        <h4>Export Options</h4>
+        <p style="text-align: center;">Which team's info do you want to export?</p>
+        <div class="modal-buttons">
+          <button id="modal-export-both-btn">Both Teams</button>
+          <button id="modal-export-a-btn">Team A Only</button>
+          <button id="modal-export-b-btn">Team B Only</button>
+          <button id="modal-export-options-cancel-btn" class="btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay export-view-modal" id="export-view-modal" style="display: none;">
+      <div class="modal-content">
+        <h4 id="export-view-modal-title">Export File Content</h4>
+        <textarea id="export-view-textarea" readonly></textarea>
+        <div class="modal-buttons">
+          <button id="modal-export-view-cancel-btn" class="btn-secondary">Close</button>
+          <button id="modal-copy-btn" class="btn-secondary">Copy to Clipboard</button>
+          <button id="modal-download-btn" class="btn-green">Download File</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-overlay team-assign-modal" id="team-assign-modal" style="display: none;">
+      <div class="modal-content">
+        <h4>Single Team File Detected</h4>
+        <p style="text-align: center;">This file contains data for one team. Which team do you want to overwrite?</p>
+        <div class="modal-buttons">
+          <button id="modal-assign-a-btn" class="btn-green">Overwrite Team A</button>
+          <button id="modal-assign-b-btn" class="btn-green">Overwrite Team B</button>
+          <button id="modal-assign-cancel-btn" class="btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
 
 
     <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -167,6 +237,11 @@ export function render(container: HTMLElement) {
     </div>
   `;
 
+  // --- Local state for export/import ---
+  let currentExportBlob: Blob | null = null;
+  let currentExportFileName: string = '';
+  let teamDataToImport: TeamConfig | null = null;
+
   // --- Get Element References ---
   const themeToggle = container.querySelector(
     '#theme-toggle',
@@ -183,7 +258,7 @@ export function render(container: HTMLElement) {
   const importBtn = container.querySelector('#import-btn') as HTMLButtonElement;
   const exportBtn = container.querySelector('#export-btn') as HTMLButtonElement;
   
-  // Modal Refs
+  // Import Modal Refs
   const importModal = container.querySelector('#import-modal') as HTMLDivElement;
   const importModalTitle = container.querySelector('#import-modal-title') as HTMLHeadingElement;
   const importTextarea = container.querySelector('#import-json-textarea') as HTMLTextAreaElement;
@@ -191,6 +266,27 @@ export function render(container: HTMLElement) {
   const importFileName = container.querySelector('#import-file-name') as HTMLSpanElement;
   const modalImportCancelBtn = container.querySelector('#modal-import-cancel-btn') as HTMLButtonElement;
   const modalImportSaveBtn = container.querySelector('#modal-import-save-btn') as HTMLButtonElement;
+  
+  // Export Options Modal Refs
+  const exportOptionsModal = container.querySelector('#export-options-modal') as HTMLDivElement;
+  const exportBothBtn = container.querySelector('#modal-export-both-btn') as HTMLButtonElement;
+  const exportABtn = container.querySelector('#modal-export-a-btn') as HTMLButtonElement;
+  const exportBBtn = container.querySelector('#modal-export-b-btn') as HTMLButtonElement;
+  const exportOptionsCancelBtn = container.querySelector('#modal-export-options-cancel-btn') as HTMLButtonElement;
+  
+  // Export View Modal Refs
+  const exportViewModal = container.querySelector('#export-view-modal') as HTMLDivElement;
+  const exportViewModalTitle = container.querySelector('#export-view-modal-title') as HTMLHeadingElement;
+  const exportViewTextarea = container.querySelector('#export-view-textarea') as HTMLTextAreaElement;
+  const modalExportViewCancelBtn = container.querySelector('#modal-export-view-cancel-btn') as HTMLButtonElement;
+  const modalCopyBtn = container.querySelector('#modal-copy-btn') as HTMLButtonElement;
+  const modalDownloadBtn = container.querySelector('#modal-download-btn') as HTMLButtonElement;
+
+  // Team Assign Modal Refs
+  const teamAssignModal = container.querySelector('#team-assign-modal') as HTMLDivElement;
+  const assignTeamABtn = container.querySelector('#modal-assign-a-btn') as HTMLButtonElement;
+  const assignTeamBBtn = container.querySelector('#modal-assign-b-btn') as HTMLButtonElement;
+  const assignCancelBtn = container.querySelector('#modal-assign-cancel-btn') as HTMLButtonElement;
 
 
   // --- Add Event Listeners ---
@@ -222,24 +318,102 @@ export function render(container: HTMLElement) {
     );
   });
   
-  // --- Updated Import/Export Listeners ---
+  // --- Import/Export Listeners ---
+
+  // --- Export View Modal ---
+  const showExportViewModal = (fileName: string, content: string, blob: Blob) => {
+    currentExportBlob = blob;
+    currentExportFileName = fileName;
+    exportViewModalTitle.textContent = `Export: ${fileName}`;
+    exportViewTextarea.value = content;
+    exportViewModal.style.display = 'flex';
+  };
+  
+  const hideExportViewModal = () => {
+    exportViewModal.style.display = 'none';
+    currentExportBlob = null;
+    currentExportFileName = '';
+  };
+  
+  modalExportViewCancelBtn.addEventListener('click', hideExportViewModal);
+  
+  modalCopyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(exportViewTextarea.value);
+    showNotification('Copied to clipboard!');
+  });
+  
+  modalDownloadBtn.addEventListener('click', () => {
+    if (currentExportBlob && currentExportFileName) {
+      triggerDownload(currentExportBlob, currentExportFileName);
+      hideExportViewModal();
+    } else {
+      showNotification('Error: No export data found.', 'error');
+    }
+  });
+
+  // --- Export Options Modal ---
+  const hideExportOptionsModal = () => {
+    exportOptionsModal.style.display = 'none';
+  };
+  
+  const handleDownload = async (type: 'all' | 'teamA' | 'teamB') => {
+    hideExportOptionsModal();
+    const { config } = getState();
+    if (!config) {
+      showNotification('Config not loaded.', 'error');
+      return;
+    }
+    
+    const baseFileName = 'team-info-config.json';
+    
+    try {
+      const blob = await downloadJson(baseFileName); 
+      
+      if (type === 'all') {
+        const content = await blob.text();
+        const teamAAbbr = config.teamA.abbreviation || 'TMA';
+        const teamBAbbr = config.teamB.abbreviation || 'TMB';
+        const downloadName = `${teamAAbbr}-vs-${teamBAbbr}.json`;
+        showExportViewModal(downloadName, content, blob);
+
+      } else {
+        const originalJsonString = await blob.text();
+        const originalConfig = JSON.parse(originalJsonString) as ScoreboardConfig;
+        
+        const modifiedConfig = createPartialConfig(originalConfig, type);
+        const modifiedJsonString = JSON.stringify(modifiedConfig, null, 2);
+        const newBlob = new Blob([modifiedJsonString], { type: 'application/json' });
+        
+        const teamName = (type === 'teamA' ? config.teamA.name : config.teamB.name) || type;
+        const downloadName = `${teamName.replace(/\s+/g, '')}-info.json`;
+        
+        showExportViewModal(downloadName, modifiedJsonString, newBlob);
+      }
+    } catch (error: any) {
+      showNotification(`Error exporting: ${error.message}`, 'error');
+    }
+  };
+  
+  exportBothBtn.addEventListener('click', () => handleDownload('all'));
+  exportABtn.addEventListener('click', () => handleDownload('teamA'));
+  exportBBtn.addEventListener('click', () => handleDownload('teamB'));
+  exportOptionsCancelBtn.addEventListener('click', hideExportOptionsModal);
+
   
   // "Export" (Download) Button
   exportBtn.addEventListener('click', async () => {
     const fileName = fileSelect.value;
-    try {
-      const blob = await downloadJson(fileName);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showNotification(`Exported ${getFriendlyFileName(fileName)}!`);
-    } catch (error: any) {
-      showNotification(`Error exporting: ${error.message}`, 'error');
+    
+    if (fileName === 'team-info-config.json') {
+      exportOptionsModal.style.display = 'flex';
+    } else {
+      try {
+        const blob = await downloadJson(fileName);
+        const content = await blob.text();
+        showExportViewModal(fileName, content, blob);
+      } catch (error: any) {
+        showNotification(`Error exporting: ${error.message}`, 'error');
+      }
     }
   });
   
@@ -249,7 +423,7 @@ export function render(container: HTMLElement) {
     importModalTitle.textContent = `Import (Upload) to ${getFriendlyFileName(fileName)}`;
     importTextarea.value = '';
     importFileName.textContent = 'No file chosen';
-    importFileInput.value = ''; // <-- This is the fix
+    importFileInput.value = ''; 
     importModal.style.display = 'flex';
   });
   
@@ -272,10 +446,58 @@ export function render(container: HTMLElement) {
       importFileName.textContent = 'No file chosen';
     }
   });
+
+  // --- Team Assign Modal Logic ---
+  const hideTeamAssignModal = () => {
+    teamAssignModal.style.display = 'none';
+    teamDataToImport = null;
+  };
+  
+  const handleTeamImport = async (targetTeam: 'teamA' | 'teamB') => {
+    if (!teamDataToImport) {
+      showNotification('Error: No team data to import.', 'error');
+      return;
+    }
+    
+    try {
+      assignTeamABtn.disabled = true;
+      assignTeamBBtn.disabled = true;
+      
+      // 1. Fetch the *current* full config
+      const currentConfigJson = await getRawJson('team-info-config.json');
+      const currentConfig = JSON.parse(currentConfigJson) as ScoreboardConfig;
+      
+      // 2. Overwrite the selected team
+      if (targetTeam === 'teamA') {
+        currentConfig.teamA = teamDataToImport;
+      } else {
+        currentConfig.teamB = teamDataToImport;
+      }
+      
+      // 3. Stringify and upload the *modified full* config
+      const newJsonData = JSON.stringify(currentConfig, null, 2);
+      await uploadJson('team-info-config.json', newJsonData);
+      
+      showNotification(`Successfully imported data to ${targetTeam}!`);
+      hideTeamAssignModal();
+
+    } catch (error: any) {
+      console.error(error);
+      showNotification(`Import Failed: ${error.message}`, 'error');
+    } finally {
+      assignTeamABtn.disabled = false;
+      assignTeamBBtn.disabled = false;
+    }
+  };
+  
+  assignTeamABtn.addEventListener('click', () => handleTeamImport('teamA'));
+  assignTeamBBtn.addEventListener('click', () => handleTeamImport('teamB'));
+  assignCancelBtn.addEventListener('click', hideTeamAssignModal);
+  
   
   // Modal: Save (Validate and Overwrite) Button
   modalImportSaveBtn.addEventListener('click', async () => {
-    const fileName = fileSelect.value;
+    const fileName = fileSelect.value as "team-info-config.json" | "scoreboard-customization.json";
     const jsonData = importTextarea.value;
     
     if (!jsonData.trim()) {
@@ -287,10 +509,32 @@ export function render(container: HTMLElement) {
       modalImportSaveBtn.disabled = true;
       modalImportSaveBtn.textContent = 'Validating...';
       
+      // --- New Validation Logic ---
+      let uploadedConfig;
+      try {
+        uploadedConfig = JSON.parse(jsonData);
+      } catch (e) {
+        throw new Error('Data is not valid JSON.');
+      }
+      
+      // Check if it's a team-info file
+      if (fileName === 'team-info-config.json') {
+        // Check for single-team format
+        if (uploadedConfig.teamA && uploadedConfig.teamB && uploadedConfig.teamB.score === -1) {
+          teamDataToImport = uploadedConfig.teamA as TeamConfig;
+          importModal.style.display = 'none'; // Hide this modal
+          teamAssignModal.style.display = 'flex'; // Show the new modal
+          return; // Stop here, let the new modal's logic take over
+        }
+      }
+      
+      // If it's not a single-team file, or if it's scoreboard-customization.json,
+      // proceed with the normal full upload.
       await uploadJson(fileName, jsonData);
       
       showNotification(`Successfully imported ${getFriendlyFileName(fileName)}! Data is now active.`);
       importModal.style.display = 'none';
+      
     } catch (error: any) {
       console.error(error);
       showNotification(`Import Failed: ${error.message}`, 'error');

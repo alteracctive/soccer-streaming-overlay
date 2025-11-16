@@ -279,7 +279,7 @@ button.btn-red {
   opacity: 0.8;
   text-align: center;
   margin-top: 8px;
-  height: 1.5em; /* Reserve space */
+  height: 1.5em; 
   line-height: 1.5em;
   white-space: nowrap;
   overflow: hidden;
@@ -726,12 +726,11 @@ button.btn-red {
   vertical-align: middle;
 }
 
-/* --- This is the FIX --- */
 .player-list-table th {
   background-color: var(--bg-color);
   position: sticky;
   top: 0;
-  z-index: 1; /* <-- This line fixes the bug */
+  z-index: 1; 
 }
 
 .player-list-table th:nth-child(1), .player-list-table td:nth-child(1) { width: 40px; text-align: center; } /* Number */
@@ -957,4 +956,49 @@ button.btn-red {
   background-color: var(--bg-color);
   border-color: var(--accent-color);
   opacity: 1;
+}
+
+/* --- New Export Options Modal --- */
+.export-options-modal .modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.export-options-modal .modal-buttons button {
+  width: 100%;
+}
+.export-options-modal .modal-buttons .btn-secondary {
+  margin-top: 8px;
+}
+
+/* --- New Export View Modal --- */
+.export-view-modal .modal-content {
+  max-width: 600px;
+}
+.export-view-modal textarea {
+  width: 100%;
+  height: 300px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px;
+  resize: vertical;
+  margin-bottom: 16px;
+}
+
+/* --- New Team Assign Modal --- */
+.team-assign-modal .modal-buttons {
+  flex-direction: column;
+  gap: 8px;
+}
+.team-assign-modal .modal-buttons button {
+  width: 100%;
+  font-size: 16px;
+  padding: 12px;
+}
+.team-assign-modal .modal-buttons .btn-secondary {
+  margin-top: 8px;
 }

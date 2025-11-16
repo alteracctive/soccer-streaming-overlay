@@ -377,6 +377,16 @@ export async function downloadJson(fileName: string): Promise<Blob> {
   return await response.blob();
 }
 
+// --- New Function ---
+export async function getRawJson(fileName: string): Promise<string> {
+  const url = `${API_URL}/api/json/${fileName}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('File not found or backend error.');
+  }
+  return await response.text();
+}
+
 export async function uploadJson(fileName: string, jsonData: string) {
   await post('/api/json/upload', { file_name: fileName, json_data: jsonData });
 }
