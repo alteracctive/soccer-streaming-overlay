@@ -4,9 +4,12 @@ import {
   getState, 
   setAutoAddScore, 
   setAutoConvertYellowToRed,
+  setFutsalClock, // <-- New
   downloadJson,
   uploadJson,
-  getRawJson, // <-- New import
+  getRawJson,
+  subscribe, // <-- New
+  unsubscribe, // <-- New
   type ScoreboardConfig,
   type TeamConfig
 } from '../stateManager';
@@ -28,7 +31,7 @@ function createPartialConfig(config: ScoreboardConfig, team: 'teamA' | 'teamB'):
   const emptyTeam = {
     name: "TEAM B",
     abbreviation: "TMB",
-    score: -1, // <-- The key identifier
+    score: -1,
     colors: {
       primary: "#0000FF",
       secondary: "#FFFFFF"
@@ -55,7 +58,8 @@ function triggerDownload(blob: Blob, fileName: string) {
 
 
 export function render(container: HTMLElement) {
-  const { isAutoAddScoreOn, isAutoConvertYellowToRedOn } = getState();
+  // Get initial state from the manager
+  const { isAutoAddScoreOn, isAutoConvertYellowToRedOn, isFutsalClockOn } = getState();
   const isDarkMode = document.body.classList.contains('dark-mode');
 
   container.innerHTML = `
@@ -212,6 +216,19 @@ export function render(container: HTMLElement) {
         <p style="font-size: 13px; opacity: 0.8; margin-top: 8px; margin-bottom: 0;">
           When ON, giving a player their 2nd yellow card will automatically give them a red card.
         </p>
+        
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 16px 0;">
+
+        <div class="form-group switch-toggle">
+          <label for="futsal-clock-toggle">Futsal Clock (Countdown)</label>
+          <label class="switch">
+            <input type="checkbox" id="futsal-clock-toggle" ${isFutsalClockOn ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p style="font-size: 13px; opacity: 0.8; margin-top: 8px; margin-bottom: 0;">
+          When ON, the timer will count down and stop at 00:00. Changing this setting will stop the timer.
+        </p>
       </div>
       
       <div class="card">
@@ -252,6 +269,9 @@ export function render(container: HTMLElement) {
   const autoConvertToggle = container.querySelector(
     '#auto-convert-toggle',
   ) as HTMLInputElement;
+  const futsalClockToggle = container.querySelector( // <-- New
+    '#futsal-clock-toggle',
+  ) as HTMLInputElement;
     
   // Import/Export Refs
   const fileSelect = container.querySelector('#json-file-select') as HTMLSelectElement;
@@ -287,6 +307,16 @@ export function render(container: HTMLElement) {
   const assignTeamABtn = container.querySelector('#modal-assign-a-btn') as HTMLButtonElement;
   const assignTeamBBtn = container.querySelector('#modal-assign-b-btn') as HTMLButtonElement;
   const assignCancelBtn = container.querySelector('#modal-assign-cancel-btn') as HTMLButtonElement;
+  
+  
+  // --- New: State Update Handler ---
+  const onStateUpdate = () => {
+    const { isFutsalClockOn } = getState();
+    if (futsalClockToggle) {
+      futsalClockToggle.checked = isFutsalClockOn;
+    }
+  };
+  subscribe(onStateUpdate);
 
 
   // --- Add Event Listeners ---
@@ -315,6 +345,15 @@ export function render(container: HTMLElement) {
     setAutoConvertYellowToRed(autoConvertToggle.checked);
     showNotification(
       `Auto-convert 2-to-1 ${autoConvertToggle.checked ? 'Enabled' : 'Disabled'}`,
+    );
+  });
+  
+  // --- New: Futsal Clock Toggle ---
+  futsalClockToggle.addEventListener('change', () => {
+    const isOn = futsalClockToggle.checked;
+    setFutsalClock(isOn);
+    showNotification(
+      `Futsal Clock ${isOn ? 'Enabled' : 'Disabled'}. Timer stopped.`,
     );
   });
   
@@ -420,6 +459,11 @@ export function render(container: HTMLElement) {
   // "Import" (Upload) Button - Show Modal
   importBtn.addEventListener('click', () => {
     const fileName = fileSelect.value;
+    if (fileName !== 'team-info-config.json' && fileName !== 'scoreboard-customization.json') {
+      showNotification('Please select a full config file to import.', 'error');
+      return;
+    }
+    
     importModalTitle.textContent = `Import (Upload) to ${getFriendlyFileName(fileName)}`;
     importTextarea.value = '';
     importFileName.textContent = 'No file chosen';
@@ -463,18 +507,15 @@ export function render(container: HTMLElement) {
       assignTeamABtn.disabled = true;
       assignTeamBBtn.disabled = true;
       
-      // 1. Fetch the *current* full config
       const currentConfigJson = await getRawJson('team-info-config.json');
       const currentConfig = JSON.parse(currentConfigJson) as ScoreboardConfig;
       
-      // 2. Overwrite the selected team
       if (targetTeam === 'teamA') {
         currentConfig.teamA = teamDataToImport;
       } else {
         currentConfig.teamB = teamDataToImport;
       }
       
-      // 3. Stringify and upload the *modified full* config
       const newJsonData = JSON.stringify(currentConfig, null, 2);
       await uploadJson('team-info-config.json', newJsonData);
       
@@ -509,7 +550,6 @@ export function render(container: HTMLElement) {
       modalImportSaveBtn.disabled = true;
       modalImportSaveBtn.textContent = 'Validating...';
       
-      // --- New Validation Logic ---
       let uploadedConfig;
       try {
         uploadedConfig = JSON.parse(jsonData);
@@ -517,19 +557,15 @@ export function render(container: HTMLElement) {
         throw new Error('Data is not valid JSON.');
       }
       
-      // Check if it's a team-info file
       if (fileName === 'team-info-config.json') {
-        // Check for single-team format
         if (uploadedConfig.teamA && uploadedConfig.teamB && uploadedConfig.teamB.score === -1) {
           teamDataToImport = uploadedConfig.teamA as TeamConfig;
-          importModal.style.display = 'none'; // Hide this modal
-          teamAssignModal.style.display = 'flex'; // Show the new modal
-          return; // Stop here, let the new modal's logic take over
+          importModal.style.display = 'none';
+          teamAssignModal.style.display = 'flex';
+          return; 
         }
       }
       
-      // If it's not a single-team file, or if it's scoreboard-customization.json,
-      // proceed with the normal full upload.
       await uploadJson(fileName, jsonData);
       
       showNotification(`Successfully imported ${getFriendlyFileName(fileName)}! Data is now active.`);
@@ -543,4 +579,9 @@ export function render(container: HTMLElement) {
       modalImportSaveBtn.textContent = 'Validate and Overwrite';
     }
   });
+
+  // Return a cleanup function
+  return () => {
+    unsubscribe(onStateUpdate);
+  };
 }

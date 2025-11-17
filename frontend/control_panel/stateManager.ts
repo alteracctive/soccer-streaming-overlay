@@ -45,9 +45,17 @@ export interface ScoreboardStyleConfig {
   scale: number;
   matchInfo: string;
   timerPosition: "Under" | "Right";
+  showRedCardBoxes: boolean;
 }
 
-export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>;
+// --- Updated Type ---
+export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition' | 'showRedCardBoxes'>;
+
+// --- New Interface ---
+export interface LayoutConfig {
+  position: "Under" | "Right";
+  showRedCardBoxes: boolean;
+}
 
 
 // --- API and WebSocket URLs ---
@@ -67,11 +75,20 @@ let appState: {
   isAutoConvertYellowToRedOn: boolean;
   extraTime: ExtraTimeStatus;
   isMatchInfoVisible: boolean;
+  isFutsalClockOn: boolean;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
-  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "", timerPosition: "Under" },
+  scoreboardStyle: { 
+    primary: '#000000', 
+    secondary: '#FFFFFF', 
+    opacity: 75, 
+    scale: 100, 
+    matchInfo: "", 
+    timerPosition: "Under",
+    showRedCardBoxes: false
+  },
   isGameReportVisible: false, 
   isScoreboardVisible: true,
   isPlayersListVisible: false,
@@ -79,6 +96,7 @@ let appState: {
   isAutoConvertYellowToRedOn: false,
   extraTime: { minutes: 0, isVisible: false },
   isMatchInfoVisible: false,
+  isFutsalClockOn: false,
 };
 
 export const stateEmitter = new EventTarget();
@@ -134,6 +152,11 @@ function updateExtraTimeStatus(status: ExtraTimeStatus) {
 
 function updateMatchInfoVisibility(isVisible: boolean) {
   appState.isMatchInfoVisible = isVisible;
+  stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
+function updateFutsalClockStatus(isOn: boolean) {
+  appState.isFutsalClockOn = isOn;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
@@ -193,6 +216,9 @@ function connectWebSocket() {
     else if (message.type === 'match_info_visibility') {
       updateMatchInfoVisibility(message.isVisible as boolean);
     }
+    else if (message.type === 'futsal_clock_status') {
+      updateFutsalClockStatus(message.isOn as boolean);
+    }
   };
 
   ws.onclose = () => {
@@ -216,7 +242,7 @@ export async function initStateManager() {
 
   const savedAutoConvert = localStorage.getItem('autoConvertYellowToRed');
   appState.isAutoConvertYellowToRedOn = savedAutoConvert === 'true';
-
+  
   connectWebSocket();
 }
 
@@ -250,6 +276,10 @@ export const timerControls = {
   set: (seconds: number) => post('/api/timer/set', { seconds }),
 };
 
+export async function setFutsalClock(isOn: boolean) {
+  await post('/api/timer/futsal-toggle', { is_on: isOn });
+}
+
 export async function setExtraTime(minutes: number) {
   await post('/api/extra-time/set', { minutes });
 }
@@ -277,8 +307,17 @@ export async function saveMatchInfo(info: string) {
   await post('/api/match-info', { info });
 }
 
+// --- This function was missing from your file ---
 export async function saveTimerPosition(position: 'Under' | 'Right') {
+  // This endpoint was removed and merged into saveLayout
+  // To fix your immediate error, we'll just re-add it.
   await post('/api/timer-position', { position });
+}
+// ---------------------------------------------
+
+// --- New Function ---
+export async function saveLayout(layout: LayoutConfig) {
+  await post('/api/layout', layout);
 }
 
 export async function toggleGameReport() {
@@ -295,6 +334,10 @@ export async function togglePlayersList() {
 
 export async function toggleMatchInfoVisibility() {
   await post('/api/match-info/toggle', {});
+}
+
+export async function toggleRedCardVisibility() {
+  await post('/api/red-card-visibility/toggle', {});
 }
 
 export async function addPlayer(
@@ -367,7 +410,6 @@ export async function resetTeamStats(team: 'teamA' | 'teamB') {
   await post('/api/player/resetstats', { team });
 }
 
-// --- Updated Import/Export Functions ---
 export async function downloadJson(fileName: string): Promise<Blob> {
   const url = `${API_URL}/api/json/${fileName}`;
   const response = await fetch(url);
@@ -377,7 +419,6 @@ export async function downloadJson(fileName: string): Promise<Blob> {
   return await response.blob();
 }
 
-// --- New Function ---
 export async function getRawJson(fileName: string): Promise<string> {
   const url = `${API_URL}/api/json/${fileName}`;
   const response = await fetch(url);

@@ -110,6 +110,15 @@ async def toggle_extra_time():
     status = await websocket_manager.toggle_extra_time_visibility()
     return status
 
+# --- New Model & Endpoint ---
+class SetFutsalClockUpdate(BaseModel):
+    is_on: bool
+
+@app.post("/api/timer/futsal-toggle", tags=["Timer Control"])
+async def set_futsal_clock(update: SetFutsalClockUpdate):
+    websocket_manager.set_futsal_clock(update.is_on)
+    return {"message": f"Futsal clock set to {update.is_on}"}
+
 
 # --- Team & Player Data ---
 @app.get("/api/config", tags=["Team & Player Data"])
