@@ -10,10 +10,8 @@ from typing import Literal, List
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        # Not in a PyInstaller bundle, use normal path
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
@@ -29,11 +27,13 @@ BUNDLED_STYLE_FILE = resource_path("scoreboard-customization.json")
 
 class ScoreboardStyleConfig(BaseModel):
     primary: str = "#000000"
-    secondary: str = "#FFFFFF"
+    secondary: str = "#FFFFFF"   # <-- Renamed (was textColorPrimary)
+    tertiary: str = "#ffd700"    # <-- Renamed (was textColorTertiary)
     opacity: int = Field(default=75, ge=50, le=100)
     scale: int = Field(default=100, ge=50, le=150)
     matchInfo: str = ""
     timerPosition: Literal["Under", "Right"] = "Under"
+    showRedCardBoxes: bool = False
 
 class ColorConfig(BaseModel):
     primary: str = "#FF0000"
@@ -119,12 +119,14 @@ class ReplacePlayerUpdate(BaseModel):
 class MatchInfoUpdate(BaseModel):
     info: str
 
-class TimerPositionUpdate(BaseModel):
+class LayoutUpdate(BaseModel):
     position: Literal["Under", "Right"]
+    showRedCardBoxes: bool
 
 class StyleUpdate(BaseModel):
     primary: str
-    secondary: str
+    secondary: str  # <-- Renamed
+    tertiary: str # <-- Renamed
     opacity: int
     scale: int
 
@@ -210,10 +212,27 @@ class DataManager:
                 async with aiofiles.open(self.scoreboard_style_path, mode='r') as f:
                     content = await f.read()
                     data = json.loads(content)
+                    
+                    # --- Migration Logic ---
+                    if 'textColorPrimary' in data:
+                        data['secondary'] = data.pop('textColorPrimary')
+                    if 'textColorTertiary' in data:
+                        data['tertiary'] = data.pop('textColorTertiary')
+                    if 'textColorSecondary' in data:
+                        data['tertiary'] = data.pop('textColorSecondary')
+                    # --- End Migration ---
+                        
                     if 'timerPosition' not in data:
                         data['timerPosition'] = 'Under'
                     if 'matchInfo' not in data:
                         data['matchInfo'] = ''
+                    if 'showRedCardBoxes' not in data:
+                        data['showRedCardBoxes'] = False
+                    if 'secondary' not in data:
+                        data['secondary'] = '#FFFFFF'
+                    if 'tertiary' not in data:
+                        data['tertiary'] = '#ffd700'
+                        
                     self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
                 print("Scoreboard style loaded successfully from writable file.")
             except (FileNotFoundError, ValidationError):
@@ -222,10 +241,24 @@ class DataManager:
                     async with aiofiles.open(BUNDLED_STYLE_FILE, mode='r') as f:
                         content = await f.read()
                         data = json.loads(content)
+                        # --- Migration Logic ---
+                        if 'textColorPrimary' in data:
+                            data['secondary'] = data.pop('textColorPrimary')
+                        if 'textColorTertiary' in data:
+                            data['tertiary'] = data.pop('textColorTertiary')
+                        if 'textColorSecondary' in data:
+                            data['tertiary'] = data.pop('textColorSecondary')
+                        # --- End Migration ---
                         if 'timerPosition' not in data:
                             data['timerPosition'] = 'Under'
                         if 'matchInfo' not in data:
                             data['matchInfo'] = ''
+                        if 'showRedCardBoxes' not in data:
+                            data['showRedCardBoxes'] = False
+                        if 'secondary' not in data:
+                            data['secondary'] = '#FFFFFF'
+                        if 'tertiary' not in data:
+                            data['tertiary'] = '#ffd700'
                         self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
                     await self._save_scoreboard_style_nolock()
                     print("Loaded from bundled default and created new writable style file.")
@@ -282,6 +315,7 @@ class DataManager:
         
         current_style.primary = style_update.primary
         current_style.secondary = style_update.secondary
+        current_style.tertiary = style_update.tertiary
         current_style.opacity = style_update.opacity
         current_style.scale = style_update.scale
         
@@ -296,10 +330,12 @@ class DataManager:
         await self.save_scoreboard_style()
         return style
 
-    async def update_timer_position(self, position: Literal["Under", "Right"]) -> ScoreboardStyleConfig:
+    async def update_layout(self, layout: LayoutUpdate) -> ScoreboardStyleConfig:
         style = self.get_scoreboard_style()
-        style.timerPosition = position
+        style.timerPosition = layout.position
+        style.showRedCardBoxes = layout.showRedCardBoxes
         await self.save_scoreboard_style()
+        print(f"Layout updated: Pos={layout.position}, RedCards={layout.showRedCardBoxes}")
         return style
 
     def get_config(self) -> ScoreboardConfig:

@@ -21,7 +21,6 @@ const stripAPrimary = document.getElementById('overlay-strip-a-primary') as HTML
 const stripASecondary = document.getElementById('overlay-strip-a-secondary') as HTMLDivElement;
 const stripBPrimary = document.getElementById('overlay-strip-b-primary') as HTMLDivElement;
 const stripBSecondary = document.getElementById('overlay-strip-b-secondary') as HTMLDivElement;
-// const reportTimerDisplay = document.getElementById('report-timer-display')!; // <-- Removed
 const reportTeamAName = document.getElementById('report-team-a-name')!;
 const reportTeamAScore = document.getElementById('report-team-a-score')!;
 const reportStripAPrimary = document.getElementById('report-strip-a-primary') as HTMLDivElement;
@@ -31,7 +30,7 @@ const reportTeamBScore = document.getElementById('report-team-b-score')!;
 const reportStripBPrimary = document.getElementById('report-strip-b-primary') as HTMLDivElement;
 const reportStripBSecondary = document.getElementById('report-strip-b-secondary') as HTMLDivElement;
 
-// --- New Game Report Middle Score Refs ---
+// --- Game Report Middle Score Refs ---
 const reportMiddleScoreA = document.getElementById('report-middle-score-a') as HTMLSpanElement;
 const reportMiddleScoreB = document.getElementById('report-middle-score-b') as HTMLSpanElement;
 const reportMiddleStripAPrimary = document.getElementById('report-middle-strip-a-primary') as HTMLDivElement;
@@ -136,7 +135,6 @@ const renderPlayerList = (
     .map(player => {
       const rowClass = player.onField ? '' : 'not-on-field';
       if (teamId === 'teamB') {
-        // Team B: Name first (right-aligned), Number second (left-aligned)
         return `
           <tr class="${rowClass}">
             <td>${player.name}</td>
@@ -144,7 +142,6 @@ const renderPlayerList = (
           </tr>
         `;
       } else {
-        // Team A: Number first (right-aligned), Name second (left-aligned)
         return `
           <tr class="${rowClass}">
             <td>${player.number}</td>
@@ -283,7 +280,6 @@ function updateUI() {
     if (reportStripBPrimary) reportStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportStripBSecondary) reportStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
     
-    // --- Update Middle Score Display ---
     if (reportMiddleScoreA) reportMiddleScoreA.textContent = config.teamA.score.toString();
     if (reportMiddleScoreB) reportMiddleScoreB.textContent = config.teamB.score.toString();
     if (reportMiddleStripAPrimary) reportMiddleStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
@@ -298,7 +294,6 @@ function updateUI() {
 
   // Update timers
   timerDisplay.textContent = formatTime(timer.seconds);
-  // if (reportTimerDisplay) reportTimerDisplay.textContent = formatTime(timer.seconds); // <-- Removed
   
   // Extra Time Logic
   if (extraTimeBox && extraTimeDisplay) {
@@ -316,23 +311,31 @@ function updateUI() {
     const backgroundColorWithOpacity = hexToRgba(scoreboardStyle.primary, scoreboardStyle.opacity);
     const scaleValue = Math.max(0.5, Math.min(1.5, scoreboardStyle.scale / 100));
 
+    // --- Apply New Colors ---
+    document.body.style.setProperty('--scoreboard-text-secondary', scoreboardStyle.secondary);
+    document.body.style.setProperty('--scoreboard-text-tertiary', scoreboardStyle.tertiary);
+
     if (matchInfoRow && matchInfoText) {
       checkAndApplyScroll(matchInfoRow.querySelector('.scrolling-text-wrapper'), scoreboardStyle.matchInfo);
       matchInfoRow.style.backgroundColor = backgroundColorWithOpacity;
-      matchInfoRow.style.color = scoreboardStyle.secondary;
+      matchInfoRow.style.color = scoreboardStyle.secondary; 
     }
 
-    if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.secondary; }
-    if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.secondary; }
-    if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; } 
+    if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.secondary; } 
+    if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.secondary; } 
+    if (extraTimeBox) { 
+      extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; 
+      extraTimeBox.style.color = scoreboardStyle.tertiary; 
+    } 
     if (scoreboardContainer) { 
       scoreboardContainer.style.transform = `scale(${scaleValue})`;
       
       const isRightLayout = scoreboardStyle.timerPosition === 'Right';
       scoreboardContainer.classList.toggle('timer-position-right', isRightLayout);
+      scoreboardContainer.classList.toggle('show-red-cards', scoreboardStyle.showRedCardBoxes);
       
       if (timerSectionRow) {
-        if (isRightLayout && teamBRedCount > 0) {
+        if (isRightLayout && teamBRedCount > 0 && scoreboardStyle.showRedCardBoxes) {
           const redCardWidth = (teamBRedCount >= 5 ? 28 : 16) + 8;
           timerSectionRow.style.marginLeft = `${redCardWidth}px`; 
         } else {
@@ -343,13 +346,13 @@ function updateUI() {
 
     if (gameReportContainer) {
         gameReportContainer.style.backgroundColor = backgroundColorWithOpacity;
-        gameReportContainer.style.color = scoreboardStyle.secondary;
+        gameReportContainer.style.color = scoreboardStyle.secondary; 
         gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`;
     }
     
     if (playersListContainer) {
         playersListContainer.style.backgroundColor = backgroundColorWithOpacity;
-        playersListContainer.style.color = scoreboardStyle.secondary;
+        playersListContainer.style.color = scoreboardStyle.secondary; 
         playersListContainer.style.transform = `translate(-50%, -50%) scale(${scaleValue})`;
     }
 
@@ -358,7 +361,7 @@ function updateUI() {
     if (matchInfoRow) { matchInfoRow.style.backgroundColor = ''; matchInfoRow.style.color = ''; }
     if (scoreRow) { scoreRow.style.backgroundColor = ''; scoreRow.style.color = ''; }
     if (timerRow) { timerRow.style.backgroundColor = ''; timerRow.style.color = ''; }
-    if (extraTimeBox) { extraTimeBox.style.backgroundColor = ''; }
+    if (extraTimeBox) { extraTimeBox.style.backgroundColor = ''; extraTimeBox.style.color = '#ffd700'; }
     if (scoreboardContainer) { scoreboardContainer.style.transform = 'scale(1)'; }
     if (gameReportContainer) { gameReportContainer.style.backgroundColor = ''; gameReportContainer.style.color = ''; gameReportContainer.style.transform = 'translateX(-50%) scale(1)'; }
     if (playersListContainer) { playersListContainer.style.backgroundColor = ''; playersListContainer.style.color = ''; playersListContainer.style.transform = 'translate(-50%, -50%) scale(1)'; }

@@ -4,12 +4,12 @@ import {
   getState, 
   setAutoAddScore, 
   setAutoConvertYellowToRed,
-  setFutsalClock, // <-- New
+  setFutsalClock,
   downloadJson,
   uploadJson,
   getRawJson,
-  subscribe, // <-- New
-  unsubscribe, // <-- New
+  subscribe,
+  unsubscribe,
   type ScoreboardConfig,
   type TeamConfig
 } from '../stateManager';
@@ -236,7 +236,7 @@ export function render(container: HTMLElement) {
         <div class="form-group inline-form-group" style="align-items: end;">
           <div class="form-group" style="flex-grow: 1;">
             <label for="json-file-select">Configuration File</label>
-            <select id="json-file-select" style="padding: 8px; border-radius: 4px; width: 100%;">
+            <select id="json-file-select">
               <option value="team-info-config.json">All Team Info</option>
               <option value="scoreboard-customization.json">Scoreboard Style & Layout</option>
             </select>
@@ -269,7 +269,7 @@ export function render(container: HTMLElement) {
   const autoConvertToggle = container.querySelector(
     '#auto-convert-toggle',
   ) as HTMLInputElement;
-  const futsalClockToggle = container.querySelector( // <-- New
+  const futsalClockToggle = container.querySelector(
     '#futsal-clock-toggle',
   ) as HTMLInputElement;
     
@@ -348,7 +348,7 @@ export function render(container: HTMLElement) {
     );
   });
   
-  // --- New: Futsal Clock Toggle ---
+  // Futsal Clock Toggle
   futsalClockToggle.addEventListener('change', () => {
     const isOn = futsalClockToggle.checked;
     setFutsalClock(isOn);
@@ -459,10 +459,6 @@ export function render(container: HTMLElement) {
   // "Import" (Upload) Button - Show Modal
   importBtn.addEventListener('click', () => {
     const fileName = fileSelect.value;
-    if (fileName !== 'team-info-config.json' && fileName !== 'scoreboard-customization.json') {
-      showNotification('Please select a full config file to import.', 'error');
-      return;
-    }
     
     importModalTitle.textContent = `Import (Upload) to ${getFriendlyFileName(fileName)}`;
     importTextarea.value = '';
@@ -558,6 +554,7 @@ export function render(container: HTMLElement) {
       }
       
       if (fileName === 'team-info-config.json') {
+        // Check for single-team format
         if (uploadedConfig.teamA && uploadedConfig.teamB && uploadedConfig.teamB.score === -1) {
           teamDataToImport = uploadedConfig.teamA as TeamConfig;
           importModal.style.display = 'none';

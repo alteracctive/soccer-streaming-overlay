@@ -149,14 +149,41 @@ input[type='number'] {
   width: 60px;
 }
 
+/* --- New Select (Dropdown) Styles --- */
+select {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%; 
+}
 
+body.dark-mode select {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+  border-color: var(--border-dark);
+}
+/* --------------------------------- */
+
+
+/* --- Updated Color Input Style --- */
 input[type='color'] {
   width: 100%;
   height: 38px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 4px;
+  background-color: var(--bg-color);
 }
+
+body.dark-mode input[type='color'] {
+  background-color: var(--bg-dark);
+  border-color: var(--border-dark);
+}
+/* --------------------------------- */
+
 
 button {
   padding: 8px 12px;
@@ -591,11 +618,18 @@ button.btn-red {
 .color-picker-row label {
   margin-bottom: 0; 
 }
+
+/* --- Updated Color Picker Row Style --- */
 .color-picker-row input[type='color'] {
   width: 60px; 
   height: 30px;
   padding: 2px;
+  background-color: var(--bg-color); /* Added */
 }
+body.dark-mode .color-picker-row input[type='color'] {
+  background-color: var(--bg-dark); /* Added */
+}
+/* --------------------------------- */
 
 .scoreboard-container {
   position: fixed;

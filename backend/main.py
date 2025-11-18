@@ -23,7 +23,7 @@ from data_manager import (
     ResetStatsUpdate,
     ReplacePlayerUpdate,
     MatchInfoUpdate,
-    TimerPositionUpdate
+    LayoutUpdate
 )
 from websocket_manager import websocket_manager
 
@@ -110,7 +110,6 @@ async def toggle_extra_time():
     status = await websocket_manager.toggle_extra_time_visibility()
     return status
 
-# --- New Model & Endpoint ---
 class SetFutsalClockUpdate(BaseModel):
     is_on: bool
 
@@ -250,15 +249,25 @@ async def toggle_match_info():
     status = await websocket_manager.toggle_match_info_visibility()
     return status
 
-@app.post("/api/timer-position", tags=["Scoreboard & Overlays"])
-async def update_timer_position(update: TimerPositionUpdate):
+@app.post("/api/layout", tags=["Scoreboard & Overlays"])
+async def update_layout(update: LayoutUpdate):
     try:
-        new_style = await data_manager.update_timer_position(update.position)
+        new_style = await data_manager.update_layout(update)
         await websocket_manager.broadcast_scoreboard_style(new_style)
         return new_style
     except Exception as e:
-        print(f"Error updating timer position: {e}")
+        print(f"Error updating layout: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/scoreboard-style", tags=["Scoreboard & Overlays"])
+async def update_scoreboard_style(style: StyleUpdate): 
+    try:
+        new_style = await data_manager.update_scoreboard_style(style) 
+        await websocket_manager.broadcast_scoreboard_style(new_style)
+        return new_style
+    except Exception as e:
+        print(f"Error updating scoreboard style: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save scoreboard style.")
 
 @app.post("/api/game-report/toggle", tags=["Scoreboard & Overlays"])
 async def toggle_game_report():
@@ -274,16 +283,6 @@ async def toggle_scoreboard():
 async def toggle_players_list():
     status = await websocket_manager.toggle_players_list()
     return status
-
-@app.post("/api/scoreboard-style", tags=["Scoreboard & Overlays"])
-async def update_scoreboard_style(style: StyleUpdate): 
-    try:
-        new_style = await data_manager.update_scoreboard_style(style) 
-        await websocket_manager.broadcast_scoreboard_style(new_style)
-        return new_style
-    except Exception as e:
-        print(f"Error updating scoreboard style: {e}")
-        raise HTTPException(status_code=500, detail="Failed to save scoreboard style.")
 
 
 # --- Import & Export ---

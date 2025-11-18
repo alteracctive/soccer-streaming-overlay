@@ -40,7 +40,8 @@ export interface ExtraTimeStatus {
 
 export interface ScoreboardStyleConfig {
   primary: string;
-  secondary: string;
+  secondary: string; // <-- Renamed
+  tertiary: string; // <-- Renamed
   opacity: number;
   scale: number;
   matchInfo: string;
@@ -51,7 +52,6 @@ export interface ScoreboardStyleConfig {
 // --- Updated Type ---
 export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition' | 'showRedCardBoxes'>;
 
-// --- New Interface ---
 export interface LayoutConfig {
   position: "Under" | "Right";
   showRedCardBoxes: boolean;
@@ -82,7 +82,8 @@ let appState: {
   isConnected: false,
   scoreboardStyle: { 
     primary: '#000000', 
-    secondary: '#FFFFFF', 
+    secondary: '#FFFFFF', // <-- Renamed
+    tertiary: '#ffd700', // <-- Renamed
     opacity: 75, 
     scale: 100, 
     matchInfo: "", 
@@ -307,18 +308,15 @@ export async function saveMatchInfo(info: string) {
   await post('/api/match-info', { info });
 }
 
-// --- This function was missing from your file ---
-export async function saveTimerPosition(position: 'Under' | 'Right') {
-  // This endpoint was removed and merged into saveLayout
-  // To fix your immediate error, we'll just re-add it.
-  await post('/api/timer-position', { position });
-}
-// ---------------------------------------------
-
-// --- New Function ---
 export async function saveLayout(layout: LayoutConfig) {
   await post('/api/layout', layout);
 }
+
+// --- This function is no longer used but kept for rollback ---
+export async function saveTimerPosition(position: 'Under' | 'Right') {
+  await post('/api/timer-position', { position });
+}
+// ----------------------------------------------------
 
 export async function toggleGameReport() {
   await post('/api/game-report/toggle', {});
@@ -334,10 +332,6 @@ export async function togglePlayersList() {
 
 export async function toggleMatchInfoVisibility() {
   await post('/api/match-info/toggle', {});
-}
-
-export async function toggleRedCardVisibility() {
-  await post('/api/red-card-visibility/toggle', {});
 }
 
 export async function addPlayer(

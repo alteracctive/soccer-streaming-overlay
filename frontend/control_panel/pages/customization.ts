@@ -2,11 +2,13 @@
 import {
   getState,
   saveScoreboardStyle,
-  saveTimerPosition,
-  saveMatchInfo, // <-- New import
-  toggleMatchInfoVisibility, // <-- New import
+  saveLayout,
+  saveMatchInfo,
+  toggleMatchInfoVisibility,
   subscribe,
   unsubscribe,
+  type ScoreboardStyleOnly,
+  type LayoutConfig
 } from '../stateManager';
 import { showNotification } from '../notification';
 
@@ -22,6 +24,57 @@ export function render(container: HTMLElement) {
         margin-left: 8px;
         font-style: italic;
       }
+      .switch-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .switch-toggle label {
+        margin-bottom: 0;
+        font-weight: 500;
+      }
+      .switch-toggle .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 28px;
+      }
+      .switch-toggle .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .switch-toggle .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 28px;
+      }
+      .switch-toggle .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+      }
+      .switch-toggle input:checked + .slider {
+        background-color: var(--green);
+      }
+      .switch-toggle input:focus + .slider {
+        box-shadow: 0 0 1px var(--green);
+      }
+      .switch-toggle input:checked + .slider:before {
+        transform: translateX(22px);
+      }
     </style>
 
     <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -30,15 +83,21 @@ export function render(container: HTMLElement) {
         <h3>Scoreboard Style <span id="unsaved-style" class="unsaved-indicator"></span></h3>
         <div style="margin-top: 10px;">
           <div class="color-picker-row">
-             <label id="sb-color-primary-label" for="sb-color-primary">Box Color (Main)</label>
+             <label id="sb-color-primary-label" for="sb-color-primary">Primary Color (Box)</label>
              <input type="color" id="sb-color-primary" value="${
                scoreboardStyle?.primary ?? '#000000'
              }">
           </div>
           <div class="color-picker-row">
-             <label id="sb-color-secondary-label" for="sb-color-secondary">Text Color (Primary)</label>
+             <label id="sb-color-secondary-label" for="sb-color-secondary">Secondary Color (Main Text)</label>
              <input type="color" id="sb-color-secondary" value="${
                scoreboardStyle?.secondary ?? '#FFFFFF'
+             }">
+          </div>
+          <div class="color-picker-row">
+             <label id="sb-color-tertiary-label" for="sb-color-tertiary">Tertiary Color (Accent Text)</label>
+             <input type="color" id="sb-color-tertiary" value="${
+               scoreboardStyle?.tertiary ?? '#ffd700'
              }">
           </div>
 
@@ -89,7 +148,7 @@ export function render(container: HTMLElement) {
         <h3>Scoreboard Layout <span id="unsaved-layout" class="unsaved-indicator"></span></h3>
         <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
           <label id="timer-position-label" for="timer-position-select" style="margin-bottom: 0; font-weight: 500;">Timer Position</label>
-          <select id="timer-position-select" style="padding: 8px; border-radius: 4px; min-width: 120px;">
+          <select id="timer-position-select" style="min-width: 120px;">
             <option value="Under" ${
               scoreboardStyle?.timerPosition === 'Under' ? 'selected' : ''
             }>Under</option>
@@ -98,6 +157,15 @@ export function render(container: HTMLElement) {
             }>Right</option>
           </select>
         </div>
+        
+        <div class="form-group switch-toggle" style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 16px;">
+          <label id="red-card-label" for="red-card-toggle">Show Red Card Boxes</label>
+          <label class="switch">
+            <input type="checkbox" id="red-card-toggle" ${scoreboardStyle?.showRedCardBoxes ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
         <button id="save-layout-settings" style="margin-top: 12px;">Save Layout</button>
       </div>
 
@@ -107,7 +175,7 @@ export function render(container: HTMLElement) {
   // --- Local State for Unsaved Data ---
   let isStyleUnsaved = false;
   let isLayoutUnsaved = false;
-  let isMatchInfoUnsaved = false; // <-- New
+  let isMatchInfoUnsaved = false;
 
   // --- Get Element References ---
   // Style
@@ -116,6 +184,9 @@ export function render(container: HTMLElement) {
   ) as HTMLInputElement;
   const sbSecondaryInput = container.querySelector(
     '#sb-color-secondary',
+  ) as HTMLInputElement;
+  const sbTertiaryInput = container.querySelector(
+    '#sb-color-tertiary',
   ) as HTMLInputElement;
   const sbOpacitySlider = container.querySelector(
     '#sb-opacity',
@@ -133,11 +204,12 @@ export function render(container: HTMLElement) {
   // Style Labels
   const sbPrimaryLabel = container.querySelector('#sb-color-primary-label') as HTMLLabelElement;
   const sbSecondaryLabel = container.querySelector('#sb-color-secondary-label') as HTMLLabelElement;
+  const sbTertiaryLabel = container.querySelector('#sb-color-tertiary-label') as HTMLLabelElement;
   const sbOpacityLabel = container.querySelector('#sb-opacity-label') as HTMLLabelElement;
   const sbScaleLabel = container.querySelector('#sb-scale-label') as HTMLLabelElement;
   const unsavedStyle = container.querySelector('#unsaved-style') as HTMLSpanElement;
   
-  // --- New Match Info Refs ---
+  // Match Info Refs
   const matchInfoInput = container.querySelector(
     '#match-info-input',
   ) as HTMLInputElement;
@@ -165,15 +237,28 @@ export function render(container: HTMLElement) {
     '#timer-position-label',
   ) as HTMLLabelElement;
   const unsavedLayout = container.querySelector('#unsaved-layout') as HTMLSpanElement;
+  const redCardToggle = container.querySelector(
+    '#red-card-toggle',
+  ) as HTMLInputElement;
+  const redCardLabel = container.querySelector(
+    '#red-card-label',
+  ) as HTMLLabelElement;
 
   
   // Group style fields and labels
   const styleFields: [HTMLElement, HTMLLabelElement][] = [
     [sbPrimaryInput, sbPrimaryLabel],
     [sbSecondaryInput, sbSecondaryLabel],
+    [sbTertiaryInput, sbTertiaryLabel],
     [sbOpacitySlider, sbOpacityLabel],
     [sbScaleSlider, sbScaleLabel]
   ];
+  
+  const layoutFields: [HTMLElement, HTMLLabelElement][] = [
+    [timerPositionSelect, timerPositionLabel],
+    [redCardToggle, redCardLabel]
+  ];
+  
   
   // --- Helper Functions ---
   const updateUnsavedIndicators = () => {
@@ -189,9 +274,9 @@ export function render(container: HTMLElement) {
     if (unsavedLayout) {
       unsavedLayout.textContent = isLayoutUnsaved ? '(unsaved data)' : '';
     }
-    if (timerPositionLabel) {
-      timerPositionLabel.style.fontStyle = isLayoutUnsaved ? 'italic' : 'normal';
-    }
+    layoutFields.forEach(([_, label]) => {
+      if (label) label.style.fontStyle = isLayoutUnsaved ? 'italic' : 'normal';
+    });
     
     // Match Info
     if (matchInfoUnsaved) {
@@ -210,6 +295,7 @@ export function render(container: HTMLElement) {
     if (!isStyleUnsaved) {
       sbPrimaryInput.value = scoreboardStyle.primary;
       sbSecondaryInput.value = scoreboardStyle.secondary;
+      sbTertiaryInput.value = scoreboardStyle.tertiary;
       sbOpacitySlider.value = scoreboardStyle.opacity.toString();
       sbOpacityValueSpan.textContent = `${scoreboardStyle.opacity}%`;
       sbScaleSlider.value = scoreboardStyle.scale.toString();
@@ -218,13 +304,13 @@ export function render(container: HTMLElement) {
     
     if (!isLayoutUnsaved) {
       timerPositionSelect.value = scoreboardStyle.timerPosition;
+      redCardToggle.checked = scoreboardStyle.showRedCardBoxes;
     }
     
     if (!isMatchInfoUnsaved) {
       matchInfoInput.value = scoreboardStyle.matchInfo;
     }
     
-    // Update toggle button
     if (toggleMatchInfoBtn) {
         if (isMatchInfoVisible) {
           toggleMatchInfoBtn.textContent = 'Showing';
@@ -265,13 +351,17 @@ export function render(container: HTMLElement) {
     }
   });
   
-  // Add 'change' listener to layout select
-  timerPositionSelect.addEventListener('change', () => {
-    isLayoutUnsaved = true;
-    updateUnsavedIndicators();
+  // Add 'change' listener to layout fields
+  layoutFields.forEach(([input, _]) => {
+    if (input) {
+      input.addEventListener('change', () => {
+        isLayoutUnsaved = true;
+        updateUnsavedIndicators();
+      });
+    }
   });
   
-  // --- New: Add 'input' listener to match info ---
+  // Add 'input' listener to match info
   matchInfoInput.addEventListener('input', () => {
     isMatchInfoUnsaved = true;
     updateUnsavedIndicators();
@@ -282,22 +372,16 @@ export function render(container: HTMLElement) {
   container
     .querySelector('#save-scoreboard-settings')
     ?.addEventListener('click', async () => {
-      if (
-        !sbPrimaryInput ||
-        !sbSecondaryInput ||
-        !sbOpacitySlider ||
-        !sbScaleSlider
-      ) {
-        showNotification('Error finding scoreboard setting inputs.', 'error');
-        return;
-      }
       try {
-        await saveScoreboardStyle({
+        const styleData: ScoreboardStyleOnly = {
           primary: sbPrimaryInput.value,
           secondary: sbSecondaryInput.value,
+          tertiary: sbTertiaryInput.value,
           opacity: parseInt(sbOpacitySlider.value, 10),
           scale: parseInt(sbScaleSlider.value, 10),
-        });
+        };
+        
+        await saveScoreboardStyle(styleData);
         
         isStyleUnsaved = false;
         updateUnsavedIndicators();
@@ -308,11 +392,15 @@ export function render(container: HTMLElement) {
       }
     });
 
-  // --- Save Layout Button Listener ---
+  // Save Layout Button Listener
   saveLayoutBtn.addEventListener('click', async () => {
     try {
-      const newPosition = timerPositionSelect.value as 'Under' | 'Right';
-      await saveTimerPosition(newPosition);
+      const layoutData: LayoutConfig = {
+        position: timerPositionSelect.value as 'Under' | 'Right',
+        showRedCardBoxes: redCardToggle.checked
+      };
+      
+      await saveLayout(layoutData);
       
       isLayoutUnsaved = false;
       updateUnsavedIndicators();
@@ -323,7 +411,7 @@ export function render(container: HTMLElement) {
     }
   });
   
-  // --- New: Save Match Info Listener ---
+  // Save Match Info Listener
   saveMatchInfoBtn.addEventListener('click', async () => {
     try {
       await saveMatchInfo(matchInfoInput.value);
@@ -335,7 +423,7 @@ export function render(container: HTMLElement) {
     }
   });
   
-  // --- New: Toggle Match Info Listener ---
+  // Toggle Match Info Listener
   toggleMatchInfoBtn.addEventListener('click', () => {
     toggleMatchInfoVisibility();
   });
@@ -343,6 +431,9 @@ export function render(container: HTMLElement) {
   
   // --- Subscribe to state changes ---
   subscribe(updateUI);
+  
+  // --- Set initial state ---
+  updateUI();
   
   // Return cleanup function
   return () => {
