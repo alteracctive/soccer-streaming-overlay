@@ -149,41 +149,14 @@ input[type='number'] {
   width: 60px;
 }
 
-/* --- New Select (Dropdown) Styles --- */
-select {
-  padding: 8px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  border-radius: 4px;
-  font-size: 14px;
-  width: 100%; 
-}
 
-body.dark-mode select {
-  background-color: var(--bg-dark);
-  color: var(--text-dark);
-  border-color: var(--border-dark);
-}
-/* --------------------------------- */
-
-
-/* --- Updated Color Input Style --- */
 input[type='color'] {
   width: 100%;
   height: 38px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 4px;
-  background-color: var(--bg-color);
 }
-
-body.dark-mode input[type='color'] {
-  background-color: var(--bg-dark);
-  border-color: var(--border-dark);
-}
-/* --------------------------------- */
-
 
 button {
   padding: 8px 12px;
@@ -229,7 +202,7 @@ button.btn-red {
   margin-bottom: 16px;
 }
 
-/* --- Updated Team Control Layout --- */
+/* Team Control Layout */
 .team-control {
   text-align: center;
   display: flex; 
@@ -276,7 +249,7 @@ button.btn-red {
   flex-shrink: 0;
 }
 
-/* --- Player Grid Styles --- */
+/* Player Grid Styles */
 .player-grid-container {
   max-height: 110px; 
   overflow-y: auto;
@@ -298,7 +271,7 @@ button.btn-red {
   font-weight: bold;
 }
 
-/* --- Player Info Display --- */
+/* Player Info Display */
 .player-info-display {
   font-size: 13px;
   font-weight: 500;
@@ -618,73 +591,16 @@ button.btn-red {
 .color-picker-row label {
   margin-bottom: 0; 
 }
-
-/* --- Updated Color Picker Row Style --- */
 .color-picker-row input[type='color'] {
   width: 60px; 
   height: 30px;
   padding: 2px;
-  background-color: var(--bg-color); /* Added */
+  background-color: var(--bg-color); 
 }
 body.dark-mode .color-picker-row input[type='color'] {
-  background-color: var(--bg-dark); /* Added */
-}
-/* --------------------------------- */
-
-.scoreboard-container {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  --scoreboard-bg: rgba(0, 0, 0, 0.75);
-  --scoreboard-text: #FFFFFF;
+  background-color: var(--bg-dark); 
 }
 
-.score-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 32px;
-  font-weight: bold;
-  background-color: var(--scoreboard-bg);
-  color: var(--scoreboard-text);
-  border-radius: 8px;
-  padding: 8px 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  min-width: 400px;
-  height: 50px;
-  box-sizing: border-box;
-}
-
-.timer-row {
-  font-size: 28px;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: bold;
-  background-color: var(--scoreboard-bg);
-  color: var(--scoreboard-text);
-  border-radius: 8px;
-  padding: 5px 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 150px;
-  box-sizing: border-box;
-}
-
-/* Customization Page - Sliders Side-by-Side */
-.slider-row {
-  display: flex;
-  gap: 16px; 
-  align-items: flex-start; 
-}
-.slider-row .form-group {
-  flex: 1; 
-  margin-top: 0; 
-}
 
 /* Modal Styles */
 .modal-overlay {
@@ -713,14 +629,86 @@ body.dark-mode .color-picker-row input[type='color'] {
   flex-direction: column;
 }
 
-.modal-content h4 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 18px;
-  border-bottom: none;
-  padding-bottom: 0;
-  flex-shrink: 0; 
+/* --- Updated Modal Header Wrapper --- */
+.modal-header-wrapper {
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
 }
+
+/* Team Info in Modal */
+.modal-team-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.modal-team-swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  display: inline-block;
+}
+
+/* Navigation Header in Modal */
+.modal-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-nav-header h4 {
+    margin: 0;
+    font-size: 18px;
+    text-align: center;
+    flex-grow: 1;
+}
+
+.nav-arrow-btn {
+  background: none;
+  border: none;
+  font-size: 14px; /* Adjust for number text */
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  min-width: 60px;
+}
+
+.nav-arrow-btn span.arrow-icon {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Align left button content to left, right to right */
+#prev-player-btn {
+    justify-content: flex-start;
+}
+#next-player-btn {
+    justify-content: flex-end;
+}
+
+.nav-arrow-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.nav-arrow-btn:hover:not(:disabled) {
+  color: var(--accent-color);
+  background: rgba(0,0,0,0.05);
+  border-radius: 4px;
+}
+
+/* ----------------------------------------- */
 
 .modal-content p {
   margin-bottom: 20px;
@@ -748,7 +736,9 @@ body.dark-mode .color-picker-row input[type='color'] {
 .player-list-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: 0; 
+  border-radius: 0 0 6px 6px;
+  border-top: none;
 }
 
 .player-list-table th,
@@ -901,6 +891,12 @@ body.dark-mode .color-picker-row input[type='color'] {
 .goal-list-item:last-child {
   border-bottom: none;
 }
+/* Wrapper for text content in list items */
+.goal-item-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .goal-list-item span {
   font-weight: 500;
   margin-right: 4px;
@@ -917,10 +913,17 @@ body.dark-mode .color-picker-row input[type='color'] {
   background: none;
   border: none;
   color: var(--red);
-  font-size: 18px;
+  font-size: 14px;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 4px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.goal-delete-btn:hover {
+  background-color: rgba(220, 53, 69, 0.1);
 }
 
 /* Player Table Totals */
@@ -939,11 +942,6 @@ body.dark-mode .color-picker-row input[type='color'] {
   text-align: center;
   font-size: 13px;
   font-weight: bold;
-}
-.player-list-table {
-  margin-top: 0;
-  border-radius: 0 0 6px 6px;
-  border-top: none;
 }
 
 /* Import/Export Modal Styles */
@@ -992,7 +990,7 @@ body.dark-mode .color-picker-row input[type='color'] {
   opacity: 1;
 }
 
-/* --- New Export Options Modal --- */
+/* Export Options Modal */
 .export-options-modal .modal-buttons {
   display: flex;
   flex-direction: column;
@@ -1005,7 +1003,7 @@ body.dark-mode .color-picker-row input[type='color'] {
   margin-top: 8px;
 }
 
-/* --- New Export View Modal --- */
+/* Export View Modal */
 .export-view-modal .modal-content {
   max-width: 600px;
 }
@@ -1023,7 +1021,7 @@ body.dark-mode .color-picker-row input[type='color'] {
   margin-bottom: 16px;
 }
 
-/* --- New Team Assign Modal --- */
+/* Team Assign Modal */
 .team-assign-modal .modal-buttons {
   flex-direction: column;
   gap: 8px;

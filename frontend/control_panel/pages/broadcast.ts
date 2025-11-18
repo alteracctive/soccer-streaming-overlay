@@ -6,29 +6,11 @@ import {
   toggleGameReport,
   toggleScoreboard,
   togglePlayersList,
-  saveMatchInfo,
-  toggleMatchInfoVisibility,
-  // type PlayerConfig, <-- Removed
 } from '../stateManager';
-import { showNotification } from '../notification';
-
-// --- renderGoalList helper function removed ---
 
 export function render(container: HTMLElement) {
   
-  const { scoreboardStyle, isMatchInfoVisible } = getState(); 
-
   container.innerHTML = `
-    <style>
-      .unsaved-indicator {
-        opacity: 0.7;
-        font-weight: normal;
-        font-size: 0.8em;
-        margin-left: 8px;
-        font-style: italic;
-      }
-    </style>
-
     <div style="display: flex; flex-direction: column; gap: 16px;">
       <div class="card">
         <h4>Broadcast Controls</h4>
@@ -54,26 +36,8 @@ export function render(container: HTMLElement) {
           </button>
         </div>
       </div>
-
-      <div class="card">
-        <h4>Match Info <span id="match-info-unsaved" class="unsaved-indicator"></span></h4>
-        <div class="form-group inline-form-group" style="align-items: end;">
-          <div class="form-group" style="flex-grow: 1;">
-            <label id="match-info-label" for="match-info-input">Text</label>
-            <input type="text" id="match-info-input" value="${scoreboardStyle?.matchInfo ?? ''}">
-          </div>
-          <button id="save-match-info" style="flex-shrink: 0;">Save</button>
-          <button id="toggle-match-info" style="min-width: 100px; flex-shrink: 0;">
-            ${isMatchInfoVisible ? 'Showing' : 'Hidden'}
-          </button>
-        </div>
-      </div>
-
-      </div>
+    </div>
   `;
-
-  // --- Local State ---
-  let isMatchInfoUnsaved = false;
 
   // --- Get Element References ---
   const gameReportToggleButton = container.querySelector(
@@ -88,41 +52,10 @@ export function render(container: HTMLElement) {
     '#toggle-players-list',
   ) as HTMLButtonElement;
 
-  // --- Match Info Refs ---
-  const matchInfoInput = container.querySelector(
-    '#match-info-input',
-  ) as HTMLInputElement;
-  const saveMatchInfoBtn = container.querySelector(
-    '#save-match-info',
-  ) as HTMLButtonElement;
-  const toggleMatchInfoBtn = container.querySelector(
-    '#toggle-match-info',
-  ) as HTMLButtonElement;
-  const matchInfoUnsaved = container.querySelector(
-    '#match-info-unsaved',
-  ) as HTMLSpanElement;
-  const matchInfoLabel = container.querySelector(
-    '#match-info-label',
-  ) as HTMLLabelElement;
 
-
-  // --- Removed Report Display Elements ---
-
-  
-  // --- Helper Function ---
-  const updateUnsavedMatchInfo = () => {
-    if (matchInfoUnsaved) {
-      matchInfoUnsaved.textContent = isMatchInfoUnsaved ? '(unsaved data)' : '';
-    }
-    if (matchInfoLabel) {
-      matchInfoLabel.style.fontStyle = isMatchInfoUnsaved ? 'italic' : 'normal';
-    }
-  };
-
-
-  // Function to update the UI
+  // Function to update the UI (buttons)
   const updateUI = () => {
-    const { scoreboardStyle, isGameReportVisible, isScoreboardVisible, isPlayersListVisible, isMatchInfoVisible } = getState();
+    const { isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
     
     // Update Toggle Buttons
     if (gameReportToggleButton) {
@@ -158,22 +91,6 @@ export function render(container: HTMLElement) {
           playersListToggleButton.classList.add('btn-red');
         }
     }
-    
-    if (toggleMatchInfoBtn) {
-        if (isMatchInfoVisible) {
-          toggleMatchInfoBtn.textContent = 'Showing';
-          toggleMatchInfoBtn.classList.remove('btn-red', 'btn-secondary');
-          toggleMatchInfoBtn.classList.add('btn-green');
-        } else {
-          toggleMatchInfoBtn.textContent = 'Hidden';
-          toggleMatchInfoBtn.classList.remove('btn-green', 'btn-secondary');
-          toggleMatchInfoBtn.classList.add('btn-red');
-        }
-    }
-    
-    if (scoreboardStyle && matchInfoInput && !isMatchInfoUnsaved) {
-      matchInfoInput.value = scoreboardStyle.matchInfo;
-    }
   };
 
   // --- Add click listeners ---
@@ -188,28 +105,6 @@ export function render(container: HTMLElement) {
   playersListToggleButton.addEventListener('click', () => {
     togglePlayersList();
   });
-
-  // --- Match Info Listener ---
-  saveMatchInfoBtn.addEventListener('click', async () => {
-    try {
-      await saveMatchInfo(matchInfoInput.value);
-      isMatchInfoUnsaved = false;
-      updateUnsavedMatchInfo();
-      showNotification('Match info saved!');
-    } catch (error: any) {
-      showNotification(`Error: ${error.message}`, 'error');
-    }
-  });
-  
-  toggleMatchInfoBtn.addEventListener('click', () => {
-    toggleMatchInfoVisibility();
-  });
-  
-  matchInfoInput.addEventListener('input', () => {
-    isMatchInfoUnsaved = true;
-    updateUnsavedMatchInfo();
-  });
-
 
   // Subscribe to state changes
   subscribe(updateUI);
