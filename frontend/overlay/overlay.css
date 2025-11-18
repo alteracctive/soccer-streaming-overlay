@@ -8,8 +8,8 @@ body {
     Arial, sans-serif;
   
   /* --- Define fallback colors --- */
-  --scoreboard-text-secondary: #FFFFFF;
-  --scoreboard-text-tertiary: #ffd700;
+  --scoreboard-text-secondary: #FFFFFF; /* Renamed */
+  --scoreboard-text-tertiary: #ffd700;  /* Renamed */
 }
 
 /* Container positions the scoreboard boxes */
@@ -71,7 +71,7 @@ body {
   top: 0;
   box-sizing: border-box;
 }
-.scoreboard-container.show-red-cards .red-card-container {
+.scoreboard-container.show-red-indicators .red-card-container { /* Renamed */
   display: flex;
 }
 

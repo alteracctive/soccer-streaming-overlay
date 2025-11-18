@@ -23,7 +23,7 @@ from data_manager import (
     ResetStatsUpdate,
     ReplacePlayerUpdate,
     MatchInfoUpdate,
-    LayoutUpdate
+    LayoutUpdate # <-- Updated import
 )
 from websocket_manager import websocket_manager
 

@@ -159,9 +159,9 @@ export function render(container: HTMLElement) {
         </div>
         
         <div class="form-group switch-toggle" style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 16px;">
-          <label id="red-card-label" for="red-card-toggle">Show Red Card Boxes</label>
+          <label id="red-card-label" for="red-card-indicator-toggle">Show Red Card Indicators</label>
           <label class="switch">
-            <input type="checkbox" id="red-card-toggle" ${scoreboardStyle?.showRedCardBoxes ? 'checked' : ''}>
+            <input type="checkbox" id="red-card-indicator-toggle" ${scoreboardStyle?.showRedCardIndicators ? 'checked' : ''}>
             <span class="slider"></span>
           </label>
         </div>
@@ -238,7 +238,7 @@ export function render(container: HTMLElement) {
   ) as HTMLLabelElement;
   const unsavedLayout = container.querySelector('#unsaved-layout') as HTMLSpanElement;
   const redCardToggle = container.querySelector(
-    '#red-card-toggle',
+    '#red-card-indicator-toggle',
   ) as HTMLInputElement;
   const redCardLabel = container.querySelector(
     '#red-card-label',
@@ -304,7 +304,7 @@ export function render(container: HTMLElement) {
     
     if (!isLayoutUnsaved) {
       timerPositionSelect.value = scoreboardStyle.timerPosition;
-      redCardToggle.checked = scoreboardStyle.showRedCardBoxes;
+      redCardToggle.checked = scoreboardStyle.showRedCardIndicators;
     }
     
     if (!isMatchInfoUnsaved) {
@@ -397,7 +397,7 @@ export function render(container: HTMLElement) {
     try {
       const layoutData: LayoutConfig = {
         position: timerPositionSelect.value as 'Under' | 'Right',
-        showRedCardBoxes: redCardToggle.checked
+        showRedCardIndicators: redCardToggle.checked
       };
       
       await saveLayout(layoutData);

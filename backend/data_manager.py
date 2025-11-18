@@ -27,13 +27,13 @@ BUNDLED_STYLE_FILE = resource_path("scoreboard-customization.json")
 
 class ScoreboardStyleConfig(BaseModel):
     primary: str = "#000000"
-    secondary: str = "#FFFFFF"   # <-- Renamed (was textColorPrimary)
-    tertiary: str = "#ffd700"    # <-- Renamed (was textColorTertiary)
+    secondary: str = "#FFFFFF"
+    tertiary: str = "#ffd700"
     opacity: int = Field(default=75, ge=50, le=100)
     scale: int = Field(default=100, ge=50, le=150)
     matchInfo: str = ""
     timerPosition: Literal["Under", "Right"] = "Under"
-    showRedCardBoxes: bool = False
+    showRedCardIndicators: bool = False # <-- Renamed
 
 class ColorConfig(BaseModel):
     primary: str = "#FF0000"
@@ -121,12 +121,12 @@ class MatchInfoUpdate(BaseModel):
 
 class LayoutUpdate(BaseModel):
     position: Literal["Under", "Right"]
-    showRedCardBoxes: bool
+    showRedCardIndicators: bool # <-- Renamed
 
 class StyleUpdate(BaseModel):
     primary: str
-    secondary: str  # <-- Renamed
-    tertiary: str # <-- Renamed
+    secondary: str
+    tertiary: str
     opacity: int
     scale: int
 
@@ -220,14 +220,16 @@ class DataManager:
                         data['tertiary'] = data.pop('textColorTertiary')
                     if 'textColorSecondary' in data:
                         data['tertiary'] = data.pop('textColorSecondary')
+                    if 'showRedCardBoxes' in data: # <-- Migration
+                        data['showRedCardIndicators'] = data.pop('showRedCardBoxes')
                     # --- End Migration ---
                         
                     if 'timerPosition' not in data:
                         data['timerPosition'] = 'Under'
                     if 'matchInfo' not in data:
                         data['matchInfo'] = ''
-                    if 'showRedCardBoxes' not in data:
-                        data['showRedCardBoxes'] = False
+                    if 'showRedCardIndicators' not in data: # <-- Updated
+                        data['showRedCardIndicators'] = False
                     if 'secondary' not in data:
                         data['secondary'] = '#FFFFFF'
                     if 'tertiary' not in data:
@@ -248,13 +250,15 @@ class DataManager:
                             data['tertiary'] = data.pop('textColorTertiary')
                         if 'textColorSecondary' in data:
                             data['tertiary'] = data.pop('textColorSecondary')
+                        if 'showRedCardBoxes' in data:
+                            data['showRedCardIndicators'] = data.pop('showRedCardBoxes')
                         # --- End Migration ---
                         if 'timerPosition' not in data:
                             data['timerPosition'] = 'Under'
                         if 'matchInfo' not in data:
                             data['matchInfo'] = ''
-                        if 'showRedCardBoxes' not in data:
-                            data['showRedCardBoxes'] = False
+                        if 'showRedCardIndicators' not in data: # <-- Updated
+                            data['showRedCardIndicators'] = False
                         if 'secondary' not in data:
                             data['secondary'] = '#FFFFFF'
                         if 'tertiary' not in data:
@@ -333,15 +337,16 @@ class DataManager:
     async def update_layout(self, layout: LayoutUpdate) -> ScoreboardStyleConfig:
         style = self.get_scoreboard_style()
         style.timerPosition = layout.position
-        style.showRedCardBoxes = layout.showRedCardBoxes
+        style.showRedCardIndicators = layout.showRedCardIndicators
         await self.save_scoreboard_style()
-        print(f"Layout updated: Pos={layout.position}, RedCards={layout.showRedCardBoxes}")
+        print(f"Layout updated: Pos={layout.position}, RedCards={layout.showRedCardIndicators}")
         return style
 
     def get_config(self) -> ScoreboardConfig:
         if self.config is None: raise Exception("Config not loaded")
         return self.config
         
+    # ... (all other methods are unchanged) ...
     async def update_team_info(self, info: TeamInfoUpdate) -> ScoreboardConfig:
         config = self.get_config()
         config.teamA.name = info.teamA.get('name', config.teamA.name)

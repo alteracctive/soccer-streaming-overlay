@@ -46,15 +46,15 @@ export interface ScoreboardStyleConfig {
   scale: number;
   matchInfo: string;
   timerPosition: "Under" | "Right";
-  showRedCardBoxes: boolean;
+  showRedCardIndicators: boolean; // <-- Renamed
 }
 
 // --- Updated Type ---
-export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition' | 'showRedCardBoxes'>;
+export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition' | 'showRedCardIndicators'>;
 
 export interface LayoutConfig {
   position: "Under" | "Right";
-  showRedCardBoxes: boolean;
+  showRedCardIndicators: boolean; // <-- Renamed
 }
 
 
@@ -88,7 +88,7 @@ let appState: {
     scale: 100, 
     matchInfo: "", 
     timerPosition: "Under",
-    showRedCardBoxes: false
+    showRedCardIndicators: false // <-- Renamed
   },
   isGameReportVisible: false, 
   isScoreboardVisible: true,
@@ -312,11 +312,11 @@ export async function saveLayout(layout: LayoutConfig) {
   await post('/api/layout', layout);
 }
 
-// --- This function is no longer used but kept for rollback ---
+// --- Reverted Function ---
 export async function saveTimerPosition(position: 'Under' | 'Right') {
   await post('/api/timer-position', { position });
 }
-// ----------------------------------------------------
+// ---------------------
 
 export async function toggleGameReport() {
   await post('/api/game-report/toggle', {});

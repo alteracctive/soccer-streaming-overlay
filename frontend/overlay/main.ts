@@ -332,10 +332,10 @@ function updateUI() {
       
       const isRightLayout = scoreboardStyle.timerPosition === 'Right';
       scoreboardContainer.classList.toggle('timer-position-right', isRightLayout);
-      scoreboardContainer.classList.toggle('show-red-cards', scoreboardStyle.showRedCardBoxes);
+      scoreboardContainer.classList.toggle('show-red-indicators', scoreboardStyle.showRedCardIndicators);
       
       if (timerSectionRow) {
-        if (isRightLayout && teamBRedCount > 0 && scoreboardStyle.showRedCardBoxes) {
+        if (isRightLayout && teamBRedCount > 0 && scoreboardStyle.showRedCardIndicators) {
           const redCardWidth = (teamBRedCount >= 5 ? 28 : 16) + 8;
           timerSectionRow.style.marginLeft = `${redCardWidth}px`; 
         } else {
