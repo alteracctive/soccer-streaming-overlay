@@ -83,19 +83,19 @@ export function render(container: HTMLElement) {
         <h3>Scoreboard Style <span id="unsaved-style" class="unsaved-indicator"></span></h3>
         <div style="margin-top: 10px;">
           <div class="color-picker-row">
-             <label id="sb-color-primary-label" for="sb-color-primary">Primary Color (Box)</label>
+             <label id="sb-color-primary-label" for="sb-color-primary">Box Background Color</label>
              <input type="color" id="sb-color-primary" value="${
                scoreboardStyle?.primary ?? '#000000'
              }">
           </div>
           <div class="color-picker-row">
-             <label id="sb-color-secondary-label" for="sb-color-secondary">Secondary Color (Main Text)</label>
+             <label id="sb-color-secondary-label" for="sb-color-secondary">Main Text Color</label>
              <input type="color" id="sb-color-secondary" value="${
                scoreboardStyle?.secondary ?? '#FFFFFF'
              }">
           </div>
           <div class="color-picker-row">
-             <label id="sb-color-tertiary-label" for="sb-color-tertiary">Tertiary Color (Accent Text)</label>
+             <label id="sb-color-tertiary-label" for="sb-color-tertiary">Alternative Text Color</label>
              <input type="color" id="sb-color-tertiary" value="${
                scoreboardStyle?.tertiary ?? '#ffd700'
              }">
@@ -159,7 +159,7 @@ export function render(container: HTMLElement) {
         </div>
         
         <div class="form-group switch-toggle" style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 16px;">
-          <label id="red-card-label" for="red-card-indicator-toggle">Show Red Card Indicators</label>
+          <label id="red-card-indicator-label" for="red-card-indicator-toggle">Show Red Card Indicators</label>
           <label class="switch">
             <input type="checkbox" id="red-card-indicator-toggle" ${scoreboardStyle?.showRedCardIndicators ? 'checked' : ''}>
             <span class="slider"></span>
@@ -241,49 +241,21 @@ export function render(container: HTMLElement) {
     '#red-card-indicator-toggle',
   ) as HTMLInputElement;
   const redCardLabel = container.querySelector(
-    '#red-card-label',
+    '#red-card-indicator-label',
   ) as HTMLLabelElement;
-
-  
-  // Group style fields and labels
-  const styleFields: [HTMLElement, HTMLLabelElement][] = [
-    [sbPrimaryInput, sbPrimaryLabel],
-    [sbSecondaryInput, sbSecondaryLabel],
-    [sbTertiaryInput, sbTertiaryLabel],
-    [sbOpacitySlider, sbOpacityLabel],
-    [sbScaleSlider, sbScaleLabel]
-  ];
-  
-  const layoutFields: [HTMLElement, HTMLLabelElement][] = [
-    [timerPositionSelect, timerPositionLabel],
-    [redCardToggle, redCardLabel]
-  ];
   
   
   // --- Helper Functions ---
   const updateUnsavedIndicators = () => {
-    // Style
+    // This function now *only* controls the (unsaved data) text in the title
     if (unsavedStyle) {
       unsavedStyle.textContent = isStyleUnsaved ? '(unsaved data)' : '';
     }
-    styleFields.forEach(([_, label]) => {
-      if (label) label.style.fontStyle = isStyleUnsaved ? 'italic' : 'normal';
-    });
-    
-    // Layout
     if (unsavedLayout) {
       unsavedLayout.textContent = isLayoutUnsaved ? '(unsaved data)' : '';
     }
-    layoutFields.forEach(([_, label]) => {
-      if (label) label.style.fontStyle = isLayoutUnsaved ? 'italic' : 'normal';
-    });
-    
-    // Match Info
     if (matchInfoUnsaved) {
       matchInfoUnsaved.textContent = isMatchInfoUnsaved ? '(unsaved data)' : '';
-    }
-    if (matchInfoLabel) {
-      matchInfoLabel.style.fontStyle = isMatchInfoUnsaved ? 'italic' : 'normal';
     }
   };
   
@@ -292,6 +264,7 @@ export function render(container: HTMLElement) {
     const { scoreboardStyle, isMatchInfoVisible } = getState();
     if (!scoreboardStyle) return;
 
+    // --- Update Style Section ---
     if (!isStyleUnsaved) {
       sbPrimaryInput.value = scoreboardStyle.primary;
       sbSecondaryInput.value = scoreboardStyle.secondary;
@@ -300,17 +273,33 @@ export function render(container: HTMLElement) {
       sbOpacityValueSpan.textContent = `${scoreboardStyle.opacity}%`;
       sbScaleSlider.value = scoreboardStyle.scale.toString();
       sbScaleValueSpan.textContent = `${scoreboardStyle.scale}%`;
+      
+      // Reset label styles
+      sbPrimaryLabel.style.fontStyle = 'normal';
+      sbSecondaryLabel.style.fontStyle = 'normal';
+      sbTertiaryLabel.style.fontStyle = 'normal';
+      sbOpacityLabel.style.fontStyle = 'normal';
+      sbScaleLabel.style.fontStyle = 'normal';
     }
     
+    // --- Update Layout Section ---
     if (!isLayoutUnsaved) {
       timerPositionSelect.value = scoreboardStyle.timerPosition;
       redCardToggle.checked = scoreboardStyle.showRedCardIndicators;
+      
+      // Reset label styles
+      timerPositionLabel.style.fontStyle = 'normal';
+      redCardLabel.style.fontStyle = 'normal';
     }
     
+    // --- Update Match Info Section ---
     if (!isMatchInfoUnsaved) {
       matchInfoInput.value = scoreboardStyle.matchInfo;
+      // Reset label style
+      matchInfoLabel.style.fontStyle = 'normal';
     }
     
+    // Update toggle button
     if (toggleMatchInfoBtn) {
         if (isMatchInfoVisible) {
           toggleMatchInfoBtn.textContent = 'Showing';
@@ -327,46 +316,56 @@ export function render(container: HTMLElement) {
 
   // --- Add Event Listeners ---
 
-  // Update Opacity Display Span when Slider Moves
-  if (sbOpacitySlider && sbOpacityValueSpan) {
-    sbOpacitySlider.addEventListener('input', () => {
-      sbOpacityValueSpan.textContent = `${sbOpacitySlider.value}%`;
-    });
-  }
-
-  // Update Scale Display Span when Slider Moves
-  if (sbScaleSlider && sbScaleValueSpan) {
-    sbScaleSlider.addEventListener('input', () => {
-      sbScaleValueSpan.textContent = `${sbScaleSlider.value}%`;
-    });
-  }
-  
-  // Add 'input' listeners to all style fields
-  styleFields.forEach(([input, _]) => {
-    if (input) {
-      input.addEventListener('input', () => {
-        isStyleUnsaved = true;
-        updateUnsavedIndicators();
-      });
-    }
+  // --- Scoreboard Style Listeners ---
+  sbPrimaryInput.addEventListener('input', () => {
+    isStyleUnsaved = true;
+    sbPrimaryLabel.style.fontStyle = 'italic';
+    updateUnsavedIndicators();
   });
-  
-  // Add 'change' listener to layout fields
-  layoutFields.forEach(([input, _]) => {
-    if (input) {
-      input.addEventListener('change', () => {
-        isLayoutUnsaved = true;
-        updateUnsavedIndicators();
-      });
-    }
+  sbSecondaryInput.addEventListener('input', () => {
+    isStyleUnsaved = true;
+    sbSecondaryLabel.style.fontStyle = 'italic';
+    updateUnsavedIndicators();
   });
-  
-  // Add 'input' listener to match info
-  matchInfoInput.addEventListener('input', () => {
-    isMatchInfoUnsaved = true;
+  sbTertiaryInput.addEventListener('input', () => {
+    isStyleUnsaved = true;
+    sbTertiaryLabel.style.fontStyle = 'italic';
+    updateUnsavedIndicators();
+  });
+  sbOpacitySlider.addEventListener('input', () => {
+    isStyleUnsaved = true;
+    sbOpacityValueSpan.textContent = `${sbOpacitySlider.value}%`;
+    sbOpacityLabel.style.fontStyle = 'italic';
+    updateUnsavedIndicators();
+  });
+  sbScaleSlider.addEventListener('input', () => {
+    isStyleUnsaved = true;
+    sbScaleValueSpan.textContent = `${sbScaleSlider.value}%`;
+    sbScaleLabel.style.fontStyle = 'italic';
     updateUnsavedIndicators();
   });
 
+  // --- Layout Listeners ---
+  timerPositionSelect.addEventListener('change', () => {
+    isLayoutUnsaved = true;
+    timerPositionLabel.style.fontStyle = 'italic';
+    updateUnsavedIndicators();
+  });
+  redCardToggle.addEventListener('change', () => {
+    isLayoutUnsaved = true;
+    redCardLabel.style.fontStyle = 'italic';
+    updateUnsavedIndicators();
+  });
+  
+  // --- Match Info Listener ---
+  matchInfoInput.addEventListener('input', () => {
+    isMatchInfoUnsaved = true;
+    matchInfoLabel.style.fontStyle = 'italic';
+    updateUnsavedIndicators();
+  });
+
+
+  // --- Save Button Listeners ---
 
   // Save Scoreboard Settings Button
   container
@@ -385,6 +384,12 @@ export function render(container: HTMLElement) {
         
         isStyleUnsaved = false;
         updateUnsavedIndicators();
+        // Reset individual label styles
+        sbPrimaryLabel.style.fontStyle = 'normal';
+        sbSecondaryLabel.style.fontStyle = 'normal';
+        sbTertiaryLabel.style.fontStyle = 'normal';
+        sbOpacityLabel.style.fontStyle = 'normal';
+        sbScaleLabel.style.fontStyle = 'normal';
         
         showNotification('Scoreboard style saved!');
       } catch (error: any) {
@@ -404,6 +409,9 @@ export function render(container: HTMLElement) {
       
       isLayoutUnsaved = false;
       updateUnsavedIndicators();
+      // Reset individual label styles
+      timerPositionLabel.style.fontStyle = 'normal';
+      redCardLabel.style.fontStyle = 'normal';
       
       showNotification('Layout saved!');
     } catch (error: any) {
@@ -417,6 +425,8 @@ export function render(container: HTMLElement) {
       await saveMatchInfo(matchInfoInput.value);
       isMatchInfoUnsaved = false;
       updateUnsavedIndicators();
+      // Reset individual label styles
+      matchInfoLabel.style.fontStyle = 'normal';
       showNotification('Match info saved!');
     } catch (error: any) {
       showNotification(`Error: ${error.message}`, 'error');
