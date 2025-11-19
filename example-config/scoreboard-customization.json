@@ -1,8 +1,10 @@
 {
   "primary": "#000e29",
   "secondary": "#ffffff",
+  "tertiary": "#ffef3d",
   "opacity": 100,
   "scale": 100,
   "matchInfo": "Sb2vn Cup | Match 1",
-  "timerPosition": "Right"
+  "timerPosition": "Right",
+  "showRedCardIndicators": false
 }

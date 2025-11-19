@@ -3,26 +3,48 @@ import {
   getState,
   subscribe,
   unsubscribe,
-  type PlayerConfig, // <-- Import PlayerConfig
+  type PlayerConfig,
+  type TeamConfig,
 } from '../stateManager';
 
-/**
- * Helper function to generate the HTML for a team's goal list
- */
-function renderGoalList(players: PlayerConfig[]): string {
-  const scorers = players
-    .filter(p => p.goals.length > 0)
-    .sort((a, b) => a.number - b.number);
+// --- Updated Helper Function ---
+function renderGoalList(
+  teamPlayers: PlayerConfig[], 
+  opponentPlayers: PlayerConfig[]
+): string {
+  
+  // 1. Get normal goals
+  const teamGoals = teamPlayers.flatMap(p => 
+    p.goals.filter(g => g > 0).map(g => ({ 
+      minute: g, 
+      playerName: p.name, 
+      playerNumber: p.number, 
+      type: 'Goal' 
+    }))
+  );
 
-  if (scorers.length === 0) {
+  // 2. Get own goals from opponent
+  const opponentOwnGoals = opponentPlayers.flatMap(p => 
+    p.goals.filter(g => g < 0).map(g => ({ 
+      minute: Math.abs(g), // Convert back to positive for display
+      playerName: p.name, 
+      playerNumber: p.number, 
+      type: 'Own Goal' // Mark as OG
+    }))
+  );
+
+  // 3. Merge and Sort
+  const allScoringEvents = [...teamGoals, ...opponentOwnGoals].sort((a, b) => a.minute - b.minute);
+
+  if (allScoringEvents.length === 0) {
     return '<p class="no-goals-text">No goals yet.</p>';
   }
 
-  return scorers.map(player => `
+  return allScoringEvents.map(event => `
     <div class="goal-scorer-row">
-      <span class="player-number">#${player.number}</span>
-      <span class="player-name">${player.name}</span>
-      <span class="goal-minutes">${player.goals.map(g => `${g}'`).join(' ')}</span>
+      <span class="player-number">#${event.playerNumber}</span>
+      <span class="player-name">${event.playerName} ${event.type === 'Own Goal' ? '(OG)' : ''}</span>
+      <span class="goal-minutes">${event.minute}'</span>
     </div>
   `).join('');
 }
@@ -55,32 +77,27 @@ export function render(container: HTMLElement) {
     </div>
   `;
 
-  // --- Get Element References ---
   const reportHeaderA = container.querySelector('#cp-report-header-a') as HTMLHeadingElement;
   const reportHeaderB = container.querySelector('#cp-report-header-b') as HTMLHeadingElement;
   const reportListA = container.querySelector('#cp-report-list-a') as HTMLDivElement;
   const reportListB = container.querySelector('#cp-report-list-b') as HTMLDivElement;
 
 
-  // Function to update the UI
   const updateUI = () => {
     const { config } = getState();
     
     if (config) {
       reportHeaderA.textContent = config.teamA.name;
       reportHeaderB.textContent = config.teamB.name;
-      reportListA.innerHTML = renderGoalList(config.teamA.players);
-      reportListB.innerHTML = renderGoalList(config.teamB.players);
+      // Pass both arrays to the renderer
+      reportListA.innerHTML = renderGoalList(config.teamA.players, config.teamB.players);
+      reportListB.innerHTML = renderGoalList(config.teamB.players, config.teamA.players);
     }
   };
 
-  // Subscribe to state changes
   subscribe(updateUI);
-  
-  // Set initial state
   updateUI();
 
-  // Return a cleanup function
   return () => {
     unsubscribe(updateUI);
   };

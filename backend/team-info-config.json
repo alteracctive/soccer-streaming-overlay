@@ -2,7 +2,7 @@
   "teamA": {
     "name": "FC Barcelona",
     "abbreviation": "BAR",
-    "score": 0,
+    "score": 1,
     "colors": {
       "primary": "#bd0052",
       "secondary": "#004d98"

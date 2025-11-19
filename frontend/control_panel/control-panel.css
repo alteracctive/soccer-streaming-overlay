@@ -795,6 +795,8 @@ body.dark-mode .color-picker-row input[type='color'] {
 .player-red-btn { background: var(--red); }
 .player-edit-btn { background: var(--accent-color); }
 .player-delete-btn { background: #6c757d; }
+/* --- New Style --- */
+.player-own-goal-btn { background: #6c757d; } /* Gray color */
 
 
 /* Custom Checkbox */

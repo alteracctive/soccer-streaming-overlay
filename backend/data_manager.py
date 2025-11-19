@@ -10,8 +10,10 @@ from typing import Literal, List
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
+        # Not in a PyInstaller bundle, use normal path
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
@@ -33,7 +35,7 @@ class ScoreboardStyleConfig(BaseModel):
     scale: int = Field(default=100, ge=50, le=150)
     matchInfo: str = ""
     timerPosition: Literal["Under", "Right"] = "Under"
-    showRedCardIndicators: bool = False # <-- Renamed
+    showRedCardIndicators: bool = False
 
 class ColorConfig(BaseModel):
     primary: str = "#FF0000"
@@ -119,9 +121,13 @@ class ReplacePlayerUpdate(BaseModel):
 class MatchInfoUpdate(BaseModel):
     info: str
 
+class TimerPositionUpdate(BaseModel):
+    position: Literal["Under", "Right"]
+
+# --- Added LayoutUpdate Back ---
 class LayoutUpdate(BaseModel):
     position: Literal["Under", "Right"]
-    showRedCardIndicators: bool # <-- Renamed
+    showRedCardIndicators: bool
 
 class StyleUpdate(BaseModel):
     primary: str
@@ -220,7 +226,7 @@ class DataManager:
                         data['tertiary'] = data.pop('textColorTertiary')
                     if 'textColorSecondary' in data:
                         data['tertiary'] = data.pop('textColorSecondary')
-                    if 'showRedCardBoxes' in data: # <-- Migration
+                    if 'showRedCardBoxes' in data:
                         data['showRedCardIndicators'] = data.pop('showRedCardBoxes')
                     # --- End Migration ---
                         
@@ -228,7 +234,7 @@ class DataManager:
                         data['timerPosition'] = 'Under'
                     if 'matchInfo' not in data:
                         data['matchInfo'] = ''
-                    if 'showRedCardIndicators' not in data: # <-- Updated
+                    if 'showRedCardIndicators' not in data:
                         data['showRedCardIndicators'] = False
                     if 'secondary' not in data:
                         data['secondary'] = '#FFFFFF'
@@ -243,7 +249,6 @@ class DataManager:
                     async with aiofiles.open(BUNDLED_STYLE_FILE, mode='r') as f:
                         content = await f.read()
                         data = json.loads(content)
-                        # --- Migration Logic ---
                         if 'textColorPrimary' in data:
                             data['secondary'] = data.pop('textColorPrimary')
                         if 'textColorTertiary' in data:
@@ -252,12 +257,12 @@ class DataManager:
                             data['tertiary'] = data.pop('textColorSecondary')
                         if 'showRedCardBoxes' in data:
                             data['showRedCardIndicators'] = data.pop('showRedCardBoxes')
-                        # --- End Migration ---
+
                         if 'timerPosition' not in data:
                             data['timerPosition'] = 'Under'
                         if 'matchInfo' not in data:
                             data['matchInfo'] = ''
-                        if 'showRedCardIndicators' not in data: # <-- Updated
+                        if 'showRedCardIndicators' not in data:
                             data['showRedCardIndicators'] = False
                         if 'secondary' not in data:
                             data['secondary'] = '#FFFFFF'
@@ -334,6 +339,7 @@ class DataManager:
         await self.save_scoreboard_style()
         return style
 
+    # --- Added Update Layout Method Back ---
     async def update_layout(self, layout: LayoutUpdate) -> ScoreboardStyleConfig:
         style = self.get_scoreboard_style()
         style.timerPosition = layout.position
@@ -342,11 +348,16 @@ class DataManager:
         print(f"Layout updated: Pos={layout.position}, RedCards={layout.showRedCardIndicators}")
         return style
 
+    async def update_timer_position(self, position: Literal["Under", "Right"]) -> ScoreboardStyleConfig:
+        style = self.get_scoreboard_style()
+        style.timerPosition = position
+        await self.save_scoreboard_style()
+        return style
+
     def get_config(self) -> ScoreboardConfig:
         if self.config is None: raise Exception("Config not loaded")
         return self.config
         
-    # ... (all other methods are unchanged) ...
     async def update_team_info(self, info: TeamInfoUpdate) -> ScoreboardConfig:
         config = self.get_config()
         config.teamA.name = info.teamA.get('name', config.teamA.name)
@@ -428,7 +439,7 @@ class DataManager:
         for player in team_to_update.players:
             if player.number == update.number:
                 player.goals.append(update.minute)
-                player.goals.sort() 
+                player.goals.sort(key=abs) 
                 player_found = True
                 break
         
