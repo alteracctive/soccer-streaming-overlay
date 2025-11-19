@@ -8,8 +8,8 @@ body {
     Arial, sans-serif;
   
   /* --- Define fallback colors --- */
-  --scoreboard-text-secondary: #FFFFFF; /* Renamed */
-  --scoreboard-text-tertiary: #ffd700;  /* Renamed */
+  --scoreboard-text-secondary: #FFFFFF;
+  --scoreboard-text-tertiary: #ffd700;
 }
 
 /* Container positions the scoreboard boxes */
@@ -71,7 +71,7 @@ body {
   top: 0;
   box-sizing: border-box;
 }
-.scoreboard-container.show-red-indicators .red-card-container { /* Renamed */
+.scoreboard-container.show-red-indicators .red-card-container {
   display: flex;
 }
 
@@ -266,6 +266,16 @@ body {
     font-weight: bold;
     font-size: 28px;
     border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* --- New Period Box Style --- */
+.game-report-period {
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding-top: 10px;
+    color: var(--scoreboard-text-tertiary); /* Use Tertiary */
 }
 
 .report-score-middle {

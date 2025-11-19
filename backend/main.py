@@ -25,18 +25,26 @@ from data_manager import (
     MatchInfoUpdate,
     TimerPositionUpdate,
     LayoutUpdate,
-    PeriodSetting, # <-- Import
-    PeriodUpdate   # <-- Import
+    PeriodSetting,
+    PeriodUpdate
 )
 from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Application starting up...")
+    # 1. Load Settings
+    await data_manager.load_period_settings()
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
-    # --- Load period settings ---
-    await data_manager.load_period_settings()
+    
+    # 2. Force set the period to the first option on startup
+    periods = data_manager.get_period_settings()
+    if periods and len(periods) > 0:
+        first_period = periods[0].name
+        print(f"Setting default period to: {first_period}")
+        await data_manager.set_current_period(first_period)
+
     yield
     print("Application shutting down...")
 

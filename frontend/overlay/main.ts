@@ -7,7 +7,7 @@ import {
   type PlayerConfig
 } from '../control_panel/stateManager';
 
-// ... (Get Element References - Unchanged) ...
+// --- Get Element References ---
 const scoreboardContainer = document.getElementById('scoreboard-container') as HTMLDivElement;
 const gameReportContainer = document.querySelector('.game-report-container') as HTMLDivElement;
 const scoreRow = document.querySelector('.score-row') as HTMLDivElement;
@@ -54,8 +54,11 @@ const teamARedCards = document.getElementById('team-a-red-cards') as HTMLDivElem
 const teamBRedCards = document.getElementById('team-b-red-cards') as HTMLDivElement;
 const timerSectionRow = document.getElementById('timer-section-row') as HTMLDivElement;
 
+// --- New Ref ---
+const gameReportPeriod = document.getElementById('game-report-period') as HTMLDivElement;
 
-// ... (Utility Functions Unchanged) ...
+
+// --- Utility Functions ---
 function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
@@ -82,7 +85,7 @@ function checkAndApplyScroll(wrapper: HTMLElement | null, textContent: string) {
   wrapper.classList.toggle('is-scrolling', isOverflowing);
 }
 
-// ... (renderPlayerList Unchanged) ...
+// --- Player List Sort and Render Function ---
 const renderPlayerList = (players: PlayerConfig[], targetLength: number, isScrolling: boolean, teamId: 'teamA' | 'teamB'): string => {
   const onField = players.filter(p => p.onField).sort((a, b) => a.number - b.number);
   const offField = players.filter(p => !p.onField).sort((a, b) => a.number - b.number);
@@ -98,43 +101,13 @@ const renderPlayerList = (players: PlayerConfig[], targetLength: number, isScrol
   if (isScrolling) { return listHtml + listHtml; } else { return listHtml; }
 };
 
-// --- Updated Goal Scorer Render Function ---
+// --- Goal Scorer Render Function ---
 const renderGoalScorers = (teamPlayers: PlayerConfig[], opponentPlayers: PlayerConfig[]): string => {
-  
-  // 1. Normal Goals
-  const teamGoals = teamPlayers.flatMap(p => 
-    p.goals.filter(g => g > 0).map(g => ({ 
-      minute: g, 
-      playerName: p.name, 
-      playerNumber: p.number, 
-      type: 'Goal' 
-    }))
-  );
-
-  // 2. Opponent Own Goals
-  const opponentOwnGoals = opponentPlayers.flatMap(p => 
-    p.goals.filter(g => g < 0).map(g => ({ 
-      minute: Math.abs(g), 
-      playerName: p.name, 
-      playerNumber: p.number, 
-      type: 'Own Goal' 
-    }))
-  );
-
-  // 3. Merge and Sort
+  const teamGoals = teamPlayers.flatMap(p => p.goals.filter(g => g > 0).map(g => ({ minute: g, playerName: p.name, playerNumber: p.number, type: 'Goal' })));
+  const opponentOwnGoals = opponentPlayers.flatMap(p => p.goals.filter(g => g < 0).map(g => ({ minute: Math.abs(g), playerName: p.name, playerNumber: p.number, type: 'Own Goal' })));
   const allEvents = [...teamGoals, ...opponentOwnGoals].sort((a, b) => a.minute - b.minute);
-
-  if (allEvents.length === 0) {
-    return '<span></span>'; 
-  }
-
-  return allEvents.map(event => `
-    <div class="overlay-goal-scorer">
-      <span class="player-number">#${event.playerNumber}</span>
-      <span class="player-name">${event.playerName} ${event.type === 'Own Goal' ? '(OG)' : ''}</span>
-      <span class="goal-minutes">${event.minute}'</span>
-    </div>
-  `).join('');
+  if (allEvents.length === 0) { return '<span></span>'; }
+  return allEvents.map(event => `<div class="overlay-goal-scorer"><span class="player-number">#${event.playerNumber}</span><span class="player-name">${event.playerName} ${event.type === 'Own Goal' ? '(OG)' : ''}</span><span class="goal-minutes">${event.minute}'</span></div>`).join('');
 };
 
 const renderRedCards = (count: number): string => {
@@ -186,6 +159,11 @@ function updateUI() {
 
   // Update Game Report
   if (config && gameReportContainer) {
+    // --- New: Update Period Text ---
+    if (gameReportPeriod && config.currentPeriod) {
+        gameReportPeriod.textContent = config.currentPeriod;
+    }
+
     checkAndApplyScroll(reportTeamAName.parentElement, config.teamA.name); 
     if (reportTeamAScore) reportTeamAScore.textContent = config.teamA.score.toString();
     if (reportStripAPrimary) reportStripAPrimary.style.backgroundColor = config.teamA.colors.primary;
@@ -200,8 +178,6 @@ function updateUI() {
     if (reportMiddleStripASecondary) reportMiddleStripASecondary.style.backgroundColor = config.teamA.colors.secondary;
     if (reportMiddleStripBPrimary) reportMiddleStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportMiddleStripBSecondary) reportMiddleStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
-    
-    // --- Pass both arrays to renderer ---
     gameReportGoalsA.innerHTML = renderGoalScorers(config.teamA.players, config.teamB.players);
     gameReportGoalsB.innerHTML = renderGoalScorers(config.teamB.players, config.teamA.players);
   }
@@ -217,8 +193,6 @@ function updateUI() {
     }
   }
 
-
-  // Apply scoreboard styles (colors, opacity, scale)
   if (scoreboardStyle) {
     const backgroundColorWithOpacity = hexToRgba(scoreboardStyle.primary, scoreboardStyle.opacity);
     const scaleValue = Math.max(0.5, Math.min(1.5, scoreboardStyle.scale / 100));
@@ -231,13 +205,9 @@ function updateUI() {
       matchInfoRow.style.backgroundColor = backgroundColorWithOpacity;
       matchInfoRow.style.color = scoreboardStyle.secondary; 
     }
-
     if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.secondary; } 
     if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.secondary; } 
-    if (extraTimeBox) { 
-      extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; 
-      extraTimeBox.style.color = scoreboardStyle.tertiary; 
-    } 
+    if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; extraTimeBox.style.color = scoreboardStyle.tertiary; } 
     if (scoreboardContainer) { 
       scoreboardContainer.style.transform = `scale(${scaleValue})`;
       const isRightLayout = scoreboardStyle.timerPosition === 'Right';
@@ -252,21 +222,17 @@ function updateUI() {
         }
       }
     }
-
     if (gameReportContainer) {
         gameReportContainer.style.backgroundColor = backgroundColorWithOpacity;
         gameReportContainer.style.color = scoreboardStyle.secondary; 
         gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`;
     }
-    
     if (playersListContainer) {
         playersListContainer.style.backgroundColor = backgroundColorWithOpacity;
         playersListContainer.style.color = scoreboardStyle.secondary; 
         playersListContainer.style.transform = `translate(-50%, -50%) scale(${scaleValue})`;
     }
-
   } else {
-    // Fallback styles
     if (matchInfoRow) { matchInfoRow.style.backgroundColor = ''; matchInfoRow.style.color = ''; }
     if (scoreRow) { scoreRow.style.backgroundColor = ''; scoreRow.style.color = ''; }
     if (timerRow) { timerRow.style.backgroundColor = ''; timerRow.style.color = ''; }
@@ -275,29 +241,13 @@ function updateUI() {
     if (gameReportContainer) { gameReportContainer.style.backgroundColor = ''; gameReportContainer.style.color = ''; gameReportContainer.style.transform = 'translateX(-50%) scale(1)'; }
     if (playersListContainer) { playersListContainer.style.backgroundColor = ''; playersListContainer.style.color = ''; playersListContainer.style.transform = 'translate(-50%, -50%) scale(1)'; }
   }
-
-  // --- UPDATED VISIBILITY LOGIC ---
   
-  if (scoreboardContainer) {
-      scoreboardContainer.style.display = (isScoreboardVisible || isMatchInfoVisible) ? 'flex' : 'none';
-  }
-  
+  if (scoreboardContainer) { scoreboardContainer.style.display = (isScoreboardVisible || isMatchInfoVisible) ? 'flex' : 'none'; }
   const contentWrapper = document.getElementById('scoreboard-content-wrapper');
-  if (contentWrapper) {
-    contentWrapper.style.display = isScoreboardVisible ? 'flex' : 'none';
-  }
-
-  if (matchInfoRow) {
-      matchInfoRow.style.display = isMatchInfoVisible ? 'flex' : 'none';
-  }
-
-  if (gameReportContainer) {
-      gameReportContainer.style.display = isGameReportVisible ? 'flex' : 'none';
-  }
-  
-  if (playersListContainer) {
-      playersListContainer.style.display = isPlayersListVisible ? 'flex' : 'none';
-  }
+  if (contentWrapper) { contentWrapper.style.display = isScoreboardVisible ? 'flex' : 'none'; }
+  if (matchInfoRow) { matchInfoRow.style.display = isMatchInfoVisible ? 'flex' : 'none'; }
+  if (gameReportContainer) { gameReportContainer.style.display = isGameReportVisible ? 'flex' : 'none'; }
+  if (playersListContainer) { playersListContainer.style.display = isPlayersListVisible ? 'flex' : 'none'; }
 }
 
 // --- Initialization ---
