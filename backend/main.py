@@ -3,7 +3,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, ValidationError
-from typing import Literal
+from typing import Literal, List
 
 from data_manager import (
     data_manager,
@@ -24,7 +24,9 @@ from data_manager import (
     ReplacePlayerUpdate,
     MatchInfoUpdate,
     TimerPositionUpdate,
-    LayoutUpdate
+    LayoutUpdate,
+    PeriodSetting, # <-- Import
+    PeriodUpdate   # <-- Import
 )
 from websocket_manager import websocket_manager
 
@@ -33,6 +35,8 @@ async def lifespan(app: FastAPI):
     print("Application starting up...")
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
+    # --- Load period settings ---
+    await data_manager.load_period_settings()
     yield
     print("Application shutting down...")
 
@@ -85,8 +89,6 @@ async def stop_timer():
     websocket_manager.stop()
     return {"message": "Timer stopped"}
 
-# REMOVED /api/timer/reset
-
 class SetTimeUpdate(BaseModel):
     seconds: int
 
@@ -115,6 +117,17 @@ class SetFutsalClockUpdate(BaseModel):
 async def set_futsal_clock(update: SetFutsalClockUpdate):
     websocket_manager.set_futsal_clock(update.is_on)
     return {"message": f"Futsal clock set to {update.is_on}"}
+
+# --- New Period Endpoints ---
+@app.get("/api/periods", tags=["Timer Control"])
+async def get_periods() -> List[PeriodSetting]:
+    return data_manager.get_period_settings()
+
+@app.post("/api/period", tags=["Timer Control"])
+async def set_current_period(update: PeriodUpdate):
+    config = await data_manager.set_current_period(update.name)
+    await websocket_manager.broadcast_config(config)
+    return {"message": f"Period set to {update.name}"}
 
 
 # --- Team & Player Data ---

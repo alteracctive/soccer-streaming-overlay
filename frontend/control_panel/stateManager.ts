@@ -26,6 +26,13 @@ export interface TeamConfig {
 export interface ScoreboardConfig {
   teamA: TeamConfig;
   teamB: TeamConfig;
+  currentPeriod: string; // <-- New field
+}
+
+// --- New Interface ---
+export interface PeriodSetting {
+  name: string;
+  endTime: number;
 }
 
 export interface TimerStatus {
@@ -272,13 +279,24 @@ export function setAutoConvertYellowToRed(isOn: boolean) {
 export const timerControls = {
   start: () => post('/api/timer/start', {}),
   stop: () => post('/api/timer/stop', {}),
-  // Reset Removed
   set: (seconds: number) => post('/api/timer/set', { seconds }),
 };
 
 export async function setFutsalClock(isOn: boolean) {
   await post('/api/timer/futsal-toggle', { is_on: isOn });
 }
+
+// --- New Period Functions ---
+export async function getPeriods(): Promise<PeriodSetting[]> {
+  const response = await fetch(`${API_URL}/api/periods`);
+  if (!response.ok) throw new Error("Failed to load periods");
+  return await response.json();
+}
+
+export async function setPeriod(name: string) {
+  await post('/api/period', { name });
+}
+
 
 export async function setExtraTime(minutes: number) {
   await post('/api/extra-time/set', { minutes });
