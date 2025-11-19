@@ -25,24 +25,25 @@ from data_manager import (
     MatchInfoUpdate,
     TimerPositionUpdate,
     LayoutUpdate,
-    PeriodSetting,
-    PeriodUpdate
+    PeriodSetting, # <-- Import
+    PeriodUpdate   # <-- Import
 )
 from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Application starting up...")
-    # 1. Load Settings
-    await data_manager.load_period_settings()
+    # 1. Load all configs
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
+    await data_manager.load_period_settings()
     
     # 2. Force set the period to the first option on startup
     periods = data_manager.get_period_settings()
     if periods and len(periods) > 0:
         first_period = periods[0].name
         print(f"Setting default period to: {first_period}")
+        # Update in-memory config (doesn't persist to file due to exclude={'currentPeriod'})
         await data_manager.set_current_period(first_period)
 
     yield
@@ -97,6 +98,11 @@ async def stop_timer():
     websocket_manager.stop()
     return {"message": "Timer stopped"}
 
+@app.post("/api/timer/reset", tags=["Timer Control"])
+async def reset_timer():
+    websocket_manager.reset()
+    return {"message": "Timer reset"}
+
 class SetTimeUpdate(BaseModel):
     seconds: int
 
@@ -126,7 +132,7 @@ async def set_futsal_clock(update: SetFutsalClockUpdate):
     websocket_manager.set_futsal_clock(update.is_on)
     return {"message": f"Futsal clock set to {update.is_on}"}
 
-# --- New Period Endpoints ---
+# --- Period Endpoints ---
 @app.get("/api/periods", tags=["Timer Control"])
 async def get_periods() -> List[PeriodSetting]:
     return data_manager.get_period_settings()

@@ -26,10 +26,9 @@ export interface TeamConfig {
 export interface ScoreboardConfig {
   teamA: TeamConfig;
   teamB: TeamConfig;
-  currentPeriod: string; // <-- New field
+  currentPeriod: string;
 }
 
-// --- New Interface ---
 export interface PeriodSetting {
   name: string;
   endTime: number;
@@ -79,6 +78,7 @@ let appState: {
   isPlayersListVisible: boolean;
   isAutoAddScoreOn: boolean;
   isAutoConvertYellowToRedOn: boolean;
+  isAutoAdvancePeriodOn: boolean; // <-- New State
   extraTime: ExtraTimeStatus;
   isMatchInfoVisible: boolean;
   isFutsalClockOn: boolean;
@@ -101,6 +101,7 @@ let appState: {
   isPlayersListVisible: false,
   isAutoAddScoreOn: false,
   isAutoConvertYellowToRedOn: false,
+  isAutoAdvancePeriodOn: false, // <-- New Default
   extraTime: { minutes: 0, isVisible: false },
   isMatchInfoVisible: false,
   isFutsalClockOn: false,
@@ -250,6 +251,9 @@ export async function initStateManager() {
   const savedAutoConvert = localStorage.getItem('autoConvertYellowToRed');
   appState.isAutoConvertYellowToRedOn = savedAutoConvert === 'true';
 
+  const savedAutoAdvance = localStorage.getItem('autoAdvancePeriod'); // <-- Load New Setting
+  appState.isAutoAdvancePeriodOn = savedAutoAdvance === 'true';
+
   connectWebSocket();
 }
 
@@ -282,11 +286,21 @@ export const timerControls = {
   set: (seconds: number) => post('/api/timer/set', { seconds }),
 };
 
+// --- New Function ---
+export function setAutoAdvancePeriod(isOn: boolean) {
+  appState.isAutoAdvancePeriodOn = isOn;
+  localStorage.setItem('autoAdvancePeriod', isOn ? 'true' : 'false');
+  
+  // Requested logic: Stop timer if setting changes while running
+  if (appState.timer.isRunning) {
+    timerControls.stop();
+  }
+}
+
 export async function setFutsalClock(isOn: boolean) {
   await post('/api/timer/futsal-toggle', { is_on: isOn });
 }
 
-// --- New Period Functions ---
 export async function getPeriods(): Promise<PeriodSetting[]> {
   const response = await fetch(`${API_URL}/api/periods`);
   if (!response.ok) throw new Error("Failed to load periods");
@@ -296,7 +310,6 @@ export async function getPeriods(): Promise<PeriodSetting[]> {
 export async function setPeriod(name: string) {
   await post('/api/period', { name });
 }
-
 
 export async function setExtraTime(minutes: number) {
   await post('/api/extra-time/set', { minutes });
@@ -343,6 +356,10 @@ export async function togglePlayersList() {
 
 export async function toggleMatchInfoVisibility() {
   await post('/api/match-info/toggle', {});
+}
+
+export async function toggleRedCardVisibility() {
+  await post('/api/red-card-visibility/toggle', {});
 }
 
 export async function addPlayer(

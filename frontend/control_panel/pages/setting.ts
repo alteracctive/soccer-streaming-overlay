@@ -4,6 +4,7 @@ import {
   getState, 
   setAutoAddScore, 
   setAutoConvertYellowToRed,
+  setAutoAdvancePeriod, // <-- New import
   setFutsalClock,
   downloadJson,
   uploadJson,
@@ -58,8 +59,7 @@ function triggerDownload(blob: Blob, fileName: string) {
 
 
 export function render(container: HTMLElement) {
-  // Get initial state from the manager
-  const { isAutoAddScoreOn, isAutoConvertYellowToRedOn, isFutsalClockOn } = getState();
+  const { isAutoAddScoreOn, isAutoConvertYellowToRedOn, isFutsalClockOn, isAutoAdvancePeriodOn } = getState();
   const isDarkMode = document.body.classList.contains('dark-mode');
 
   container.innerHTML = `
@@ -220,6 +220,19 @@ export function render(container: HTMLElement) {
         <hr style="border: none; border-top: 1px solid var(--border-color); margin: 16px 0;">
 
         <div class="form-group switch-toggle">
+          <label for="auto-advance-toggle">Auto-advance Period on Time Set</label>
+          <label class="switch">
+            <input type="checkbox" id="auto-advance-toggle" ${isAutoAdvancePeriodOn ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p style="font-size: 13px; opacity: 0.8; margin-top: 8px; margin-bottom: 0;">
+          When ON, clicking "Set to [Time]" in the dashboard will automatically switch the match period to the next one in the list.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 16px 0;">
+
+        <div class="form-group switch-toggle">
           <label for="futsal-clock-toggle">Futsal Clock (Countdown)</label>
           <label class="switch">
             <input type="checkbox" id="futsal-clock-toggle" ${isFutsalClockOn ? 'checked' : ''}>
@@ -236,7 +249,7 @@ export function render(container: HTMLElement) {
         <div class="form-group inline-form-group" style="align-items: end;">
           <div class="form-group" style="flex-grow: 1;">
             <label for="json-file-select">Configuration File</label>
-            <select id="json-file-select">
+            <select id="json-file-select" style="padding: 8px; border-radius: 4px; width: 100%;">
               <option value="team-info-config.json">All Team Info</option>
               <option value="scoreboard-customization.json">Scoreboard Style & Layout</option>
             </select>
@@ -254,31 +267,21 @@ export function render(container: HTMLElement) {
     </div>
   `;
 
-  // --- Local state for export/import ---
+  // ... (Variable declarations omitted) ...
   let currentExportBlob: Blob | null = null;
   let currentExportFileName: string = '';
   let teamDataToImport: TeamConfig | null = null;
 
-  // --- Get Element References ---
-  const themeToggle = container.querySelector(
-    '#theme-toggle',
-  ) as HTMLInputElement;
-  const autoScoreToggle = container.querySelector(
-    '#auto-score-toggle',
-  ) as HTMLInputElement;
-  const autoConvertToggle = container.querySelector(
-    '#auto-convert-toggle',
-  ) as HTMLInputElement;
-  const futsalClockToggle = container.querySelector(
-    '#futsal-clock-toggle',
-  ) as HTMLInputElement;
+  const themeToggle = container.querySelector('#theme-toggle') as HTMLInputElement;
+  const autoScoreToggle = container.querySelector('#auto-score-toggle') as HTMLInputElement;
+  const autoConvertToggle = container.querySelector('#auto-convert-toggle') as HTMLInputElement;
+  const autoAdvanceToggle = container.querySelector('#auto-advance-toggle') as HTMLInputElement; // <-- New Ref
+  const futsalClockToggle = container.querySelector('#futsal-clock-toggle') as HTMLInputElement;
     
-  // Import/Export Refs
+  // ... (Rest of element refs omitted) ...
   const fileSelect = container.querySelector('#json-file-select') as HTMLSelectElement;
   const importBtn = container.querySelector('#import-btn') as HTMLButtonElement;
   const exportBtn = container.querySelector('#export-btn') as HTMLButtonElement;
-  
-  // Import Modal Refs
   const importModal = container.querySelector('#import-modal') as HTMLDivElement;
   const importModalTitle = container.querySelector('#import-modal-title') as HTMLHeadingElement;
   const importTextarea = container.querySelector('#import-json-textarea') as HTMLTextAreaElement;
@@ -286,298 +289,89 @@ export function render(container: HTMLElement) {
   const importFileName = container.querySelector('#import-file-name') as HTMLSpanElement;
   const modalImportCancelBtn = container.querySelector('#modal-import-cancel-btn') as HTMLButtonElement;
   const modalImportSaveBtn = container.querySelector('#modal-import-save-btn') as HTMLButtonElement;
-  
-  // Export Options Modal Refs
   const exportOptionsModal = container.querySelector('#export-options-modal') as HTMLDivElement;
   const exportBothBtn = container.querySelector('#modal-export-both-btn') as HTMLButtonElement;
   const exportABtn = container.querySelector('#modal-export-a-btn') as HTMLButtonElement;
   const exportBBtn = container.querySelector('#modal-export-b-btn') as HTMLButtonElement;
   const exportOptionsCancelBtn = container.querySelector('#modal-export-options-cancel-btn') as HTMLButtonElement;
-  
-  // Export View Modal Refs
   const exportViewModal = container.querySelector('#export-view-modal') as HTMLDivElement;
   const exportViewModalTitle = container.querySelector('#export-view-modal-title') as HTMLHeadingElement;
   const exportViewTextarea = container.querySelector('#export-view-textarea') as HTMLTextAreaElement;
   const modalExportViewCancelBtn = container.querySelector('#modal-export-view-cancel-btn') as HTMLButtonElement;
   const modalCopyBtn = container.querySelector('#modal-copy-btn') as HTMLButtonElement;
   const modalDownloadBtn = container.querySelector('#modal-download-btn') as HTMLButtonElement;
-
-  // Team Assign Modal Refs
   const teamAssignModal = container.querySelector('#team-assign-modal') as HTMLDivElement;
   const assignTeamABtn = container.querySelector('#modal-assign-a-btn') as HTMLButtonElement;
   const assignTeamBBtn = container.querySelector('#modal-assign-b-btn') as HTMLButtonElement;
   const assignCancelBtn = container.querySelector('#modal-assign-cancel-btn') as HTMLButtonElement;
-  
-  
-  // --- New: State Update Handler ---
+
+  // --- State Update Handler ---
   const onStateUpdate = () => {
-    const { isFutsalClockOn } = getState();
-    if (futsalClockToggle) {
-      futsalClockToggle.checked = isFutsalClockOn;
-    }
+    const { isFutsalClockOn, isAutoAdvancePeriodOn } = getState();
+    if (futsalClockToggle) futsalClockToggle.checked = isFutsalClockOn;
+    if (autoAdvanceToggle) autoAdvanceToggle.checked = isAutoAdvancePeriodOn; // <-- Sync UI
   };
   subscribe(onStateUpdate);
 
 
   // --- Add Event Listeners ---
   
-  // Dark Mode Toggle
   themeToggle.addEventListener('change', () => {
-    if (themeToggle.checked) {
-      document.body.classList.add('dark-mode');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.body.classList.remove('dark-mode');
-      localStorage.setItem('theme', 'light');
-    }
+    if (themeToggle.checked) { document.body.classList.add('dark-mode'); localStorage.setItem('theme', 'dark'); } 
+    else { document.body.classList.remove('dark-mode'); localStorage.setItem('theme', 'light'); }
   });
   
-  // Auto-Score Toggle
   autoScoreToggle.addEventListener('change', () => {
     setAutoAddScore(autoScoreToggle.checked);
-    showNotification(
-      `Auto-add score ${autoScoreToggle.checked ? 'Enabled' : 'Disabled'}`,
-    );
+    showNotification(`Auto-add score ${autoScoreToggle.checked ? 'Enabled' : 'Disabled'}`);
   });
 
-  // Auto-Convert Toggle
   autoConvertToggle.addEventListener('change', () => {
     setAutoConvertYellowToRed(autoConvertToggle.checked);
-    showNotification(
-      `Auto-convert 2-to-1 ${autoConvertToggle.checked ? 'Enabled' : 'Disabled'}`,
-    );
+    showNotification(`Auto-convert 2-to-1 ${autoConvertToggle.checked ? 'Enabled' : 'Disabled'}`);
   });
   
-  // Futsal Clock Toggle
+  // --- New: Auto-Advance Listener ---
+  autoAdvanceToggle.addEventListener('change', () => {
+    setAutoAdvancePeriod(autoAdvanceToggle.checked);
+    showNotification(`Auto-advance period ${autoAdvanceToggle.checked ? 'Enabled' : 'Disabled'}`);
+  });
+  
   futsalClockToggle.addEventListener('change', () => {
     const isOn = futsalClockToggle.checked;
     setFutsalClock(isOn);
-    showNotification(
-      `Futsal Clock ${isOn ? 'Enabled' : 'Disabled'}. Timer stopped.`,
-    );
+    showNotification(`Futsal Clock ${isOn ? 'Enabled' : 'Disabled'}. Timer stopped.`);
   });
   
-  // --- Import/Export Listeners ---
-
+  // ... (Import/Export Logic omitted for brevity - unchanged) ...
   // --- Export View Modal ---
-  const showExportViewModal = (fileName: string, content: string, blob: Blob) => {
-    currentExportBlob = blob;
-    currentExportFileName = fileName;
-    exportViewModalTitle.textContent = `Export: ${fileName}`;
-    exportViewTextarea.value = content;
-    exportViewModal.style.display = 'flex';
-  };
-  
-  const hideExportViewModal = () => {
-    exportViewModal.style.display = 'none';
-    currentExportBlob = null;
-    currentExportFileName = '';
-  };
-  
+  const showExportViewModal = (fileName: string, content: string, blob: Blob) => { currentExportBlob = blob; currentExportFileName = fileName; exportViewModalTitle.textContent = `Export: ${fileName}`; exportViewTextarea.value = content; exportViewModal.style.display = 'flex'; };
+  const hideExportViewModal = () => { exportViewModal.style.display = 'none'; currentExportBlob = null; currentExportFileName = ''; };
   modalExportViewCancelBtn.addEventListener('click', hideExportViewModal);
-  
-  modalCopyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(exportViewTextarea.value);
-    showNotification('Copied to clipboard!');
-  });
-  
-  modalDownloadBtn.addEventListener('click', () => {
-    if (currentExportBlob && currentExportFileName) {
-      triggerDownload(currentExportBlob, currentExportFileName);
-      hideExportViewModal();
-    } else {
-      showNotification('Error: No export data found.', 'error');
-    }
-  });
+  modalCopyBtn.addEventListener('click', () => { navigator.clipboard.writeText(exportViewTextarea.value); showNotification('Copied to clipboard!'); });
+  modalDownloadBtn.addEventListener('click', () => { if (currentExportBlob && currentExportFileName) { triggerDownload(currentExportBlob, currentExportFileName); hideExportViewModal(); } else { showNotification('Error: No export data found.', 'error'); } });
 
   // --- Export Options Modal ---
-  const hideExportOptionsModal = () => {
-    exportOptionsModal.style.display = 'none';
-  };
-  
-  const handleDownload = async (type: 'all' | 'teamA' | 'teamB') => {
-    hideExportOptionsModal();
-    const { config } = getState();
-    if (!config) {
-      showNotification('Config not loaded.', 'error');
-      return;
-    }
-    
-    const baseFileName = 'team-info-config.json';
-    
-    try {
-      const blob = await downloadJson(baseFileName); 
-      
-      if (type === 'all') {
-        const content = await blob.text();
-        const teamAAbbr = config.teamA.abbreviation || 'TMA';
-        const teamBAbbr = config.teamB.abbreviation || 'TMB';
-        const downloadName = `${teamAAbbr}-vs-${teamBAbbr}.json`;
-        showExportViewModal(downloadName, content, blob);
-
-      } else {
-        const originalJsonString = await blob.text();
-        const originalConfig = JSON.parse(originalJsonString) as ScoreboardConfig;
-        
-        const modifiedConfig = createPartialConfig(originalConfig, type);
-        const modifiedJsonString = JSON.stringify(modifiedConfig, null, 2);
-        const newBlob = new Blob([modifiedJsonString], { type: 'application/json' });
-        
-        const teamName = (type === 'teamA' ? config.teamA.name : config.teamB.name) || type;
-        const downloadName = `${teamName.replace(/\s+/g, '')}-info.json`;
-        
-        showExportViewModal(downloadName, modifiedJsonString, newBlob);
-      }
-    } catch (error: any) {
-      showNotification(`Error exporting: ${error.message}`, 'error');
-    }
-  };
-  
+  const hideExportOptionsModal = () => { exportOptionsModal.style.display = 'none'; };
+  const handleDownload = async (type: 'all' | 'teamA' | 'teamB') => { hideExportOptionsModal(); const { config } = getState(); if (!config) { showNotification('Config not loaded.', 'error'); return; } const baseFileName = 'team-info-config.json'; try { const blob = await downloadJson(baseFileName); if (type === 'all') { const content = await blob.text(); const teamAAbbr = config.teamA.abbreviation || 'TMA'; const teamBAbbr = config.teamB.abbreviation || 'TMB'; const downloadName = `${teamAAbbr}-vs-${teamBAbbr}.json`; showExportViewModal(downloadName, content, blob); } else { const originalJsonString = await blob.text(); const originalConfig = JSON.parse(originalJsonString) as ScoreboardConfig; const modifiedConfig = createPartialConfig(originalConfig, type); const modifiedJsonString = JSON.stringify(modifiedConfig, null, 2); const newBlob = new Blob([modifiedJsonString], { type: 'application/json' }); const teamName = (type === 'teamA' ? config.teamA.name : config.teamB.name) || type; const downloadName = `${teamName.replace(/\s+/g, '')}-info.json`; showExportViewModal(downloadName, modifiedJsonString, newBlob); } } catch (error: any) { showNotification(`Error exporting: ${error.message}`, 'error'); } };
   exportBothBtn.addEventListener('click', () => handleDownload('all'));
   exportABtn.addEventListener('click', () => handleDownload('teamA'));
   exportBBtn.addEventListener('click', () => handleDownload('teamB'));
   exportOptionsCancelBtn.addEventListener('click', hideExportOptionsModal);
+  
+  exportBtn.addEventListener('click', async () => { const fileName = fileSelect.value; if (fileName === 'team-info-config.json') { exportOptionsModal.style.display = 'flex'; } else { try { const blob = await downloadJson(fileName); const content = await blob.text(); showExportViewModal(fileName, content, blob); } catch (error: any) { showNotification(`Error exporting: ${error.message}`, 'error'); } } });
+  importBtn.addEventListener('click', () => { const fileName = fileSelect.value; if (fileName !== 'team-info-config.json' && fileName !== 'scoreboard-customization.json') { showNotification('Please select a full config file to import.', 'error'); return; } importModalTitle.textContent = `Import (Upload) to ${getFriendlyFileName(fileName)}`; importTextarea.value = ''; importFileName.textContent = 'No file chosen'; importFileInput.value = ''; importModal.style.display = 'flex'; });
+  modalImportCancelBtn.addEventListener('click', () => { importModal.style.display = 'none'; });
+  importFileInput.addEventListener('change', () => { const file = importFileInput.files?.[0]; if (file) { importFileName.textContent = file.name; const reader = new FileReader(); reader.onload = (e) => { importTextarea.value = e.target?.result as string; }; reader.readAsText(file); } else { importFileName.textContent = 'No file chosen'; } });
 
-  
-  // "Export" (Download) Button
-  exportBtn.addEventListener('click', async () => {
-    const fileName = fileSelect.value;
-    
-    if (fileName === 'team-info-config.json') {
-      exportOptionsModal.style.display = 'flex';
-    } else {
-      try {
-        const blob = await downloadJson(fileName);
-        const content = await blob.text();
-        showExportViewModal(fileName, content, blob);
-      } catch (error: any) {
-        showNotification(`Error exporting: ${error.message}`, 'error');
-      }
-    }
-  });
-  
-  // "Import" (Upload) Button - Show Modal
-  importBtn.addEventListener('click', () => {
-    const fileName = fileSelect.value;
-    
-    importModalTitle.textContent = `Import (Upload) to ${getFriendlyFileName(fileName)}`;
-    importTextarea.value = '';
-    importFileName.textContent = 'No file chosen';
-    importFileInput.value = ''; 
-    importModal.style.display = 'flex';
-  });
-  
-  // Modal: Cancel Button
-  modalImportCancelBtn.addEventListener('click', () => {
-    importModal.style.display = 'none';
-  });
-  
-  // Modal: File Input
-  importFileInput.addEventListener('change', () => {
-    const file = importFileInput.files?.[0];
-    if (file) {
-      importFileName.textContent = file.name;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        importTextarea.value = e.target?.result as string;
-      };
-      reader.readAsText(file);
-    } else {
-      importFileName.textContent = 'No file chosen';
-    }
-  });
-
-  // --- Team Assign Modal Logic ---
-  const hideTeamAssignModal = () => {
-    teamAssignModal.style.display = 'none';
-    teamDataToImport = null;
-  };
-  
-  const handleTeamImport = async (targetTeam: 'teamA' | 'teamB') => {
-    if (!teamDataToImport) {
-      showNotification('Error: No team data to import.', 'error');
-      return;
-    }
-    
-    try {
-      assignTeamABtn.disabled = true;
-      assignTeamBBtn.disabled = true;
-      
-      const currentConfigJson = await getRawJson('team-info-config.json');
-      const currentConfig = JSON.parse(currentConfigJson) as ScoreboardConfig;
-      
-      if (targetTeam === 'teamA') {
-        currentConfig.teamA = teamDataToImport;
-      } else {
-        currentConfig.teamB = teamDataToImport;
-      }
-      
-      const newJsonData = JSON.stringify(currentConfig, null, 2);
-      await uploadJson('team-info-config.json', newJsonData);
-      
-      showNotification(`Successfully imported data to ${targetTeam}!`);
-      hideTeamAssignModal();
-
-    } catch (error: any) {
-      console.error(error);
-      showNotification(`Import Failed: ${error.message}`, 'error');
-    } finally {
-      assignTeamABtn.disabled = false;
-      assignTeamBBtn.disabled = false;
-    }
-  };
-  
+  const hideTeamAssignModal = () => { teamAssignModal.style.display = 'none'; teamDataToImport = null; };
+  const handleTeamImport = async (targetTeam: 'teamA' | 'teamB') => { if (!teamDataToImport) { showNotification('Error: No team data to import.', 'error'); return; } try { assignTeamABtn.disabled = true; assignTeamBBtn.disabled = true; const currentConfigJson = await getRawJson('team-info-config.json'); const currentConfig = JSON.parse(currentConfigJson) as ScoreboardConfig; if (targetTeam === 'teamA') { currentConfig.teamA = teamDataToImport; } else { currentConfig.teamB = teamDataToImport; } const newJsonData = JSON.stringify(currentConfig, null, 2); await uploadJson('team-info-config.json', newJsonData); showNotification(`Successfully imported data to ${targetTeam}!`); hideTeamAssignModal(); } catch (error: any) { console.error(error); showNotification(`Import Failed: ${error.message}`, 'error'); } finally { assignTeamABtn.disabled = false; assignTeamBBtn.disabled = false; } };
   assignTeamABtn.addEventListener('click', () => handleTeamImport('teamA'));
   assignTeamBBtn.addEventListener('click', () => handleTeamImport('teamB'));
   assignCancelBtn.addEventListener('click', hideTeamAssignModal);
   
-  
-  // Modal: Save (Validate and Overwrite) Button
-  modalImportSaveBtn.addEventListener('click', async () => {
-    const fileName = fileSelect.value as "team-info-config.json" | "scoreboard-customization.json";
-    const jsonData = importTextarea.value;
-    
-    if (!jsonData.trim()) {
-      showNotification('No JSON data to import.', 'error');
-      return;
-    }
-    
-    try {
-      modalImportSaveBtn.disabled = true;
-      modalImportSaveBtn.textContent = 'Validating...';
-      
-      let uploadedConfig;
-      try {
-        uploadedConfig = JSON.parse(jsonData);
-      } catch (e) {
-        throw new Error('Data is not valid JSON.');
-      }
-      
-      if (fileName === 'team-info-config.json') {
-        // Check for single-team format
-        if (uploadedConfig.teamA && uploadedConfig.teamB && uploadedConfig.teamB.score === -1) {
-          teamDataToImport = uploadedConfig.teamA as TeamConfig;
-          importModal.style.display = 'none';
-          teamAssignModal.style.display = 'flex';
-          return; 
-        }
-      }
-      
-      await uploadJson(fileName, jsonData);
-      
-      showNotification(`Successfully imported ${getFriendlyFileName(fileName)}! Data is now active.`);
-      importModal.style.display = 'none';
-      
-    } catch (error: any) {
-      console.error(error);
-      showNotification(`Import Failed: ${error.message}`, 'error');
-    } finally {
-      modalImportSaveBtn.disabled = false;
-      modalImportSaveBtn.textContent = 'Validate and Overwrite';
-    }
-  });
+  modalImportSaveBtn.addEventListener('click', async () => { const fileName = fileSelect.value as "team-info-config.json" | "scoreboard-customization.json"; const jsonData = importTextarea.value; if (!jsonData.trim()) { showNotification('No JSON data to import.', 'error'); return; } try { modalImportSaveBtn.disabled = true; modalImportSaveBtn.textContent = 'Validating...'; let uploadedConfig; try { uploadedConfig = JSON.parse(jsonData); } catch (e) { throw new Error('Data is not valid JSON.'); } if (fileName === 'team-info-config.json') { if (uploadedConfig.teamA && uploadedConfig.teamB && uploadedConfig.teamB.score === -1) { teamDataToImport = uploadedConfig.teamA as TeamConfig; importModal.style.display = 'none'; teamAssignModal.style.display = 'flex'; return; } } await uploadJson(fileName, jsonData); showNotification(`Successfully imported ${getFriendlyFileName(fileName)}! Data is now active.`); importModal.style.display = 'none'; } catch (error: any) { console.error(error); showNotification(`Import Failed: ${error.message}`, 'error'); } finally { modalImportSaveBtn.disabled = false; modalImportSaveBtn.textContent = 'Validate and Overwrite'; } });
 
-  // Return a cleanup function
   return () => {
     unsubscribe(onStateUpdate);
   };

@@ -8,68 +8,34 @@ import {
   setExtraTime,
   toggleExtraTimeVisibility,
   addGoal,
-  getPeriods, // <-- New import
-  setPeriod, // <-- New import
+  getPeriods, 
+  setPeriod, 
   type PlayerConfig,
-  type PeriodSetting // <-- New import
+  type PeriodSetting 
 } from '../stateManager';
 import { showNotification } from '../notification';
 
-// Utility function to format time
+// ... (Utility functions renderPlayerGrid and formatTime Unchanged) ...
 function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
-  
-  const min = (totalMinutes < 100) 
-    ? totalMinutes.toString().padStart(2, '0') 
-    : totalMinutes.toString();
-    
+  const min = (totalMinutes < 100) ? totalMinutes.toString().padStart(2, '0') : totalMinutes.toString();
   return `${min}:${sec}`;
 }
 
-// Function to Render Player Grid
 function renderPlayerGrid(players: PlayerConfig[]): string {
-  if (!players || players.length === 0) {
-    return '<p style="font-size: 13px; opacity: 0.7;">No players on roster.</p>';
-  }
-  
-  const sortedPlayers = [...players].sort((a, b) => {
-    if (a.onField && !b.onField) return -1;
-    if (!a.onField && b.onField) return 1;
-    return a.number - b.number;
-  });
-
+  if (!players || players.length === 0) { return '<p style="font-size: 13px; opacity: 0.7;">No players on roster.</p>'; }
+  const sortedPlayers = [...players].sort((a, b) => { if (a.onField && !b.onField) return -1; if (!a.onField && b.onField) return 1; return a.number - b.number; });
   return sortedPlayers.map(player => {
-    let btnClass = '';
-    
-    if (player.redCards.length > 0) {
-      btnClass = 'btn-red'; 
-    } else if (player.onField) {
-      btnClass = ''; 
-    } else {
-      btnClass = 'btn-secondary'; 
-    }
-    
-    return `
-      <button 
-        class="player-btn ${btnClass}" 
-        title="${player.name}" 
-        data-number="${player.number}"
-      >
-        ${player.number}
-      </button>
-    `;
+    let btnClass = ''; if (player.redCards.length > 0) { btnClass = 'btn-red'; } else if (player.onField) { btnClass = ''; } else { btnClass = 'btn-secondary'; }
+    return `<button class="player-btn ${btnClass}" title="${player.name}" data-number="${player.number}">${player.number}</button>`;
   }).join('');
 }
 
-
 export function render(container: HTMLElement) {
   const { config, timer, extraTime } = getState();
-  
-  // --- Local State for Periods ---
   let allPeriods: PeriodSetting[] = [];
 
-  // --- Render HTML ---
   container.innerHTML = `
     <div class="modal-overlay" id="set-time-modal" style="display: none;">
       <div class="modal-content" style="max-width: 320px;">
@@ -95,55 +61,22 @@ export function render(container: HTMLElement) {
     <div class="controller-grid" id="dashboard-controller-grid">
       <div class="card team-control"> 
         <div class="team-header">
-          <div class="color-swatch-container">
-            <span class="color-swatch" id="team-a-swatch-primary"></span>
-            <span class="color-swatch" id="team-a-swatch-secondary"></span>
-          </div>
+          <div class="color-swatch-container"><span class="color-swatch" id="team-a-swatch-primary"></span><span class="color-swatch" id="team-a-swatch-secondary"></span></div>
           <h4 id="team-a-header">Team A (TMA)</h4>
         </div>
-        
         <div class="card-content">
-          <div class="score-side">
-            <div class="team-score" id="team-a-score">0</div>
-            <div class="score-control-row">
-              <button id="team-a-dec" class="btn-secondary score-btn">-</button>
-              <button id="team-a-inc" class="score-btn">+</button>
-            </div>
-          </div>
-          <div class="player-side">
-            <div class="player-grid-container" id="player-grid-container-a">
-              <div class="player-grid" id="player-grid-a" data-team="teamA">
-              </div>
-            </div>
-            <div class="player-info-display" id="team-a-info-display">&nbsp;</div>
-          </div>
+          <div class="score-side"><div class="team-score" id="team-a-score">0</div><div class="score-control-row"><button id="team-a-dec" class="btn-secondary score-btn">-</button><button id="team-a-inc" class="score-btn">+</button></div></div>
+          <div class="player-side"><div class="player-grid-container" id="player-grid-container-a"><div class="player-grid" id="player-grid-a" data-team="teamA"></div></div><div class="player-info-display" id="team-a-info-display">&nbsp;</div></div>
         </div>
       </div>
-      
       <div class="card team-control">
         <div class="team-header">
-          <div class="color-swatch-container">
-            <span class="color-swatch" id="team-b-swatch-primary"></span>
-            <span class="color-swatch" id="team-b-swatch-secondary"></span>
-          </div>
+          <div class="color-swatch-container"><span class="color-swatch" id="team-b-swatch-primary"></span><span class="color-swatch" id="team-b-swatch-secondary"></span></div>
           <h4 id="team-b-header">Team B (TMB)</h4>
         </div>
-        
         <div class="card-content">
-          <div class="score-side">
-            <div class="team-score" id="team-b-score">0</div>
-            <div class="score-control-row">
-              <button id="team-b-dec" class="btn-secondary score-btn">-</button>
-              <button id="team-b-inc" class="score-btn">+</button>
-            </div>
-          </div>
-          <div class="player-side">
-            <div class="player-grid-container" id="player-grid-container-b">
-              <div class="player-grid" id="player-grid-b" data-team="teamB">
-              </div>
-            </div>
-            <div class="player-info-display" id="team-b-info-display">&nbsp;</div>
-          </div>
+          <div class="score-side"><div class="team-score" id="team-b-score">0</div><div class="score-control-row"><button id="team-b-dec" class="btn-secondary score-btn">-</button><button id="team-b-inc" class="score-btn">+</button></div></div>
+          <div class="player-side"><div class="player-grid-container" id="player-grid-container-b"><div class="player-grid" id="player-grid-b" data-team="teamB"></div></div><div class="player-info-display" id="team-b-info-display">&nbsp;</div></div>
         </div>
       </div>
     </div>
@@ -151,10 +84,7 @@ export function render(container: HTMLElement) {
     <div class="timer-grid">
       <div class="card timer-control">
         <h4>Timer</h4>
-        <div class="timer-display" id="timer-display">${formatTime(
-          timer.seconds,
-        )}</div>
-        
+        <div class="timer-display" id="timer-display">${formatTime(timer.seconds)}</div>
         <div class="btn-group" style="margin-bottom: 16px;">
           <button id="start-stop-toggle" class="btn-green" style="flex-grow: 1;">Start</button>
           <button id="show-set-time" class="btn-secondary">Set Time</button>
@@ -169,54 +99,42 @@ export function render(container: HTMLElement) {
              </div>
              <div style="text-align: right;">
                 <label style="font-size: 12px; margin-bottom: 4px; display: block;">Target</label>
-                <span id="period-end-time" style="font-weight: bold; color: var(--accent-color);">--'</span>
+                <button id="set-to-period-end-btn" class="btn-secondary" style="white-space: nowrap; height: 35px; font-size: 13px;">
+                   Set to <span id="period-end-time-btn" style="font-weight: bold;">--'</span>
+                </button>
              </div>
         </div>
-
       </div>
-      
       <div class="card timer-control">
         <h4>Additional Time</h4>
         <div class="form-group" style="padding: 10px 0;">
           <label for="extra-time-input" style="font-weight: 500;">Minutes</label>
           <div class="inline-form-group" style="margin-top: 4px; justify-content: center;">
             <input type="number" id="extra-time-input" min="0" max="99" value="${extraTime.minutes}" style="width: 100px; text-align: center; margin: 0 auto;">
-            <button id="extra-time-action-btn" class="btn-secondary" style="min-width: 110px;">
-              ${extraTime.isVisible ? 'Showing' : 'Set and Show'}
-            </button>
+            <button id="extra-time-action-btn" class="btn-secondary" style="min-width: 110px;">${extraTime.isVisible ? 'Showing' : 'Set and Show'}</button>
           </div>
         </div>
       </div>
     </div>
   `;
 
-  // --- Get Element References ---
+  // --- Refs ---
   const teamAScoreEl = container.querySelector('#team-a-score') as HTMLElement;
   const teamBScoreEl = container.querySelector('#team-b-score') as HTMLElement;
   const timerDisplayEl = container.querySelector('#timer-display') as HTMLElement;
-  
-  // Modal Refs
   const setTimeModal = container.querySelector('#set-time-modal') as HTMLDivElement;
   const timerMinInput = container.querySelector('#timer-min') as HTMLInputElement;
   const timerSecInput = container.querySelector('#timer-sec') as HTMLInputElement;
   const saveSetTimeBtn = container.querySelector('#save-set-time') as HTMLButtonElement;
   const cancelSetTimeBtn = container.querySelector('#cancel-set-time') as HTMLButtonElement;
-
-  // Buttons
-  const startStopToggle = container.querySelector('#start-stop-toggle') as HTMLButtonElement;
   const showSetTimeBtn = container.querySelector('#show-set-time') as HTMLButtonElement;
-
-  // Swatch refs
+  const startStopToggle = container.querySelector('#start-stop-toggle') as HTMLButtonElement;
   const teamASwatchP = container.querySelector('#team-a-swatch-primary') as HTMLSpanElement;
   const teamASwatchS = container.querySelector('#team-a-swatch-secondary') as HTMLSpanElement;
   const teamBSwatchP = container.querySelector('#team-b-swatch-primary') as HTMLSpanElement;
   const teamBSwatchS = container.querySelector('#team-b-swatch-secondary') as HTMLSpanElement;
-
-  // Extra Time Refs
   const extraTimeInput = container.querySelector('#extra-time-input') as HTMLInputElement;
   const extraTimeActionBtn = container.querySelector('#extra-time-action-btn') as HTMLButtonElement;
-    
-  // Grid Refs
   const controllerGrid = container.querySelector('#dashboard-controller-grid') as HTMLDivElement;
   const teamAHeader = container.querySelector('#team-a-header') as HTMLHeadingElement;
   const teamBHeader = container.querySelector('#team-b-header') as HTMLHeadingElement;
@@ -224,127 +142,69 @@ export function render(container: HTMLElement) {
   const playerGridB = container.querySelector('#player-grid-b') as HTMLDivElement;
   const teamAInfoDisplay = container.querySelector('#team-a-info-display') as HTMLDivElement;
   const teamBInfoDisplay = container.querySelector('#team-b-info-display') as HTMLDivElement;
-  
-  // --- New Period Refs ---
   const periodSelect = container.querySelector('#period-select') as HTMLSelectElement;
-  const periodEndTime = container.querySelector('#period-end-time') as HTMLSpanElement;
+  const periodEndTimeBtnSpan = container.querySelector('#period-end-time-btn') as HTMLSpanElement;
+  const setToPeriodEndBtn = container.querySelector('#set-to-period-end-btn') as HTMLButtonElement;
 
 
-  // --- Initialize Period Data ---
   const initPeriods = async () => {
     try {
         allPeriods = await getPeriods();
-        
-        // Populate Dropdown
-        periodSelect.innerHTML = allPeriods.map(p => 
-            `<option value="${p.name}">${p.name}</option>`
-        ).join('');
-        
-        // Set Initial Selection
+        periodSelect.innerHTML = allPeriods.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
         const { config } = getState();
-        if (config && config.currentPeriod) {
-             periodSelect.value = config.currentPeriod;
-             updateEndTimeLabel();
-        }
-    } catch (e) {
-        console.error("Failed to load periods", e);
-        periodSelect.innerHTML = '<option>Error loading</option>';
-    }
+        if (config && config.currentPeriod) { periodSelect.value = config.currentPeriod; } else if (allPeriods.length > 0) { periodSelect.value = allPeriods[0].name; }
+        updateEndTimeLabel();
+    } catch (e) { console.error("Failed to load periods", e); periodSelect.innerHTML = '<option>Error loading</option>'; }
   };
   
   const updateEndTimeLabel = () => {
       const selectedName = periodSelect.value;
       const period = allPeriods.find(p => p.name === selectedName);
       if (period) {
-          periodEndTime.textContent = `Ends at ${period.endTime}'`;
+          periodEndTimeBtnSpan.textContent = `${period.endTime}:00`;
+          setToPeriodEndBtn.disabled = false;
+      } else {
+          periodEndTimeBtnSpan.textContent = "--";
+          setToPeriodEndBtn.disabled = true;
       }
   };
 
-
-  // --- Update UI Function ---
   const updateUI = () => {
     const { config, timer, extraTime } = getState();
-
-    // Update scores and team names
     if (config) {
       teamAScoreEl.textContent = config.teamA.score.toString();
       teamBScoreEl.textContent = config.teamB.score.toString();
-      
       teamAHeader.textContent = `${config.teamA.name} (${config.teamA.abbreviation})`;
       teamBHeader.textContent = `${config.teamB.name} (${config.teamB.abbreviation})`;
-      
       if (teamASwatchP) teamASwatchP.style.backgroundColor = config.teamA.colors.primary;
       if (teamASwatchS) teamASwatchS.style.backgroundColor = config.teamA.colors.secondary;
       if (teamBSwatchP) teamBSwatchP.style.backgroundColor = config.teamB.colors.primary;
       if (teamBSwatchS) teamBSwatchS.style.backgroundColor = config.teamB.colors.secondary;
-      
       playerGridA.innerHTML = renderPlayerGrid(config.teamA.players);
       playerGridB.innerHTML = renderPlayerGrid(config.teamB.players);
-      
-      // Sync Period Dropdown (if data changed externally)
-      if (allPeriods.length > 0 && periodSelect.value !== config.currentPeriod) {
-          periodSelect.value = config.currentPeriod;
-          updateEndTimeLabel();
-      }
+      if (allPeriods.length > 0 && periodSelect.value !== config.currentPeriod) { periodSelect.value = config.currentPeriod; updateEndTimeLabel(); }
     }
-
-    // Update timer display
-    if (timerDisplayEl) {
-      timerDisplayEl.textContent = formatTime(timer.seconds);
-    }
-
-    // Update Toggle Button
-    if (startStopToggle) {
-      if (timer.isRunning) {
-        startStopToggle.textContent = 'Stop';
-        startStopToggle.classList.remove('btn-green');
-        startStopToggle.classList.add('btn-red');
-      } else {
-        startStopToggle.textContent = 'Start';
-        startStopToggle.classList.remove('btn-red');
-        startStopToggle.classList.add('btn-green');
-      }
-    }
-    
-    // Update Extra Time UI
-    if (extraTimeActionBtn) {
-      if (document.activeElement !== extraTimeInput) {
-        extraTimeInput.value = extraTime.minutes.toString();
-      }
-      
-      if (extraTime.isVisible) {
-        extraTimeActionBtn.textContent = 'Showing';
-        extraTimeActionBtn.classList.remove('btn-secondary');
-        extraTimeActionBtn.classList.add('btn-green');
-      } else {
-        extraTimeActionBtn.textContent = 'Set and Show';
-        extraTimeActionBtn.classList.remove('btn-green');
-        extraTimeActionBtn.classList.add('btn-secondary');
-      }
-    }
+    if (timerDisplayEl) timerDisplayEl.textContent = formatTime(timer.seconds);
+    if (startStopToggle) { if (timer.isRunning) { startStopToggle.textContent = 'Stop'; startStopToggle.classList.remove('btn-green'); startStopToggle.classList.add('btn-red'); } else { startStopToggle.textContent = 'Start'; startStopToggle.classList.remove('btn-red'); startStopToggle.classList.add('btn-green'); } }
+    if (extraTimeActionBtn) { if (document.activeElement !== extraTimeInput) { extraTimeInput.value = extraTime.minutes.toString(); } if (extraTime.isVisible) { extraTimeActionBtn.textContent = 'Showing'; extraTimeActionBtn.classList.remove('btn-secondary'); extraTimeActionBtn.classList.add('btn-green'); } else { extraTimeActionBtn.textContent = 'Set and Show'; extraTimeActionBtn.classList.remove('btn-green'); extraTimeActionBtn.classList.add('btn-secondary'); } }
   };
 
-  // --- Delegated Click Listener ---
   const handleGridClick = async (e: Event) => {
     const target = e.target as HTMLElement;
-    
     const scoreBtnId = target.id;
     if (scoreBtnId === 'team-a-inc') { setScore('teamA', (getState().config?.teamA.score ?? 0) + 1); return; }
     if (scoreBtnId === 'team-a-dec') { setScore('teamA', (getState().config?.teamA.score ?? 0) - 1); return; }
     if (scoreBtnId === 'team-b-inc') { setScore('teamB', (getState().config?.teamB.score ?? 0) + 1); return; }
     if (scoreBtnId === 'team-b-dec') { setScore('teamB', (getState().config?.teamB.score ?? 0) - 1); return; }
-
     if (target.classList.contains('player-btn')) {
       const grid = target.closest('.player-grid') as HTMLDivElement;
       const team = grid?.dataset.team as 'teamA' | 'teamB';
       const number = parseInt(target.dataset.number || '', 10);
-      
       if (!team || isNaN(number)) return;
       const { config, timer } = getState();
       if (!config) return;
       const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
       if (!player) return;
-
       const minute = Math.floor(timer.seconds / 60) + 1;
       await addGoal(team, number, minute);
       const currentScore = (team === 'teamA') ? config.teamA.score : config.teamB.score;
@@ -352,87 +212,46 @@ export function render(container: HTMLElement) {
       showNotification(`Goal given to #${player.number} ${player.name} at ${minute}'`);
     }
   };
+  const handleGridMouseOver = (e: Event) => { const target = e.target as HTMLElement; if (target.classList.contains('player-btn')) { const grid = target.closest('.player-grid') as HTMLDivElement; const team = grid?.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const { config } = getState(); if (!config) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number); if (!player) return; const goalText = player.goals.length === 1 ? '1 goal' : `${player.goals.length} goals`; const displayText = `#${player.number} ${player.name} (${goalText})`; if (team === 'teamA') { teamAInfoDisplay.textContent = displayText; } else { teamBInfoDisplay.textContent = displayText; } } };
+  const handleGridMouseOut = (e: Event) => { const target = e.target as HTMLElement; if (target.classList.contains('player-btn')) { const grid = target.closest('.player-grid') as HTMLDivElement; const team = grid?.dataset.team as 'teamA' | 'teamB'; if (team === 'teamA') { teamAInfoDisplay.innerHTML = '&nbsp;'; } else { teamBInfoDisplay.innerHTML = '&nbsp;'; } } };
 
-  const handleGridMouseOver = (e: Event) => {
-    const target = e.target as HTMLElement;
-    if (target.classList.contains('player-btn')) {
-      const grid = target.closest('.player-grid') as HTMLDivElement;
-      const team = grid?.dataset.team as 'teamA' | 'teamB';
-      const number = parseInt(target.dataset.number || '', 10);
-      if (!team || isNaN(number)) return;
-      const { config } = getState();
-      if (!config) return;
-      const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
-      if (!player) return;
-      const goalText = player.goals.length === 1 ? '1 goal' : `${player.goals.length} goals`;
-      const displayText = `#${player.number} ${player.name} (${goalText})`;
-      if (team === 'teamA') { teamAInfoDisplay.textContent = displayText; } else { teamBInfoDisplay.textContent = displayText; }
-    }
-  };
+  controllerGrid.addEventListener('click', handleGridClick); controllerGrid.addEventListener('mouseover', handleGridMouseOver); controllerGrid.addEventListener('mouseout', handleGridMouseOut);
+  startStopToggle.addEventListener('click', () => { if (getState().timer.isRunning) { timerControls.stop(); } else { timerControls.start(); } });
+  showSetTimeBtn.addEventListener('click', () => { if (setTimeModal) { const { seconds } = getState().timer; timerMinInput.value = Math.floor(seconds / 60).toString(); timerSecInput.value = (seconds % 60).toString(); setTimeModal.style.display = 'flex'; } });
+  cancelSetTimeBtn.addEventListener('click', () => { if (setTimeModal) setTimeModal.style.display = 'none'; });
+  setTimeModal.addEventListener('click', (e) => { if (e.target === setTimeModal) setTimeModal.style.display = 'none'; });
+  saveSetTimeBtn.addEventListener('click', () => { let minutes = parseInt(timerMinInput.value, 10) || 0; let seconds = parseInt(timerSecInput.value, 10) || 0; if (minutes > 999) minutes = 999; if (minutes < 0) minutes = 0; if (seconds > 59) seconds = 59; if (seconds < 0) seconds = 0; timerControls.set(minutes * 60 + seconds); if (setTimeModal) setTimeModal.style.display = 'none'; });
+  extraTimeActionBtn.addEventListener('click', () => { const { extraTime } = getState(); if (extraTime.isVisible) { toggleExtraTimeVisibility(); } else { let minutes = parseInt(extraTimeInput.value, 10) || 0; if (minutes < 0) minutes = 0; if (minutes > 99) minutes = 99; extraTimeInput.value = minutes.toString(); setExtraTime(minutes); toggleExtraTimeVisibility(); } });
   
-  const handleGridMouseOut = (e: Event) => {
-    const target = e.target as HTMLElement;
-    if (target.classList.contains('player-btn')) {
-      const grid = target.closest('.player-grid') as HTMLDivElement;
-      const team = grid?.dataset.team as 'teamA' | 'teamB';
-      if (team === 'teamA') { teamAInfoDisplay.innerHTML = '&nbsp;'; } else { teamBInfoDisplay.innerHTML = '&nbsp;'; }
-    }
-  };
-
-
-  // --- Add Event Listeners ---
-  controllerGrid.addEventListener('click', handleGridClick);
-  controllerGrid.addEventListener('mouseover', handleGridMouseOver);
-  controllerGrid.addEventListener('mouseout', handleGridMouseOut);
-
-  startStopToggle.addEventListener('click', () => {
-    if (getState().timer.isRunning) { timerControls.stop(); } else { timerControls.start(); }
-  });
-
-  // --- Modal Listeners ---
-  showSetTimeBtn.addEventListener('click', () => {
-    if (setTimeModal) {
-      const { seconds } = getState().timer;
-      timerMinInput.value = Math.floor(seconds / 60).toString();
-      timerSecInput.value = (seconds % 60).toString();
-      setTimeModal.style.display = 'flex';
-    }
-  });
-
-  cancelSetTimeBtn.addEventListener('click', () => {
-    if (setTimeModal) setTimeModal.style.display = 'none';
-  });
+  periodSelect.addEventListener('change', async () => { updateEndTimeLabel(); await setPeriod(periodSelect.value); showNotification(`Period set to ${periodSelect.value}`); });
   
-  setTimeModal.addEventListener('click', (e) => {
-    if (e.target === setTimeModal) setTimeModal.style.display = 'none';
+  // --- Updated: Set To Period End Logic with Auto Advance ---
+  setToPeriodEndBtn.addEventListener('click', async () => {
+      const selectedName = periodSelect.value;
+      const periodIndex = allPeriods.findIndex(p => p.name === selectedName);
+      const period = allPeriods[periodIndex];
+      
+      if (period) {
+          // 1. Set Timer
+          const seconds = period.endTime * 60;
+          timerControls.set(seconds);
+          showNotification(`Timer set to ${period.endTime}:00`);
+
+          // 2. Check Auto Advance Setting
+          const { isAutoAdvancePeriodOn } = getState();
+          if (isAutoAdvancePeriodOn) {
+              const nextPeriod = allPeriods[periodIndex + 1];
+              if (nextPeriod) {
+                  // Automatically move to the next period
+                  await setPeriod(nextPeriod.name);
+                  // Note: The dropdown will update via the updateUI loop automatically
+                  showNotification(`Auto-advanced to ${nextPeriod.name}`);
+              }
+          }
+      }
   });
 
-  saveSetTimeBtn.addEventListener('click', () => {
-    let minutes = parseInt(timerMinInput.value, 10) || 0;
-    let seconds = parseInt(timerSecInput.value, 10) || 0;
-    if (minutes > 999) minutes = 999;
-    if (minutes < 0) minutes = 0;
-    if (seconds > 59) seconds = 59;
-    if (seconds < 0) seconds = 0;
-    timerControls.set(minutes * 60 + seconds);
-    if (setTimeModal) setTimeModal.style.display = 'none';
-  });
-  
-  extraTimeActionBtn.addEventListener('click', () => {
-    const { extraTime } = getState();
-    if (extraTime.isVisible) { toggleExtraTimeVisibility(); } else { let minutes = parseInt(extraTimeInput.value, 10) || 0; if (minutes < 0) minutes = 0; if (minutes > 99) minutes = 99; extraTimeInput.value = minutes.toString(); setExtraTime(minutes); toggleExtraTimeVisibility(); }
-  });
-  
-  // --- New Period Change Listener ---
-  periodSelect.addEventListener('change', async () => {
-      updateEndTimeLabel();
-      await setPeriod(periodSelect.value);
-      showNotification(`Period set to ${periodSelect.value}`);
-  });
-
-
-  // --- Subscribe and Init ---
-  initPeriods(); // Load period data
+  initPeriods();
   subscribe(updateUI);
   updateUI(); 
 
