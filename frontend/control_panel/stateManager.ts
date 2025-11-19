@@ -40,21 +40,20 @@ export interface ExtraTimeStatus {
 
 export interface ScoreboardStyleConfig {
   primary: string;
-  secondary: string; // <-- Renamed
-  tertiary: string; // <-- Renamed
+  secondary: string;
+  tertiary: string;
   opacity: number;
   scale: number;
   matchInfo: string;
   timerPosition: "Under" | "Right";
-  showRedCardIndicators: boolean; // <-- Renamed
+  showRedCardIndicators: boolean;
 }
 
-// --- Updated Type ---
 export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition' | 'showRedCardIndicators'>;
 
 export interface LayoutConfig {
   position: "Under" | "Right";
-  showRedCardIndicators: boolean; // <-- Renamed
+  showRedCardIndicators: boolean;
 }
 
 
@@ -82,13 +81,13 @@ let appState: {
   isConnected: false,
   scoreboardStyle: { 
     primary: '#000000', 
-    secondary: '#FFFFFF', // <-- Renamed
-    tertiary: '#ffd700', // <-- Renamed
+    secondary: '#FFFFFF', 
+    tertiary: '#ffd700', 
     opacity: 75, 
     scale: 100, 
     matchInfo: "", 
     timerPosition: "Under",
-    showRedCardIndicators: false // <-- Renamed
+    showRedCardIndicators: false
   },
   isGameReportVisible: false, 
   isScoreboardVisible: true,
@@ -243,7 +242,7 @@ export async function initStateManager() {
 
   const savedAutoConvert = localStorage.getItem('autoConvertYellowToRed');
   appState.isAutoConvertYellowToRedOn = savedAutoConvert === 'true';
-  
+
   connectWebSocket();
 }
 
@@ -273,7 +272,7 @@ export function setAutoConvertYellowToRed(isOn: boolean) {
 export const timerControls = {
   start: () => post('/api/timer/start', {}),
   stop: () => post('/api/timer/stop', {}),
-  reset: () => post('/api/timer/reset', {}),
+  // Reset Removed
   set: (seconds: number) => post('/api/timer/set', { seconds }),
 };
 
@@ -311,12 +310,6 @@ export async function saveMatchInfo(info: string) {
 export async function saveLayout(layout: LayoutConfig) {
   await post('/api/layout', layout);
 }
-
-// --- Reverted Function ---
-export async function saveTimerPosition(position: 'Under' | 'Right') {
-  await post('/api/timer-position', { position });
-}
-// ---------------------
 
 export async function toggleGameReport() {
   await post('/api/game-report/toggle', {});

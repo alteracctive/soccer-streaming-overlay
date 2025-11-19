@@ -24,13 +24,12 @@ function formatTime(totalSeconds: number): string {
   return `${min}:${sec}`;
 }
 
-// --- Updated Function to Render Player Grid ---
+// Function to Render Player Grid
 function renderPlayerGrid(players: PlayerConfig[]): string {
   if (!players || players.length === 0) {
     return '<p style="font-size: 13px; opacity: 0.7;">No players on roster.</p>';
   }
   
-  // Sort players: On Field first, then by number
   const sortedPlayers = [...players].sort((a, b) => {
     if (a.onField && !b.onField) return -1;
     if (!a.onField && b.onField) return 1;
@@ -40,13 +39,12 @@ function renderPlayerGrid(players: PlayerConfig[]): string {
   return sortedPlayers.map(player => {
     let btnClass = '';
     
-    // --- Updated Color Logic ---
     if (player.redCards.length > 0) {
-      btnClass = 'btn-red'; // Red card overrides all
+      btnClass = 'btn-red'; 
     } else if (player.onField) {
-      btnClass = ''; // Active (default accent)
+      btnClass = ''; 
     } else {
-      btnClass = 'btn-secondary'; // Inactive
+      btnClass = 'btn-secondary'; 
     }
     
     return `
@@ -67,6 +65,27 @@ export function render(container: HTMLElement) {
 
   // --- Render HTML ---
   container.innerHTML = `
+    <div class="modal-overlay" id="set-time-modal" style="display: none;">
+      <div class="modal-content" style="max-width: 320px;">
+        <h4>Set Game Timer</h4>
+        <div style="display: flex; gap: 10px; justify-content: center; align-items: flex-start; margin: 20px 0;">
+            <div class="form-group" style="text-align: center; margin-bottom: 0;">
+                <label for="timer-min" style="margin-bottom: 4px;">Minutes</label>
+                <input type="number" id="timer-min" min="0" max="999" value="0" style="width: 80px; text-align: center; font-size: 18px; padding: 8px;">
+            </div>
+            <div style="font-size: 24px; font-weight: bold; margin-top: 32px;">:</div>
+            <div class="form-group" style="text-align: center; margin-bottom: 0;">
+                <label for="timer-sec" style="margin-bottom: 4px;">Seconds</label>
+                <input type="number" id="timer-sec" min="0" max="59" value="0" style="width: 80px; text-align: center; font-size: 18px; padding: 8px;">
+            </div>
+        </div>
+        <div class="modal-buttons" style="justify-content: center;">
+            <button id="cancel-set-time" class="btn-secondary" style="flex: 1;">Cancel</button>
+            <button id="save-set-time" class="btn-green" style="flex: 1;">Set Time</button>
+        </div>
+      </div>
+    </div>
+
     <div class="controller-grid" id="dashboard-controller-grid">
       <div class="card team-control"> 
         <div class="team-header">
@@ -132,26 +151,7 @@ export function render(container: HTMLElement) {
         
         <div class="btn-group">
           <button id="start-stop-toggle" class="btn-green" style="flex-grow: 1;">Start</button>
-          
-          <button id="reset-timer" class="btn-secondary">Reset</button>
           <button id="show-set-time" class="btn-secondary">Set</button>
-        </div>
-
-        <div id="set-time-popup" style="display: none;">
-          <div style="display: flex; gap: 8px; align-items: center;">
-              <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
-                  <label for="timer-min">Minutes (0-999)</label>
-                  <input type="number" id="timer-min" min="0" max="999" value="0">
-              </div>
-              <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
-                  <label for="timer-sec">Seconds (0-59)</label>
-                  <input type="number" id="timer-sec" min="0" max="59" value="0">
-              </div>
-          </div>
-          <div class="btn-group" style="margin-top: 10px;">
-              <button id="save-set-time" style="flex-grow: 1;">Save</button>
-              <button id="cancel-set-time" class="btn-secondary" style="flex-grow: 1;">Cancel</button>
-          </div>
         </div>
       </div>
       
@@ -173,23 +173,17 @@ export function render(container: HTMLElement) {
   // --- Get Element References ---
   const teamAScoreEl = container.querySelector('#team-a-score') as HTMLElement;
   const teamBScoreEl = container.querySelector('#team-b-score') as HTMLElement;
-  const timerDisplayEl = container.querySelector(
-    '#timer-display',
-  ) as HTMLElement;
-  const setTimePopup = container.querySelector(
-    '#set-time-popup',
-  ) as HTMLDivElement;
-  const timerMinInput = container.querySelector(
-    '#timer-min',
-  ) as HTMLInputElement;
-  const timerSecInput = container.querySelector(
-    '#timer-sec',
-  ) as HTMLInputElement;
+  const timerDisplayEl = container.querySelector('#timer-display') as HTMLElement;
+  
+  // Modal Refs
+  const setTimeModal = container.querySelector('#set-time-modal') as HTMLDivElement;
+  const timerMinInput = container.querySelector('#timer-min') as HTMLInputElement;
+  const timerSecInput = container.querySelector('#timer-sec') as HTMLInputElement;
+  const saveSetTimeBtn = container.querySelector('#save-set-time') as HTMLButtonElement;
+  const cancelSetTimeBtn = container.querySelector('#cancel-set-time') as HTMLButtonElement;
 
   // Toggle button ref
-  const startStopToggle = container.querySelector(
-    '#start-stop-toggle',
-  ) as HTMLButtonElement;
+  const startStopToggle = container.querySelector('#start-stop-toggle') as HTMLButtonElement;
 
   // Swatch refs
   const teamASwatchP = container.querySelector('#team-a-swatch-primary') as HTMLSpanElement;
@@ -198,12 +192,8 @@ export function render(container: HTMLElement) {
   const teamBSwatchS = container.querySelector('#team-b-swatch-secondary') as HTMLSpanElement;
 
   // Extra Time Refs
-  const extraTimeInput = container.querySelector(
-    '#extra-time-input',
-  ) as HTMLInputElement;
-  const extraTimeActionBtn = container.querySelector(
-    '#extra-time-action-btn',
-  ) as HTMLButtonElement;
+  const extraTimeInput = container.querySelector('#extra-time-input') as HTMLInputElement;
+  const extraTimeActionBtn = container.querySelector('#extra-time-action-btn') as HTMLButtonElement;
     
   // Grid Refs
   const controllerGrid = container.querySelector('#dashboard-controller-grid') as HTMLDivElement;
@@ -212,7 +202,7 @@ export function render(container: HTMLElement) {
   const playerGridA = container.querySelector('#player-grid-a') as HTMLDivElement;
   const playerGridB = container.querySelector('#player-grid-b') as HTMLDivElement;
   
-  // --- New Info Display Refs ---
+  // Info Display Refs
   const teamAInfoDisplay = container.querySelector('#team-a-info-display') as HTMLDivElement;
   const teamBInfoDisplay = container.querySelector('#team-b-info-display') as HTMLDivElement;
 
@@ -313,10 +303,8 @@ export function render(container: HTMLElement) {
 
       const minute = Math.floor(timer.seconds / 60) + 1;
       
-      // 1. Add goal to player
       await addGoal(team, number, minute);
       
-      // 2. Add goal to scorekeeper (bypassing setting)
       const currentScore = (team === 'teamA') ? config.teamA.score : config.teamB.score;
       await setScore(team, currentScore + 1);
       
@@ -359,7 +347,7 @@ export function render(container: HTMLElement) {
       const team = grid?.dataset.team as 'teamA' | 'teamB';
       
       if (team === 'teamA') {
-        teamAInfoDisplay.innerHTML = '&nbsp;'; // Use &nbsp; to maintain height
+        teamAInfoDisplay.innerHTML = '&nbsp;'; 
       } else {
         teamBInfoDisplay.innerHTML = '&nbsp;';
       }
@@ -380,28 +368,30 @@ export function render(container: HTMLElement) {
       timerControls.start();
     }
   });
-
-  container.querySelector('#reset-timer')?.addEventListener('click', () => {
-    timerControls.stop();
-    timerControls.reset();
-  });
-  
+  // --- Modal Listeners ---
   container.querySelector('#show-set-time')?.addEventListener('click', () => {
-    if (setTimePopup) {
+    if (setTimeModal) {
       const { seconds } = getState().timer;
       timerMinInput.value = Math.floor(seconds / 60).toString();
       timerSecInput.value = (seconds % 60).toString();
-      setTimePopup.style.display = 'block';
+      setTimeModal.style.display = 'flex'; // Show flex to center
     }
   });
 
-  container.querySelector('#cancel-set-time')?.addEventListener('click', () => {
-    if (setTimePopup) {
-      setTimePopup.style.display = 'none';
+  cancelSetTimeBtn.addEventListener('click', () => {
+    if (setTimeModal) {
+      setTimeModal.style.display = 'none';
+    }
+  });
+  
+  // Close on outside click
+  setTimeModal.addEventListener('click', (e) => {
+    if (e.target === setTimeModal) {
+        setTimeModal.style.display = 'none';
     }
   });
 
-  container.querySelector('#save-set-time')?.addEventListener('click', () => {
+  saveSetTimeBtn.addEventListener('click', () => {
     let minutes = parseInt(timerMinInput.value, 10) || 0;
     let seconds = parseInt(timerSecInput.value, 10) || 0;
     if (minutes > 999) minutes = 999;
@@ -409,8 +399,8 @@ export function render(container: HTMLElement) {
     if (seconds > 59) seconds = 59;
     if (seconds < 0) seconds = 0;
     timerControls.set(minutes * 60 + seconds);
-    if (setTimePopup) {
-      setTimePopup.style.display = 'none';
+    if (setTimeModal) {
+      setTimeModal.style.display = 'none';
     }
   });
   

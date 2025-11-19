@@ -23,7 +23,8 @@ from data_manager import (
     ResetStatsUpdate,
     ReplacePlayerUpdate,
     MatchInfoUpdate,
-    LayoutUpdate # <-- Updated import
+    TimerPositionUpdate,
+    LayoutUpdate
 )
 from websocket_manager import websocket_manager
 
@@ -84,10 +85,7 @@ async def stop_timer():
     websocket_manager.stop()
     return {"message": "Timer stopped"}
 
-@app.post("/api/timer/reset", tags=["Timer Control"])
-async def reset_timer():
-    websocket_manager.reset()
-    return {"message": "Timer reset"}
+# REMOVED /api/timer/reset
 
 class SetTimeUpdate(BaseModel):
     seconds: int

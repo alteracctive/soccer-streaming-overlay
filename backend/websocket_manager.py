@@ -266,17 +266,7 @@ class WebSocketManager:
             asyncio.create_task(self.broadcast_status())
             print("Timer stopped")
 
-    def reset(self):
-        if self._is_futsal_clock_on:
-            self._seconds = self._last_set_futsal_time
-        else:
-            self._seconds = 0
-            
-        if self._is_running:
-            self.stop()
-            
-        asyncio.create_task(self.broadcast_time())
-        print("Timer reset")
+    # REMOVED def reset(self)
 
     def set_time(self, new_seconds: int):
         if new_seconds < 0:
