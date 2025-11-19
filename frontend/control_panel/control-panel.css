@@ -1036,3 +1036,100 @@ body.dark-mode .color-picker-row input[type='color'] {
 .team-assign-modal .modal-buttons .btn-secondary {
   margin-top: 8px;
 }
+
+/* ... (Previous styles remain unchanged) ... */
+
+/* --- New Timeline Styles --- */
+.timeline-wrapper {
+  position: relative;
+  padding: 20px 0;
+  margin-top: 10px;
+}
+
+/* The vertical line in the center */
+.timeline-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background-color: var(--border-color);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+.timeline-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 12px; /* Spacing between events */
+}
+
+.timeline-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  /* Ensure empty sides take up space */
+  min-height: 1px; 
+}
+
+.timeline-side.left {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.timeline-side.right {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.timeline-minute {
+  width: 32px;
+  height: 32px;
+  background-color: var(--sidebar-bg); /* Matches card bg */
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-color);
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Event styling */
+.timeline-event-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+}
+
+/* Flip order for right side so icon is near the center line */
+.timeline-side.right .timeline-event-content {
+  flex-direction: row-reverse;
+}
+
+.event-icon {
+  font-size: 14px;
+}
+
+.event-name {
+  font-weight: 500;
+}
+
+.no-events-text {
+  text-align: center;
+  font-style: italic;
+  opacity: 0.6;
+  padding: 20px;
+}
