@@ -342,12 +342,31 @@ button.btn-red {
   text-align: center;
 }
 
-.timer-display {
+/* --- Updated Timer Layout --- */
+.timer-display-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: baseline; /* Aligns text by the bottom baseline */
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.timer-display-main {
   font-size: 36px;
   font-weight: bold;
-  margin-bottom: 12px;
   font-family: 'Courier New', Courier, monospace;
+  line-height: 1;
 }
+
+.timer-display-additional {
+  font-size: 20px; /* Smaller */
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--accent-color); /* Use accent color to distinguish */
+  opacity: 0.8;
+  line-height: 1;
+}
+/* --------------------------- */
 
 .timer-grid {
   display: grid;
