@@ -6,13 +6,20 @@ export interface ColorConfig {
   secondary: string;
 }
 
+// --- New Interface ---
+export interface Goal {
+  regMinute: number;
+  addMinute: number;
+  isOwnGoal: boolean;
+}
+
 export interface PlayerConfig {
   number: number;
   name: string;
   onField: boolean;
   yellowCards: number[];
   redCards: number[];
-  goals: number[];
+  goals: Goal[]; // <-- Updated
 }
 
 export interface TeamConfig {
@@ -78,7 +85,7 @@ let appState: {
   isPlayersListVisible: boolean;
   isAutoAddScoreOn: boolean;
   isAutoConvertYellowToRedOn: boolean;
-  isAutoAdvancePeriodOn: boolean; // <-- New State
+  isAutoAdvancePeriodOn: boolean;
   extraTime: ExtraTimeStatus;
   isMatchInfoVisible: boolean;
   isFutsalClockOn: boolean;
@@ -101,7 +108,7 @@ let appState: {
   isPlayersListVisible: false,
   isAutoAddScoreOn: false,
   isAutoConvertYellowToRedOn: false,
-  isAutoAdvancePeriodOn: false, // <-- New Default
+  isAutoAdvancePeriodOn: false,
   extraTime: { minutes: 0, isVisible: false },
   isMatchInfoVisible: false,
   isFutsalClockOn: false,
@@ -244,14 +251,13 @@ function connectWebSocket() {
 
 // --- Public Interface ---
 export async function initStateManager() {
-  // Load local settings
   const savedAutoScore = localStorage.getItem('autoAddScore');
   appState.isAutoAddScoreOn = savedAutoScore === 'true';
 
   const savedAutoConvert = localStorage.getItem('autoConvertYellowToRed');
   appState.isAutoConvertYellowToRedOn = savedAutoConvert === 'true';
 
-  const savedAutoAdvance = localStorage.getItem('autoAdvancePeriod'); // <-- Load New Setting
+  const savedAutoAdvance = localStorage.getItem('autoAdvancePeriod');
   appState.isAutoAdvancePeriodOn = savedAutoAdvance === 'true';
 
   connectWebSocket();
@@ -279,23 +285,18 @@ export function setAutoConvertYellowToRed(isOn: boolean) {
   localStorage.setItem('autoConvertYellowToRed', isOn ? 'true' : 'false');
 }
 
+export function setAutoAdvancePeriod(isOn: boolean) {
+  appState.isAutoAdvancePeriodOn = isOn;
+  localStorage.setItem('autoAdvancePeriod', isOn ? 'true' : 'false');
+  if (appState.timer.isRunning) timerControls.stop();
+}
+
 // --- API-Calling Functions ---
 export const timerControls = {
   start: () => post('/api/timer/start', {}),
   stop: () => post('/api/timer/stop', {}),
   set: (seconds: number) => post('/api/timer/set', { seconds }),
 };
-
-// --- New Function ---
-export function setAutoAdvancePeriod(isOn: boolean) {
-  appState.isAutoAdvancePeriodOn = isOn;
-  localStorage.setItem('autoAdvancePeriod', isOn ? 'true' : 'false');
-  
-  // Requested logic: Stop timer if setting changes while running
-  if (appState.timer.isRunning) {
-    timerControls.stop();
-  }
-}
 
 export async function setFutsalClock(isOn: boolean) {
   await post('/api/timer/futsal-toggle', { is_on: isOn });
@@ -386,19 +387,29 @@ export async function deletePlayer(team: 'teamA' | 'teamB', number: number) {
   await post('/api/player/delete', { team, number });
 }
 
+// --- Updated Function ---
 export async function addGoal(
   team: 'teamA' | 'teamB',
   number: number,
-  minute: number,
+  regMinute: number,
+  addMinute: number,
+  isOwnGoal: boolean
 ) {
-  await post('/api/player/goal', { team, number, minute });
+  await post('/api/player/goal', { team, number, regMinute, addMinute, isOwnGoal });
   
   if (appState.isAutoAddScoreOn) {
     const { config } = getState();
     if (!config) return;
     
-    const currentScore = (team === 'teamA') ? config.teamA.score : config.teamB.score;
-    setScore(team, currentScore + 1);
+    // Own Goal Logic for auto-score
+    if (isOwnGoal) {
+         const opponent = team === 'teamA' ? 'teamB' : 'teamA';
+         const currentScore = config[opponent].score;
+         setScore(opponent, currentScore + 1);
+    } else {
+         const currentScore = config[team].score;
+         setScore(team, currentScore + 1);
+    }
   }
 }
 

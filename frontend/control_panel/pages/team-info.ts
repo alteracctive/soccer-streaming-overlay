@@ -15,27 +15,24 @@ import {
   subscribe,
   unsubscribe,
   setScore,
-  type PlayerConfig
+  getPeriods, // <-- Import to get limits
+  type PlayerConfig,
+  type Goal,
+  type PeriodSetting
 } from '../stateManager';
 import { showNotification } from '../notification';
 
 type ConfirmAction = (() => Promise<void>) | null;
 
-
 export function render(container: HTMLElement) {
   const { config } = getState();
+  let allPeriods: PeriodSetting[] = [];
+  let currentPeriodLimit = 45; // Fallback
 
   container.innerHTML = `
     <style>
-      .unsaved-indicator {
-        opacity: 0.7;
-        font-weight: normal;
-        font-size: 0.8em;
-        margin-left: 8px;
-        font-style: italic;
-      }
+      .unsaved-indicator { opacity: 0.7; font-weight: normal; font-size: 0.8em; margin-left: 8px; font-style: italic; }
     </style>
-
     <div class="modal-overlay" id="confirmation-modal" style="display: none;">
       <div class="modal-content">
         <h4>Are you sure?</h4>
@@ -46,7 +43,6 @@ export function render(container: HTMLElement) {
         </div>
       </div>
     </div>
-    
     <div class="modal-overlay" id="player-edit-modal" style="display: none;">
       <div class="modal-content player-edit-modal">
         <div class="modal-header-wrapper">
@@ -56,18 +52,12 @@ export function render(container: HTMLElement) {
              <span id="modal-team-name">Team Name</span>
           </div>
           <div class="modal-nav-header">
-            <button id="prev-player-btn" class="nav-arrow-btn">
-              <span id="prev-player-num"></span> <span class="arrow-icon">◄</span>
-            </button>
+            <button id="prev-player-btn" class="nav-arrow-btn"><span id="prev-player-num"></span> <span class="arrow-icon">◄</span></button>
             <h4 id="player-edit-title">#99 Player Name</h4>
-            <button id="next-player-btn" class="nav-arrow-btn">
-              <span class="arrow-icon">►</span> <span id="next-player-num"></span>
-            </button>
+            <button id="next-player-btn" class="nav-arrow-btn"><span class="arrow-icon">►</span> <span id="next-player-num"></span></button>
           </div>
         </div>
-        
         <div class="player-edit-modal-body">
-          
           <div class="form-group inline-form-group" style="gap: 16px;">
             <div class="form-group" style="width: 80px;">
               <label for="edit-player-number">Number</label>
@@ -78,7 +68,6 @@ export function render(container: HTMLElement) {
               <input type="text" id="edit-player-name">
             </div>
           </div>
-          
           <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
               <label style="margin-bottom: 0;">Goals</label>
@@ -87,10 +76,8 @@ export function render(container: HTMLElement) {
                  <button id="edit-add-goal-btn" class="player-action-btn player-goal-btn" style="padding: 2px 8px; font-size: 12px; width: auto; height: auto; line-height: 1.5;">+ Add Goal</button>
               </div>
             </div>
-            <ul class="goal-list" id="edit-player-goals-list">
-            </ul>
+            <ul class="goal-list" id="edit-player-goals-list"></ul>
           </div>
-          
           <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
               <label style="margin-bottom: 0;">Yellow Cards (Max 2)</label>
@@ -98,7 +85,6 @@ export function render(container: HTMLElement) {
             </div>
             <ul class="goal-list" id="edit-yellow-cards-list"></ul>
           </div>
-
           <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
               <label style="margin-bottom: 0;">Red Cards (Max 1)</label>
@@ -106,7 +92,6 @@ export function render(container: HTMLElement) {
             </div>
             <ul class="goal-list" id="edit-red-cards-list"></ul>
           </div>
-
         </div>
         <div class="modal-buttons">
           <button id="modal-delete-player-btn" class="btn-red">Delete Player</button>
@@ -142,9 +127,7 @@ export function render(container: HTMLElement) {
             </div>
             <button id="sync-a" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
           </div>
-          
           <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
-
           <div>
             <h4>Team B Info <span id="unsaved-b" class="unsaved-indicator"></span></h4>
             <div class="inline-form-group">
@@ -193,14 +176,11 @@ export function render(container: HTMLElement) {
               <button id="delete-list-a" class="btn-secondary" style="width: 100%;">Delete Team A List</button>
               <button id="reset-stats-a" class="btn-secondary" style="width: 100%;">Reset Team A Stats</button>
             </div>
-            
             <h4 style="margin-top: 16px;">Team A Roster</h4>
             <div class="player-totals-row" id="player-totals-a"></div>
             <div class="player-list-container" id="player-list-a"></div>
           </div>
-          
           <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
-
           <div>
             <h4>Team B - Add Player</h4>
             <div class="inline-form-group" style="align-items: end;">
@@ -218,7 +198,6 @@ export function render(container: HTMLElement) {
               <button id="delete-list-b" class="btn-secondary" style="width: 100%;">Delete Team B List</button>
               <button id="reset-stats-b" class="btn-secondary" style="width: 100%;">Reset Team B Stats</button>
             </div>
-
             <h4 style="margin-top: 16px;">Team B Roster</h4>
             <div class="player-totals-row" id="player-totals-b"></div>
             <div class="player-list-container" id="player-list-b"></div>
@@ -228,12 +207,12 @@ export function render(container: HTMLElement) {
     </div> 
   `;
 
-  // ... (Variables and Elements) ...
+  // ... (Ref Variables, Handlers, and Initial Selectors - Unchanged) ...
   let isTeamAUnsaved = false;
   let isTeamBUnsaved = false;
   let playerToEdit: PlayerConfig | null = null;
   let teamToEdit: 'teamA' | 'teamB' | null = null;
-  let editGoals: number[] = [];
+  let editGoals: Goal[] = []; // <-- Changed Type
   let editYellowCards: number[] = [];
   let editRedCards: number[] = [];
 
@@ -241,33 +220,29 @@ export function render(container: HTMLElement) {
   const teamAAbbr = container.querySelector('#team-a-abbr') as HTMLInputElement;
   const teamBName = container.querySelector('#team-b-name') as HTMLInputElement;
   const teamBAbbr = container.querySelector('#team-b-abbr') as HTMLInputElement;
-  const teamANameLabel = container.querySelector('label[for="team-a-name"]') as HTMLLabelElement;
-  const teamAAbbrLabel = container.querySelector('label[for="team-a-abbr"]') as HTMLLabelElement;
-  const teamBNameLabel = container.querySelector('label[for="team-b-name"]') as HTMLLabelElement;
-  const teamBAbbrLabel = container.querySelector('label[for="team-b-abbr"]') as HTMLLabelElement;
-
+  // ... all other standard refs ...
   const teamAPrimary = container.querySelector('#team-a-primary') as HTMLInputElement;
   const teamASecondary = container.querySelector('#team-a-secondary') as HTMLInputElement;
   const teamBPrimary = container.querySelector('#team-b-primary') as HTMLInputElement;
   const teamBSecondary = container.querySelector('#team-b-secondary') as HTMLInputElement;
+  const teamANameLabel = container.querySelector('label[for="team-a-name"]') as HTMLLabelElement;
+  const teamAAbbrLabel = container.querySelector('label[for="team-a-abbr"]') as HTMLLabelElement;
+  const teamBNameLabel = container.querySelector('label[for="team-b-name"]') as HTMLLabelElement;
+  const teamBAbbrLabel = container.querySelector('label[for="team-b-abbr"]') as HTMLLabelElement;
   const teamAPrimaryLabel = container.querySelector('label[for="team-a-primary"]') as HTMLLabelElement;
   const teamASecondaryLabel = container.querySelector('label[for="team-a-secondary"]') as HTMLLabelElement;
   const teamBPrimaryLabel = container.querySelector('label[for="team-b-primary"]') as HTMLLabelElement;
   const teamBSecondaryLabel = container.querySelector('label[for="team-b-secondary"]') as HTMLLabelElement;
-
   const teamAPlayerNum = container.querySelector('#team-a-player-number') as HTMLInputElement;
   const teamAPlayerName = container.querySelector('#team-a-player-name') as HTMLInputElement;
   const addPlayerAButton = container.querySelector('#add-player-a') as HTMLButtonElement;
-
   const teamBPlayerNum = container.querySelector('#team-b-player-number') as HTMLInputElement;
   const teamBPlayerName = container.querySelector('#team-b-player-name') as HTMLInputElement;
   const addPlayerBButton = container.querySelector('#add-player-b') as HTMLButtonElement;
-
   const confirmModal = container.querySelector('#confirmation-modal') as HTMLDivElement;
   const modalMessage = container.querySelector('#modal-message-text') as HTMLParagraphElement;
   const modalConfirmBtn = container.querySelector('#modal-confirm-btn') as HTMLButtonElement;
   const modalCancelBtn = container.querySelector('#modal-cancel-btn') as HTMLButtonElement;
-  
   const playerEditModal = container.querySelector('#player-edit-modal') as HTMLDivElement;
   const playerEditTitle = container.querySelector('#player-edit-title') as HTMLHeadingElement;
   const modalTeamName = container.querySelector('#modal-team-name') as HTMLSpanElement;
@@ -277,42 +252,33 @@ export function render(container: HTMLElement) {
   const nextPlayerBtn = container.querySelector('#next-player-btn') as HTMLButtonElement;
   const prevPlayerNum = container.querySelector('#prev-player-num') as HTMLSpanElement;
   const nextPlayerNum = container.querySelector('#next-player-num') as HTMLSpanElement;
-
   const editPlayerNumber = container.querySelector('#edit-player-number') as HTMLInputElement;
   const editPlayerName = container.querySelector('#edit-player-name') as HTMLInputElement;
   const editGoalsList = container.querySelector('#edit-player-goals-list') as HTMLUListElement;
   const editAddGoalBtn = container.querySelector('#edit-add-goal-btn') as HTMLButtonElement;
-  const editAddOwnGoalBtn = container.querySelector('#edit-add-own-goal-btn') as HTMLButtonElement; 
+  const editAddOwnGoalBtn = container.querySelector('#edit-add-own-goal-btn') as HTMLButtonElement;
   const editYellowCardsList = container.querySelector('#edit-yellow-cards-list') as HTMLUListElement;
   const editAddYellowBtn = container.querySelector('#edit-add-yellow-btn') as HTMLButtonElement;
   const editRedCardsList = container.querySelector('#edit-red-cards-list') as HTMLUListElement;
   const editAddRedBtn = container.querySelector('#edit-add-red-btn') as HTMLButtonElement;
-
   const modalSaveBtn = container.querySelector('#modal-save-btn') as HTMLButtonElement;
   const modalEditCancelBtn = container.querySelector('#modal-edit-cancel-btn') as HTMLButtonElement;
   const modalDeletePlayerBtn = container.querySelector('#modal-delete-player-btn') as HTMLButtonElement;
-
   const deleteListAButton = container.querySelector('#delete-list-a') as HTMLButtonElement;
   const deleteListBButton = container.querySelector('#delete-list-b') as HTMLButtonElement;
   const resetStatsAButton = container.querySelector('#reset-stats-a') as HTMLButtonElement;
   const resetStatsBButton = container.querySelector('#reset-stats-b') as HTMLButtonElement;
-
   const unsavedA = container.querySelector('#unsaved-a') as HTMLSpanElement;
   const unsavedB = container.querySelector('#unsaved-b') as HTMLSpanElement;
-  
   const playerListA = container.querySelector('#player-list-a') as HTMLDivElement;
   const playerListB = container.querySelector('#player-list-b') as HTMLDivElement;
   const playerTotalsA = container.querySelector('#player-totals-a') as HTMLDivElement;
   const playerTotalsB = container.querySelector('#player-totals-b') as HTMLDivElement;
 
+  // ... (Basic helpers unchanged) ...
   const teamAFields: [HTMLInputElement, HTMLLabelElement][] = [[teamAName, teamANameLabel],[teamAAbbr, teamAAbbrLabel],[teamAPrimary, teamAPrimaryLabel],[teamASecondary, teamASecondaryLabel]];
   const teamBFields: [HTMLInputElement, HTMLLabelElement][] = [[teamBName, teamBNameLabel],[teamBAbbr, teamBAbbrLabel],[teamBPrimary, teamBPrimaryLabel],[teamBSecondary, teamBSecondaryLabel]];
-
-  const updateUnsavedIndicators = () => {
-    if (unsavedA) unsavedA.textContent = isTeamAUnsaved ? '(unsaved data)' : '';
-    if (unsavedB) unsavedB.textContent = isTeamBUnsaved ? '(unsaved data)' : '';
-  };
-  
+  const updateUnsavedIndicators = () => { if (unsavedA) unsavedA.textContent = isTeamAUnsaved ? '(unsaved data)' : ''; if (unsavedB) unsavedB.textContent = isTeamBUnsaved ? '(unsaved data)' : ''; };
   let confirmAction: ConfirmAction = null;
   const showConfirmModal = (message: string, onConfirm: ConfirmAction) => { modalMessage.textContent = message; confirmAction = onConfirm; confirmModal.style.display = 'flex'; };
   const hideConfirmModal = () => { confirmModal.style.display = 'none'; modalMessage.textContent = ''; confirmAction = null; };
@@ -320,34 +286,63 @@ export function render(container: HTMLElement) {
   modalCancelBtn.addEventListener('click', hideConfirmModal);
   confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) { hideConfirmModal(); } });
 
+  // --- Helper to find current period limit ---
+  const loadPeriodLimit = async () => {
+    try {
+        const periods = await getPeriods();
+        const { config } = getState();
+        if (config && config.currentPeriod) {
+            const p = periods.find(per => per.name === config.currentPeriod);
+            if (p) currentPeriodLimit = p.endTime;
+        }
+    } catch (e) { console.error(e); }
+  };
 
-  // --- Player Edit Modal Logic ---
-  
-  const renderMinuteList = (listEl: HTMLUListElement, minutes: number[], type: string) => {
+  // --- Calculate Time Helper ---
+  const getCurrentGameTime = (): { reg: number, add: number } => {
+      const { timer } = getState();
+      const totalSeconds = timer.seconds;
+      const limitSeconds = currentPeriodLimit * 60;
+      
+      let reg, add;
+      if (totalSeconds <= limitSeconds) {
+          reg = Math.floor(totalSeconds / 60) + 1;
+          add = 0;
+      } else {
+          reg = currentPeriodLimit;
+          add = Math.ceil((totalSeconds - limitSeconds) / 60);
+      }
+      return { reg, add };
+  };
+
+
+  // --- Updated: Goals Renderer (Supports Goal objects) ---
+  const renderGoalList = (listEl: HTMLUListElement, goals: Goal[]) => {
     listEl.innerHTML = '';
-    if (minutes.length === 0) {
-      listEl.innerHTML = `<li class="goal-list-item">No ${type}s</li>`;
+    if (goals.length === 0) {
+      listEl.innerHTML = `<li class="goal-list-item">No Goals</li>`;
       return;
     }
-    // Sort by absolute value (keep negative for OG in display)
-    minutes.sort((a, b) => Math.abs(a) - Math.abs(b));
     
-    minutes.forEach((minute, index) => {
+    // Sort by absolute time (reg + add)
+    goals.sort((a, b) => (a.regMinute + a.addMinute) - (b.regMinute + b.addMinute));
+    
+    goals.forEach((goal, index) => {
       const li = document.createElement('li');
       li.className = 'goal-list-item';
       
-      let displayType = type;
-      let displayMinute = minute;
+      const label = goal.isOwnGoal ? "Own Goal" : "Goal";
+      // Value to show in input: "90" (if add=0) or "90+5" (if add>0)
+      // Actually, for editing, we probably want to edit reg/add separately? 
+      // The prompt implies a simple text display or basic input.
+      // Let's show two inputs: Reg + Add
       
-      if (type === 'Goal' && minute < 0) {
-        displayType = 'Own Goal';
-        displayMinute = Math.abs(minute);
-      }
-
       li.innerHTML = `
         <div class="goal-item-content">
-            <span>${displayType} @</span>
-            <input type="number" class="goal-minute-input" value="${displayMinute}" data-index="${index}" min="1" max="999">
+            <span>${label} @</span>
+            <input type="number" class="goal-minute-input reg-input" value="${goal.regMinute}" data-index="${index}" min="1" max="999" style="width: 40px;">
+            <span>+</span>
+            <input type="number" class="goal-minute-input add-input" value="${goal.addMinute}" data-index="${index}" min="0" max="99" style="width: 40px;">
             <span>'</span>
         </div>
         <button class="goal-delete-btn" data-index="${index}">❌</button>
@@ -355,102 +350,153 @@ export function render(container: HTMLElement) {
       listEl.appendChild(li);
     });
 
+    // Listeners
     listEl.querySelectorAll('.goal-delete-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const index = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10);
-        if (index > -1) {
-          minutes.splice(index, 1); 
-          renderMinuteList(listEl, minutes, type); 
-        }
+        const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10);
+        if (idx > -1) { goals.splice(idx, 1); renderGoalList(listEl, goals); }
       });
     });
-    listEl.querySelectorAll('.goal-minute-input').forEach(input => {
+    
+    listEl.querySelectorAll('.reg-input').forEach(input => {
       input.addEventListener('change', (e) => {
         const target = e.currentTarget as HTMLInputElement;
-        const index = parseInt(target.dataset.index || '-1', 10);
-        let newVal = parseInt(target.value, 10);
-        if (isNaN(newVal) || newVal < 1) newVal = 1;
-        if (index > -1) {
-            // Preserve sign (Own Goal vs Goal)
-            if (minutes[index] < 0) minutes[index] = -newVal;
-            else minutes[index] = newVal;
-        }
+        const idx = parseInt(target.dataset.index || '-1', 10);
+        const val = parseInt(target.value, 10) || 1;
+        if (idx > -1) goals[idx].regMinute = val;
+      });
+    });
+    
+    listEl.querySelectorAll('.add-input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const target = e.currentTarget as HTMLInputElement;
+        const idx = parseInt(target.dataset.index || '-1', 10);
+        const val = parseInt(target.value, 10) || 0;
+        if (idx > -1) goals[idx].addMinute = val;
       });
     });
   };
 
+  // --- Cards Renderer (Simple List of Integers) ---
+  const renderCardList = (listEl: HTMLUListElement, minutes: number[], type: string) => {
+      listEl.innerHTML = '';
+      if (minutes.length === 0) { listEl.innerHTML = `<li class="goal-list-item">No ${type}s</li>`; return; }
+      minutes.sort((a, b) => a - b);
+      minutes.forEach((m, i) => {
+          const li = document.createElement('li');
+          li.className = 'goal-list-item';
+          li.innerHTML = `
+            <div class="goal-item-content">
+                <span>${type} @</span>
+                <input type="number" class="card-minute-input" value="${m}" data-index="${i}" min="1" max="999">
+                <span>'</span>
+            </div>
+            <button class="card-delete-btn" data-index="${i}">❌</button>
+          `;
+          listEl.appendChild(li);
+      });
+      
+      listEl.querySelectorAll('.card-delete-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10);
+              if (idx > -1) { minutes.splice(idx, 1); renderCardList(listEl, minutes, type); }
+          });
+      });
+      listEl.querySelectorAll('.card-minute-input').forEach(input => {
+          input.addEventListener('change', (e) => {
+              const idx = parseInt((e.currentTarget as HTMLInputElement).dataset.index || '-1', 10);
+              const val = parseInt((e.currentTarget as HTMLInputElement).value, 10) || 1;
+              if (idx > -1) minutes[idx] = val;
+          });
+      });
+  };
+
+
+  // --- Show Edit Modal ---
   const showPlayerEditModal = (player: PlayerConfig, team: 'teamA' | 'teamB') => {
     playerToEdit = player;
     teamToEdit = team;
+    
     const { config } = getState();
-    if (config) {
-      const teamConfig = config[team];
-      const players = teamConfig.players;
-      const currentIndex = players.findIndex(p => p.number === player.number);
-      modalTeamName.textContent = teamConfig.name;
-      modalTeamPrimary.style.backgroundColor = teamConfig.colors.primary;
-      modalTeamSecondary.style.backgroundColor = teamConfig.colors.secondary;
-      const prevPlayer = players[currentIndex - 1];
-      const nextPlayer = players[currentIndex + 1];
-      if (prevPlayer) { prevPlayerNum.textContent = `#${prevPlayer.number}`; prevPlayerBtn.disabled = false; } else { prevPlayerNum.textContent = ''; prevPlayerBtn.disabled = true; }
-      if (nextPlayer) { nextPlayerNum.textContent = `#${nextPlayer.number}`; nextPlayerBtn.disabled = false; } else { nextPlayerNum.textContent = ''; nextPlayerBtn.disabled = true; }
-    }
-    editGoals = [...player.goals]; 
+    if (!config) return;
+    
+    const teamConfig = config[team];
+    const players = teamConfig.players;
+    const currentIndex = players.findIndex(p => p.number === player.number);
+    
+    modalTeamName.textContent = teamConfig.name;
+    modalTeamPrimary.style.backgroundColor = teamConfig.colors.primary;
+    modalTeamSecondary.style.backgroundColor = teamConfig.colors.secondary;
+
+    const prevPlayer = players[currentIndex - 1];
+    const nextPlayer = players[currentIndex + 1];
+    if (prevPlayer) { prevPlayerNum.textContent = `#${prevPlayer.number}`; prevPlayerBtn.disabled = false; } else { prevPlayerNum.textContent = ''; prevPlayerBtn.disabled = true; }
+    if (nextPlayer) { nextPlayerNum.textContent = `#${nextPlayer.number}`; nextPlayerBtn.disabled = false; } else { nextPlayerNum.textContent = ''; nextPlayerBtn.disabled = true; }
+
+    // Deep copy complex objects
+    editGoals = player.goals.map(g => ({ ...g }));
     editYellowCards = [...player.yellowCards];
     editRedCards = [...player.redCards];
+
     playerEditTitle.textContent = `#${player.number} ${player.name}`;
     editPlayerNumber.value = player.number.toString();
     editPlayerName.value = player.name;
-    renderMinuteList(editGoalsList, editGoals, 'Goal');
-    renderMinuteList(editYellowCardsList, editYellowCards, 'Yellow');
-    renderMinuteList(editRedCardsList, editRedCards, 'Red');
+    
+    renderGoalList(editGoalsList, editGoals);
+    renderCardList(editYellowCardsList, editYellowCards, 'Yellow');
+    renderCardList(editRedCardsList, editRedCards, 'Red');
+    
     playerEditModal.style.display = 'flex';
   };
+  
   const hidePlayerEditModal = () => { playerEditModal.style.display = 'none'; playerToEdit = null; teamToEdit = null; editGoals = []; editYellowCards = []; editRedCards = []; };
   const navigatePlayer = (direction: 'prev' | 'next') => { if (!playerToEdit || !teamToEdit) return; const { config } = getState(); if (!config) return; const players = config[teamToEdit].players; const currentIndex = players.findIndex(p => p.number === playerToEdit!.number); const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1; if (newIndex >= 0 && newIndex < players.length) { showPlayerEditModal(players[newIndex], teamToEdit); } };
   prevPlayerBtn.addEventListener('click', () => navigatePlayer('prev'));
   nextPlayerBtn.addEventListener('click', () => navigatePlayer('next'));
 
-  // --- Listeners ---
+  // --- Add Goal Logic ---
   editAddGoalBtn.addEventListener('click', () => {
-    const { timer } = getState();
-    const minute = Math.floor(timer.seconds / 60) + 1;
-    editGoals.push(minute);
-    renderMinuteList(editGoalsList, editGoals, 'Goal');
+    const { reg, add } = getCurrentGameTime();
+    editGoals.push({ regMinute: reg, addMinute: add, isOwnGoal: false });
+    renderGoalList(editGoalsList, editGoals);
   });
 
-  // --- New Own Goal Logic ---
   editAddOwnGoalBtn.addEventListener('click', () => {
-      const { timer } = getState();
-      const minute = Math.floor(timer.seconds / 60) + 1;
-      editGoals.push(-minute); // Push negative minute
-      renderMinuteList(editGoalsList, editGoals, 'Goal');
+      const { reg, add } = getCurrentGameTime();
+      editGoals.push({ regMinute: reg, addMinute: add, isOwnGoal: true });
+      renderGoalList(editGoalsList, editGoals);
   });
 
+  // --- Add Card Logic ---
+  // Note: Cards still use simple integer minutes for now based on previous requirements
+  // We will calculate total minutes (reg + add) for simplicity in display if backend expects int
+  // Or if backend expects int, we just sum them.
   editAddYellowBtn.addEventListener('click', () => {
     if (editYellowCards.length >= 2) { showNotification('Max 2 yellow cards.', 'error'); return; }
-    const { timer, isAutoConvertYellowToRedOn } = getState();
-    const minute = Math.floor(timer.seconds / 60) + 1;
-    editYellowCards.push(minute);
-    renderMinuteList(editYellowCardsList, editYellowCards, 'Yellow');
+    const { reg, add } = getCurrentGameTime();
+    const totalMin = reg + add; 
+    editYellowCards.push(totalMin);
+    renderCardList(editYellowCardsList, editYellowCards, 'Yellow');
+    
+    const { isAutoConvertYellowToRedOn } = getState();
     if (editYellowCards.length === 2 && isAutoConvertYellowToRedOn && editRedCards.length < 1) {
-      editRedCards.push(minute);
-      renderMinuteList(editRedCardsList, editRedCards, 'Red');
+      editRedCards.push(totalMin);
+      renderCardList(editRedCardsList, editRedCards, 'Red');
       showNotification('2nd yellow auto-added a red card!');
     }
   });
+
   editAddRedBtn.addEventListener('click', () => {
     if (editRedCards.length >= 1) { showNotification('Max 1 red card.', 'error'); return; }
-    const { timer } = getState();
-    const minute = Math.floor(timer.seconds / 60) + 1;
-    editRedCards.push(minute);
-    renderMinuteList(editRedCardsList, editRedCards, 'Red');
+    const { reg, add } = getCurrentGameTime();
+    editRedCards.push(reg + add);
+    renderCardList(editRedCardsList, editRedCards, 'Red');
   });
   
   modalEditCancelBtn.addEventListener('click', hidePlayerEditModal);
   modalDeletePlayerBtn.addEventListener('click', () => { if (!playerToEdit || !teamToEdit) return; const player = playerToEdit; const team = teamToEdit; hidePlayerEditModal(); showConfirmModal(`Are you sure you want to delete ${player.name} (#${player.number})?`, async () => { await deletePlayer(team, player.number); showNotification(`${player.name} deleted!`); }); });
   
-  // --- Save with Auto-Add Logic ---
+  // --- SAVE & AUTO-SCORE LOGIC ---
   modalSaveBtn.addEventListener('click', async () => { 
       if (!playerToEdit || !teamToEdit) return; 
       const newNumber = parseInt(editPlayerNumber.value, 10); 
@@ -458,39 +504,48 @@ export function render(container: HTMLElement) {
       if (isNaN(newNumber) || newNumber < 0 || newNumber > 99) { showNotification('Player number must be between 0 and 99.', 'error'); return; } 
       if (!newName) { showNotification('Player name cannot be empty.', 'error'); return; } 
       
-      // Calculate diffs for auto-score
-      const oldRegularGoals = playerToEdit.goals.filter(g => g > 0).length;
-      const oldOwnGoals = playerToEdit.goals.filter(g => g < 0).length;
-      const newRegularGoals = editGoals.filter(g => g > 0).length;
-      const newOwnGoals = editGoals.filter(g => g < 0).length;
+      // 1. Calculate Differences
+      const oldRegular = playerToEdit.goals.filter(g => !g.isOwnGoal).length;
+      const oldOwn = playerToEdit.goals.filter(g => g.isOwnGoal).length;
       
-      const diffRegular = newRegularGoals - oldRegularGoals;
-      const diffOwn = newOwnGoals - oldOwnGoals;
+      const newRegular = editGoals.filter(g => !g.isOwnGoal).length;
+      const newOwn = editGoals.filter(g => g.isOwnGoal).length;
+      
+      const diffRegular = newRegular - oldRegular;
+      const diffOwn = newOwn - oldOwn;
 
-      const updatedPlayerData: PlayerConfig = { ...playerToEdit, number: newNumber, name: newName, yellowCards: editYellowCards, redCards: editRedCards, goals: editGoals, }; 
+      const updatedPlayerData: PlayerConfig = { 
+          ...playerToEdit, 
+          number: newNumber, 
+          name: newName, 
+          yellowCards: editYellowCards, 
+          redCards: editRedCards, 
+          goals: editGoals, // Updated list
+      }; 
       
       try { 
           await editPlayer(teamToEdit, playerToEdit.number, updatedPlayerData); 
           showNotification(`Player #${updatedPlayerData.number} ${updatedPlayerData.name} saved!`); 
           
-          // Handle Auto-Add Score
+          // 2. Apply Auto-Score based on Diff
           const { config, isAutoAddScoreOn } = getState();
           if (isAutoAddScoreOn && config) {
+              // A. Regular Goals -> Add to THIS team
               if (diffRegular !== 0) {
                   const currentScore = config[teamToEdit].score;
-                  // Add diff (can be negative if goals were removed)
-                  const newScore = Math.max(0, currentScore + diffRegular); 
+                  const newScore = Math.max(0, currentScore + diffRegular);
                   await setScore(teamToEdit, newScore);
                   if (diffRegular > 0) showNotification(`Auto-added ${diffRegular} goal(s) to ${config[teamToEdit].name}!`);
                   else showNotification(`Auto-removed ${Math.abs(diffRegular)} goal(s) from ${config[teamToEdit].name}!`);
               }
               
+              // B. Own Goals -> Add to OPPONENT team
               if (diffOwn !== 0) {
                   const opponentTeam = teamToEdit === 'teamA' ? 'teamB' : 'teamA';
                   const opponentScore = config[opponentTeam].score;
                   const newOpScore = Math.max(0, opponentScore + diffOwn);
                   await setScore(opponentTeam, newOpScore);
-                  if (diffOwn > 0) showNotification(`Auto-added ${diffOwn} own goal(s) to Opponent (${config[opponentTeam].name})!`);
+                  if (diffOwn > 0) showNotification(`Auto-added ${diffOwn} own goal(s) to Opponent!`);
                   else showNotification(`Auto-removed ${Math.abs(diffOwn)} own goal(s) from Opponent!`);
               }
           }
@@ -502,171 +557,115 @@ export function render(container: HTMLElement) {
   });
 
 
-  // --- Player List Rendering Function ---
+  // --- Player List Rendering ---
   const updatePlayerLists = () => {
     const { config } = getState();
     if (!config) return;
 
-    // --- Team A Calculations ---
-    let totalAGoals = 0, totalAYellow = 0, totalARed = 0, totalAOnField = 0;
-    const totalAPlayers = config.teamA.players.length;
+    // Team A Stats
+    const teamAPlayers = config.teamA.players;
+    const totalAGoals = teamAPlayers.reduce((sum, p) => sum + p.goals.filter(g => !g.isOwnGoal).length, 0);
+    const totalAYellow = teamAPlayers.reduce((sum, p) => sum + p.yellowCards.length, 0);
+    const totalARed = teamAPlayers.reduce((sum, p) => sum + p.redCards.length, 0);
+    const totalAOnField = teamAPlayers.filter(p => p.onField).length;
     
-    let teamBOwnGoals = 0;
-    for(const p of config.teamB.players) {
-        teamBOwnGoals += p.goals.filter(g => g < 0).length;
-    }
-
-    for (const player of config.teamA.players) {
-      totalAGoals += player.goals.filter(g => g > 0).length; // Only positive
-      totalAYellow += player.yellowCards.length;
-      totalARed += player.redCards.length;
-      if (player.onField) totalAOnField++;
-    }
-    
-    const teamAGoalDisplay = teamBOwnGoals > 0 
-        ? `${totalAGoals} (+${teamBOwnGoals} O.G.)` 
-        : `${totalAGoals}`;
+    // Opponent Own Goals (B -> A)
+    const teamBOwnGoals = config.teamB.players.reduce((sum, p) => sum + p.goals.filter(g => g.isOwnGoal).length, 0);
+    const displayScoreA = teamBOwnGoals > 0 ? `${totalAGoals} (+${teamBOwnGoals} O.G.)` : `${totalAGoals}`;
 
     playerTotalsA.innerHTML = `
-      <span class="player-total-item">⚽ Goals: ${teamAGoalDisplay}</span>
+      <span class="player-total-item">⚽ Goals: ${displayScoreA}</span>
       <span class="player-total-item">🟨 Cards: ${totalAYellow}</span>
       <span class="player-total-item">🟥 Cards: ${totalARed}</span>
       <span class="player-total-item">✅ On Field: ${totalAOnField}</span>
-      <span class="player-total-item">👥 Total: ${totalAPlayers}</span>
+      <span class="player-total-item">👥 Total: ${teamAPlayers.length}</span>
     `;
 
-    let tableAHtml = '';
-    if (config.teamA.players.length === 0) {
-      tableAHtml = '<p>No players on roster.</p>';
-      playerTotalsA.style.display = 'none';
-    } else {
-      playerTotalsA.style.display = 'flex';
-      tableAHtml = `
-        <table class="player-list-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>⚽</th>
-              <th>🟨</th>
-              <th>🟥</th>
-              <th>✅</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${config.teamA.players.map(player => `
-              <tr>
-                <td>${player.number}</td>
-                <td>${player.name}</td>
-                <td>${player.goals.filter(g => g > 0).length}</td> <td>${player.yellowCards.length}</td>
-                <td>${player.redCards.length}</td>
-                <td>
-                  <input type="checkbox" class="on-field-checkbox" data-team="teamA" data-number="${player.number}" ${player.onField ? 'checked' : ''}>
-                </td>
-                <td>
-                  <div class="player-action-cell">
-                    <button class="player-action-btn player-goal-btn" data-team="teamA" data-number="${player.number}">⚽</button>
-                    <button class="player-action-btn player-yellow-btn" data-team="teamA" data-number="${player.number}">🟨</button>
-                    <button class="player-action-btn player-red-btn" data-team="teamA" data-number="${player.number}">🟥</button>
-                    <button class="player-action-btn player-edit-btn" data-team="teamA" data-number="${player.number}">✏️</button>
-                    <button class="player-action-btn player-delete-btn" data-team="teamA" data-number="${player.number}">🗑️</button>
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-    playerListA.innerHTML = tableAHtml;
-
-    // --- Team B Calculations ---
-    let totalBGoals = 0, totalBYellow = 0, totalBRed = 0, totalBOnField = 0;
-    const totalBPlayers = config.teamB.players.length;
+    // Team B Stats
+    const teamBPlayers = config.teamB.players;
+    const totalBGoals = teamBPlayers.reduce((sum, p) => sum + p.goals.filter(g => !g.isOwnGoal).length, 0);
+    const totalBYellow = teamBPlayers.reduce((sum, p) => sum + p.yellowCards.length, 0);
+    const totalBRed = teamBPlayers.reduce((sum, p) => sum + p.redCards.length, 0);
+    const totalBOnField = teamBPlayers.filter(p => p.onField).length;
     
-    let teamAOwnGoals = 0;
-    for(const p of config.teamA.players) {
-        teamAOwnGoals += p.goals.filter(g => g < 0).length;
-    }
-
-    for (const player of config.teamB.players) {
-      totalBGoals += player.goals.filter(g => g > 0).length;
-      totalBYellow += player.yellowCards.length;
-      totalBRed += player.redCards.length;
-      if (player.onField) totalBOnField++;
-    }
-    
-    const teamBGoalDisplay = teamAOwnGoals > 0 
-        ? `${totalBGoals} (+${teamAOwnGoals} O.G.)` 
-        : `${totalBGoals}`;
+    // Opponent Own Goals (A -> B)
+    const teamAOwnGoals = teamAPlayers.reduce((sum, p) => sum + p.goals.filter(g => g.isOwnGoal).length, 0);
+    const displayScoreB = teamAOwnGoals > 0 ? `${totalBGoals} (+${teamAOwnGoals} O.G.)` : `${totalBGoals}`;
 
     playerTotalsB.innerHTML = `
-      <span class="player-total-item">⚽ Goals: ${teamBGoalDisplay}</span>
+      <span class="player-total-item">⚽ Goals: ${displayScoreB}</span>
       <span class="player-total-item">🟨 Cards: ${totalBYellow}</span>
       <span class="player-total-item">🟥 Cards: ${totalBRed}</span>
       <span class="player-total-item">✅ On Field: ${totalBOnField}</span>
-      <span class="player-total-item">👥 Total: ${totalBPlayers}</span>
+      <span class="player-total-item">👥 Total: ${teamBPlayers.length}</span>
     `;
 
-    let tableBHtml = '';
-    if (config.teamB.players.length === 0) {
-      tableBHtml = '<p>No players on roster.</p>';
-      playerTotalsB.style.display = 'none';
-    } else {
-      playerTotalsB.style.display = 'flex';
-      tableBHtml = `
+    // Tables
+    const renderRows = (team: 'teamA' | 'teamB', players: PlayerConfig[]) => {
+        if (players.length === 0) return '<p>No players on roster.</p>';
+        return `
         <table class="player-list-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>⚽</th>
-              <th>🟨</th>
-              <th>🟥</th>
-              <th>✅</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+          <thead><tr><th>#</th><th>Name</th><th>⚽</th><th>🟨</th><th>🟥</th><th>✅</th><th>Actions</th></tr></thead>
           <tbody>
-            ${config.teamB.players.map(player => `
+            ${players.map(player => `
               <tr>
                 <td>${player.number}</td>
                 <td>${player.name}</td>
-                <td>${player.goals.filter(g => g > 0).length}</td> <td>${player.yellowCards.length}</td>
+                <td>${player.goals.filter(g => !g.isOwnGoal).length}</td>
+                <td>${player.yellowCards.length}</td>
                 <td>${player.redCards.length}</td>
-                <td>
-                  <input type="checkbox" class="on-field-checkbox" data-team="teamB" data-number="${player.number}" ${player.onField ? 'checked' : ''}>
-                </td>
+                <td><input type="checkbox" class="on-field-checkbox" data-team="${team}" data-number="${player.number}" ${player.onField ? 'checked' : ''}></td>
                 <td>
                   <div class="player-action-cell">
-                    <button class="player-action-btn player-goal-btn" data-team="teamB" data-number="${player.number}">⚽</button>
-                    <button class="player-action-btn player-yellow-btn" data-team="teamB" data-number="${player.number}">🟨</button>
-                    <button class="player-action-btn player-red-btn" data-team="teamB" data-number="${player.number}">🟥</button>
-                    <button class="player-action-btn player-edit-btn" data-team="teamB" data-number="${player.number}">✏️</button>
-                    <button class="player-action-btn player-delete-btn" data-team="teamB" data-number="${player.number}">🗑️</button>
+                    <button class="player-action-btn player-goal-btn" data-team="${team}" data-number="${player.number}">⚽</button>
+                    <button class="player-action-btn player-yellow-btn" data-team="${team}" data-number="${player.number}">🟨</button>
+                    <button class="player-action-btn player-red-btn" data-team="${team}" data-number="${player.number}">🟥</button>
+                    <button class="player-action-btn player-edit-btn" data-team="${team}" data-number="${player.number}">✏️</button>
+                    <button class="player-action-btn player-delete-btn" data-team="${team}" data-number="${player.number}">🗑️</button>
                   </div>
                 </td>
               </tr>
             `).join('')}
           </tbody>
-        </table>
-      `;
-    }
-    playerListB.innerHTML = tableBHtml;
+        </table>`;
+    };
     
-    container.querySelectorAll('.on-field-checkbox').forEach(box => { box.addEventListener('change', async (e) => { const target = e.currentTarget as HTMLInputElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (team && !isNaN(number)) { await toggleOnField(team, number); } }); });
-    container.querySelectorAll('.player-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number); const playerName = player ? `${player.name} (#${player.number})` : `Player #${number}`; showConfirmModal(`Are you sure you want to delete ${playerName}?`, async () => { await deletePlayer(team, number); showNotification(`${playerName} deleted!`); }); }); });
+    playerListA.innerHTML = renderRows('teamA', config.teamA.players);
+    playerListB.innerHTML = renderRows('teamB', config.teamB.players);
     
-    // Quick goal add still adds a regular goal immediately (as requested in previous prompts for dashboard/quick actions)
-    container.querySelectorAll('.player-goal-btn').forEach(btn => { btn.addEventListener('click', async (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const { timer } = getState(); const minute = Math.floor(timer.seconds / 60) + 1; try { await addGoal(team, number, minute); const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number); showNotification(`Goal given to #${player?.number} ${player?.name} at ${minute}'`); } catch (error: any) { showNotification(`Error adding goal: ${error.message}`, 'error'); } }); });
-    container.querySelectorAll('.player-yellow-btn').forEach(btn => { btn.addEventListener('click', async (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const { config, timer, isAutoConvertYellowToRedOn } = getState(); if (!config) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number); if (!player) return; if (player.yellowCards.length >= 2) { showNotification('Player already has 2 yellow cards.', 'error'); return; } const minute = Math.floor(timer.seconds / 60) + 1; try { await addCard(team, number, 'yellow', minute); showNotification(`Yellow Card given to #${player.number} ${player.name} at ${minute}'`); if (player.yellowCards.length === 1 && isAutoConvertYellowToRedOn && player.redCards.length < 1) { await addCard(team, number, 'red', minute); showNotification(`Player #${number} received 2nd yellow and a Red Card at ${minute}'!`); } } catch (error: any) { showNotification(`Error adding card: ${error.message}`, 'error'); } }); });
-    container.querySelectorAll('.player-red-btn').forEach(btn => { btn.addEventListener('click', async (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const { config, timer } = getState(); if (!config) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number); if (!player) return; if (player.redCards.length >= 1) { showNotification('Player already has a red card.', 'error'); return; } const minute = Math.floor(timer.seconds / 60) + 1; try { await addCard(team, number, 'red', minute); showNotification(`Red Card given to #${player.number} ${player.name} at ${minute}'`); } catch (error: any) { showNotification(`Error adding card: ${error.message}`, 'error'); } }); });
-    container.querySelectorAll('.player-edit-btn').forEach(btn => { btn.addEventListener('click', (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const { config } = getState(); if (!config) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number); if (player) { showPlayerEditModal(player, team); } }); });
+    // Attach listeners
+    attachTableListeners(container, config);
+  };
+  
+  // Extracted listener attachment to keep things clean
+  const attachTableListeners = (container: HTMLElement, config: any) => {
+      container.querySelectorAll('.on-field-checkbox').forEach(box => { box.addEventListener('change', async (e) => { const target = e.currentTarget as HTMLInputElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (team && !isNaN(number)) { await toggleOnField(team, number); } }); });
+      container.querySelectorAll('.player-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find((p: PlayerConfig) => p.number === number); showConfirmModal(`Are you sure you want to delete ${player.name}?`, async () => { await deletePlayer(team, number); showNotification(`${player.name} deleted!`); }); }); });
+      container.querySelectorAll('.player-edit-btn').forEach(btn => { btn.addEventListener('click', (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find((p: PlayerConfig) => p.number === number); if (player) showPlayerEditModal(player, team); }); });
+      
+      // Quick Actions
+      container.querySelectorAll('.player-goal-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
+          const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
+          const { timer } = getState(); const { reg, add } = getCurrentGameTime(); // use helper!
+          await addGoal(team, number, reg, add, false);
+          showNotification(`Goal given to #${number}`);
+      }); });
+      container.querySelectorAll('.player-yellow-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
+          const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
+          const { timer } = getState(); const { reg, add } = getCurrentGameTime(); const total = reg + add; 
+          await addCard(team, number, 'yellow', total);
+          showNotification(`Yellow card given to #${number}`);
+      }); });
+      container.querySelectorAll('.player-red-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
+          const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
+          const { timer } = getState(); const { reg, add } = getCurrentGameTime(); const total = reg + add; 
+          await addCard(team, number, 'red', total);
+          showNotification(`Red card given to #${number}`);
+      }); });
   };
   
 
-  // --- Add Event Listeners (Existing ones unchanged) ---
+  // --- Add Event Listeners ---
   const numberInputHandler = (e: Event) => { const target = e.target as HTMLInputElement; target.value = target.value.replace(/[^0-9]/g, ''); if (target.value.length > 2) { target.value = target.value.slice(0, 2); } if (target.value === '') return; if (parseInt(target.value, 10) > 99) { target.value = '99'; } if (parseInt(target.value, 10) < 0) { target.value = '0'; } };
   teamAPlayerNum.addEventListener('input', numberInputHandler); teamBPlayerNum.addEventListener('input', numberInputHandler); editPlayerNumber.addEventListener('input', numberInputHandler);
   teamAFields.forEach(([input, label]) => { if (input) { input.addEventListener('input', () => { isTeamAUnsaved = true; if (label) label.style.fontStyle = 'italic'; updateUnsavedIndicators(); }); } });
@@ -682,8 +681,11 @@ export function render(container: HTMLElement) {
   resetStatsAButton.addEventListener('click', () => { const { config } = getState(); const teamName = config?.teamA.name ?? 'Team A'; const teamAbbr = config?.teamA.abbreviation ?? 'TMA'; showConfirmModal(`Are you sure you want to reset all stats (goals, cards, on-field) for ${teamName} (${teamAbbr})?`, async () => { await resetTeamStats('teamA'); showNotification('Team A stats reset!'); }); });
   resetStatsBButton.addEventListener('click', () => { const { config } = getState(); const teamName = config?.teamB.name ?? 'Team B'; const teamAbbr = config?.teamB.abbreviation ?? 'TMB'; showConfirmModal(`Are you sure you want to reset all stats (goals, cards, on-field) for ${teamName} (${teamAbbr})?`, async () => { await resetTeamStats('teamB'); showNotification('Team B stats reset!'); }); });
 
+  loadPeriodLimit();
+
   const onStateUpdate = () => {
     updatePlayerLists();
+    loadPeriodLimit(); // Refresh limit if periods changed
   };
   
   subscribe(onStateUpdate); 

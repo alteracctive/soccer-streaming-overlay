@@ -4,34 +4,53 @@ import {
   subscribe,
   unsubscribe,
   type PlayerConfig,
+  type Goal, // Ensure Goal is imported
 } from '../stateManager';
+
+/**
+ * Helper to format time string (e.g., "45+2'" or "12'")
+ */
+function formatGoalTime(g: Goal): string {
+  return g.addMinute > 0 ? `${g.regMinute}+${g.addMinute}'` : `${g.regMinute}'`;
+}
 
 /**
  * Helper function to generate the HTML for a team's goal list (Game Report)
  */
-function renderGoalList(players: PlayerConfig[], opponentPlayers: PlayerConfig[]): string {
-  // 1. Get normal goals
-  const teamGoals = players.flatMap(p => 
-    p.goals.filter(g => g > 0).map(g => ({ 
-      minute: g, 
-      playerName: p.name, 
-      playerNumber: p.number, 
-      type: 'Goal' 
-    }))
+function renderGoalList(
+  teamPlayers: PlayerConfig[], 
+  opponentPlayers: PlayerConfig[]
+): string {
+  
+  // 1. Get normal goals from THIS team
+  const teamGoals = teamPlayers.flatMap(p => 
+    p.goals
+      .filter(g => !g.isOwnGoal) // Check boolean
+      .map(g => ({ 
+        goal: g,
+        playerName: p.name, 
+        playerNumber: p.number, 
+        type: 'Goal' 
+      }))
   );
 
-  // 2. Get own goals from opponent
+  // 2. Get own goals from OPPONENT team
   const opponentOwnGoals = opponentPlayers.flatMap(p => 
-    p.goals.filter(g => g < 0).map(g => ({ 
-      minute: Math.abs(g), 
-      playerName: p.name, 
-      playerNumber: p.number, 
-      type: 'Own Goal' 
-    }))
+    p.goals
+      .filter(g => g.isOwnGoal) // Check boolean
+      .map(g => ({ 
+        goal: g,
+        playerName: p.name, 
+        playerNumber: p.number, 
+        type: 'Own Goal' 
+      }))
   );
 
   // 3. Merge and Sort
-  const allScoringEvents = [...teamGoals, ...opponentOwnGoals].sort((a, b) => a.minute - b.minute);
+  const allScoringEvents = [...teamGoals, ...opponentOwnGoals].sort((a, b) => {
+    if (a.goal.regMinute !== b.goal.regMinute) return a.goal.regMinute - b.goal.regMinute;
+    return a.goal.addMinute - b.goal.addMinute;
+  });
 
   if (allScoringEvents.length === 0) {
     return '<p class="no-goals-text">No goals yet.</p>';
@@ -41,7 +60,7 @@ function renderGoalList(players: PlayerConfig[], opponentPlayers: PlayerConfig[]
     <div class="goal-scorer-row">
       <span class="player-number">#${event.playerNumber}</span>
       <span class="player-name">${event.playerName} ${event.type === 'Own Goal' ? '(OG)' : ''}</span>
-      <span class="goal-minutes">${event.minute}'</span>
+      <span class="goal-minutes">${formatGoalTime(event.goal)}</span>
     </div>
   `).join('');
 }
@@ -50,23 +69,19 @@ function renderGoalList(players: PlayerConfig[], opponentPlayers: PlayerConfig[]
  * Helper: Render Timeline
  */
 interface TimelineEvent {
-  minute: number;
+  regMinute: number;
+  addMinute: number;
   type: 'Goal' | 'Own Goal' | 'Yellow' | 'Red';
   playerName: string;
   playerNumber: number;
-  visualTeam: 'teamA' | 'teamB'; // Which side of the timeline to display
+  visualTeam: 'teamA' | 'teamB'; 
 }
 
 function getEventPriority(type: string): number {
-  // Higher number = Top of the visual stack (Latest) in bottom-up timeline
-  // But we render Top-Down in HTML (Latest -> Earliest)
-  // So "Later" priority means it appears ABOVE "Earlier" priority in the visual stack.
-  // Requirement: Goal < Yellow < Red (Time flow).
-  // Visual (Bottom Up): Goal -> Yellow -> Red.
-  // HTML (Top Down): Red -> Yellow -> Goal.
+  // Visual Stack (Bottom-Up): Goal (1) -> Yellow (2) -> Red (3)
   if (type === 'Red') return 3;
   if (type === 'Yellow') return 2;
-  return 1; // Goal/OG
+  return 1; 
 }
 
 function getEventIcon(type: string): string {
@@ -87,38 +102,45 @@ function renderTimeline(
 
   // 1. Gather Team A Events
   teamAPlayers.forEach(p => {
-    // Goals
     p.goals.forEach(g => {
-      if (g > 0) events.push({ minute: g, type: 'Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' });
-      else events.push({ minute: Math.abs(g), type: 'Own Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }); // OG on Opponent side
+      if (g.isOwnGoal) {
+        // Own Goal: Display on Opponent's side (Team B)
+        events.push({ regMinute: g.regMinute, addMinute: g.addMinute, type: 'Own Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' });
+      } else {
+        // Normal Goal: Display on Team A side
+        events.push({ regMinute: g.regMinute, addMinute: g.addMinute, type: 'Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' });
+      }
     });
-    // Cards
-    p.yellowCards.forEach(m => events.push({ minute: m, type: 'Yellow', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }));
-    p.redCards.forEach(m => events.push({ minute: m, type: 'Red', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }));
+    // Cards (stored as integers in current stateManager, need to handle if they are ints)
+    // Assuming cards are still integers based on previous stateManager:
+    p.yellowCards.forEach(m => events.push({ regMinute: m, addMinute: 0, type: 'Yellow', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }));
+    p.redCards.forEach(m => events.push({ regMinute: m, addMinute: 0, type: 'Red', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }));
   });
 
   // 2. Gather Team B Events
   teamBPlayers.forEach(p => {
-    // Goals
     p.goals.forEach(g => {
-      if (g > 0) events.push({ minute: g, type: 'Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' });
-      else events.push({ minute: Math.abs(g), type: 'Own Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }); // OG on Opponent side
+      if (g.isOwnGoal) {
+        // Own Goal: Display on Opponent's side (Team A)
+        events.push({ regMinute: g.regMinute, addMinute: g.addMinute, type: 'Own Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' });
+      } else {
+        // Normal Goal: Display on Team B side
+        events.push({ regMinute: g.regMinute, addMinute: g.addMinute, type: 'Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' });
+      }
     });
-    // Cards
-    p.yellowCards.forEach(m => events.push({ minute: m, type: 'Yellow', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }));
-    p.redCards.forEach(m => events.push({ minute: m, type: 'Red', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }));
+    p.yellowCards.forEach(m => events.push({ regMinute: m, addMinute: 0, type: 'Yellow', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }));
+    p.redCards.forEach(m => events.push({ regMinute: m, addMinute: 0, type: 'Red', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }));
   });
 
   if (events.length === 0) {
     return '<div class="no-events-text">Match started - No events yet</div>';
   }
 
-  // 3. Sort Events (Descending Minute for Top-Down rendering)
+  // 3. Sort Events (Descending for Top-Down HTML rendering)
+  // Latest events at the top
   events.sort((a, b) => {
-    if (b.minute !== a.minute) {
-      return b.minute - a.minute; // Higher minute first (Top)
-    }
-    // If minutes equal, sort by priority (Red > Yellow > Goal)
+    if (b.regMinute !== a.regMinute) return b.regMinute - a.regMinute;
+    if (b.addMinute !== a.addMinute) return b.addMinute - a.addMinute;
     return getEventPriority(b.type) - getEventPriority(a.type);
   });
 
@@ -128,6 +150,8 @@ function renderTimeline(
       <div class="timeline-line"></div>
       ${events.map(e => {
         const isLeft = e.visualTeam === 'teamA';
+        const timeString = e.addMinute > 0 ? `${e.regMinute}+${e.addMinute}'` : `${e.regMinute}'`;
+        
         const contentHtml = `
           <div class="timeline-event-content">
             <span class="event-name">#${e.playerNumber} ${e.playerName}</span>
@@ -140,7 +164,7 @@ function renderTimeline(
             <div class="timeline-side left">
               ${isLeft ? contentHtml : ''}
             </div>
-            <div class="timeline-minute">${e.minute}'</div>
+            <div class="timeline-minute">${timeString}</div>
             <div class="timeline-side right">
               ${!isLeft ? contentHtml : ''}
             </div>

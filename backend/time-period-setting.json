@@ -1,5 +1,4 @@
 [
-  { "name": "Prematch", "endTime": 0 },
   { "name": "First Half", "endTime": 45 },
   { "name": "Half Time", "endTime": 45 },
   { "name": "Second Half", "endTime": 90 },

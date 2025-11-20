@@ -8,14 +8,10 @@ from typing import Literal, List
 
 # --- Helper Function ---
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        # Not in a PyInstaller bundle, use normal path
         base_path = os.path.abspath(".")
-
     return os.path.join(base_path, relative_path)
 
 # --- Path Definitions ---
@@ -43,13 +39,19 @@ class ColorConfig(BaseModel):
     primary: str = "#FF0000"
     secondary: str = "#FFFFFF"
 
+# --- New Goal Model ---
+class Goal(BaseModel):
+    regMinute: int
+    addMinute: int = 0
+    isOwnGoal: bool = False
+
 class PlayerConfig(BaseModel):
     number: int
     name: str
     onField: bool = False
     yellowCards: List[int] = []
     redCards: List[int] = []
-    goals: List[int] = []
+    goals: List[Goal] = [] # <-- Updated to List[Goal]
 
 class TeamConfig(BaseModel):
     name: str = "TEAM"
@@ -91,10 +93,13 @@ class DeletePlayerUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
     number: int
 
+# --- Updated AddGoalUpdate ---
 class AddGoalUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
     number: int
-    minute: int
+    regMinute: int
+    addMinute: int
+    isOwnGoal: bool
 
 class AddCardUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
@@ -106,6 +111,7 @@ class ToggleOnFieldUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
     number: int
 
+# --- Updated EditPlayerUpdate ---
 class EditPlayerUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
     original_number: int 
@@ -115,7 +121,7 @@ class EditPlayerUpdate(BaseModel):
     onField: bool
     yellowCards: List[int]
     redCards: List[int]
-    goals: List[int]
+    goals: List[Goal] # <-- Updated
 
 class ResetStatsUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
@@ -160,9 +166,8 @@ class DataManager:
         if self.config is None: return
         try:
             async with aiofiles.open(self.file_path, mode='w') as f:
-                # --- Updated: Exclude currentPeriod ---
                 await f.write(self.config.model_dump_json(indent=2, exclude={'currentPeriod'}))
-            print(f"Config saved to {self.file_path} (currentPeriod excluded)")
+            print(f"Config saved to {self.file_path}")
         except Exception as e:
             print(f"!!! Critical Error saving config to {self.file_path}: {e}")
 
@@ -198,6 +203,20 @@ class DataManager:
                     for team_key in ['teamA', 'teamB']:
                         if team_key in data and 'players' in data[team_key]:
                             for player in data[team_key]['players']:
+                                # Migrate Goals from int list to object list
+                                new_goals = []
+                                if 'goals' in player:
+                                    for g in player['goals']:
+                                        if isinstance(g, int):
+                                            # Old format conversion
+                                            is_og = g < 0
+                                            minute = abs(g)
+                                            new_goals.append({"regMinute": minute, "addMinute": 0, "isOwnGoal": is_og})
+                                            migrated = True
+                                        else:
+                                            new_goals.append(g)
+                                    player['goals'] = new_goals
+
                                 if isinstance(player.get('yellowCards'), int):
                                     player['yellowCards'] = []
                                     migrated = True
@@ -205,10 +224,8 @@ class DataManager:
                                     player['redCards'] = []
                                     migrated = True
                     
-                    # Migration for currentPeriod
                     if 'currentPeriod' not in data:
                         data['currentPeriod'] = "First Half"
-                        # Don't mark migrated=True for this, as we don't want to save it anyway
                         
                     self.config = ScoreboardConfig.model_validate(data)
                 print("Config loaded successfully.")
@@ -232,7 +249,6 @@ class DataManager:
                 async with aiofiles.open(self.scoreboard_style_path, mode='r') as f:
                     content = await f.read()
                     data = json.loads(content)
-                    # Migrations
                     if 'textColorPrimary' in data: data['secondary'] = data.pop('textColorPrimary')
                     if 'textColorTertiary' in data: data['tertiary'] = data.pop('textColorTertiary')
                     if 'textColorSecondary' in data: data['tertiary'] = data.pop('textColorSecondary')
@@ -242,7 +258,6 @@ class DataManager:
                     if 'showRedCardIndicators' not in data: data['showRedCardIndicators'] = False
                     if 'secondary' not in data: data['secondary'] = '#FFFFFF'
                     if 'tertiary' not in data: data['tertiary'] = '#ffd700'
-                        
                     self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
                 print("Scoreboard style loaded.")
             except (FileNotFoundError, ValidationError):
@@ -251,7 +266,6 @@ class DataManager:
                     async with aiofiles.open(BUNDLED_STYLE_FILE, mode='r') as f:
                         content = await f.read()
                         data = json.loads(content)
-                        # Bundled Migrations
                         if 'textColorPrimary' in data: data['secondary'] = data.pop('textColorPrimary')
                         if 'textColorTertiary' in data: data['tertiary'] = data.pop('textColorTertiary')
                         if 'textColorSecondary' in data: data['tertiary'] = data.pop('textColorSecondary')
@@ -302,17 +316,14 @@ class DataManager:
         data_to_write = ""
         try:
             if file_name == "team-info-config.json":
-                # --- Updated: Parse and Re-Dump to ensure exclusion ---
                 model = ScoreboardConfig.model_validate_json(raw_json_data)
                 path_to_write = self.file_path
                 data_to_write = model.model_dump_json(indent=2, exclude={'currentPeriod'})
-                
             elif file_name == "scoreboard-customization.json":
                 model = ScoreboardStyleConfig.model_validate_json(raw_json_data)
                 path_to_write = self.scoreboard_style_path
                 data_to_write = model.model_dump_json(indent=2)
             else: raise Exception("Invalid file name.")
-            
             async with aiofiles.open(path_to_write, mode='w') as f: await f.write(data_to_write)
             await self.load_config()
             await self.load_scoreboard_style()
@@ -402,13 +413,20 @@ class DataManager:
         if original_count != len(team_to_update.players): await self.save_config()
         return config
 
+    # --- Updated Method ---
     async def add_goal(self, update: AddGoalUpdate) -> ScoreboardConfig:
         config = self.get_config()
         team_to_update = getattr(config, update.team)
         for player in team_to_update.players:
             if player.number == update.number:
-                player.goals.append(update.minute)
-                player.goals.sort(key=abs) 
+                new_goal = Goal(
+                    regMinute=update.regMinute,
+                    addMinute=update.addMinute,
+                    isOwnGoal=update.isOwnGoal
+                )
+                player.goals.append(new_goal)
+                # Sort logic: regMinute then addMinute
+                player.goals.sort(key=lambda g: (g.regMinute, g.addMinute))
                 await self.save_config()
                 break
         return config
@@ -438,6 +456,7 @@ class DataManager:
                 break
         return config
 
+    # --- Updated Method ---
     async def edit_player(self, update: EditPlayerUpdate) -> ScoreboardConfig:
         config = self.get_config()
         team = getattr(config, update.team)
@@ -451,7 +470,8 @@ class DataManager:
                 player.onField = update.onField
                 player.yellowCards = sorted(update.yellowCards)[:2]
                 player.redCards = sorted(update.redCards)[:1]
-                player.goals = sorted(update.goals) 
+                # Sorting
+                player.goals = sorted(update.goals, key=lambda g: (g.regMinute, g.addMinute))
                 await self.save_config()
                 break
         return config

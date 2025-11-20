@@ -4,10 +4,11 @@ import {
   subscribe,
   getState,
   STATE_UPDATE_EVENT,
-  type PlayerConfig
+  type PlayerConfig,
+  type Goal
 } from '../control_panel/stateManager';
 
-// --- Get Element References ---
+// ... (Get Element References - Unchanged from previous steps) ...
 const scoreboardContainer = document.getElementById('scoreboard-container') as HTMLDivElement;
 const gameReportContainer = document.querySelector('.game-report-container') as HTMLDivElement;
 const scoreRow = document.querySelector('.score-row') as HTMLDivElement;
@@ -53,12 +54,9 @@ const matchInfoText = document.getElementById('match-info-text') as HTMLSpanElem
 const teamARedCards = document.getElementById('team-a-red-cards') as HTMLDivElement;
 const teamBRedCards = document.getElementById('team-b-red-cards') as HTMLDivElement;
 const timerSectionRow = document.getElementById('timer-section-row') as HTMLDivElement;
-
-// --- New Ref ---
 const gameReportPeriod = document.getElementById('game-report-period') as HTMLDivElement;
 
-
-// --- Utility Functions ---
+// ... (Utility Functions Unchanged) ...
 function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
@@ -101,13 +99,54 @@ const renderPlayerList = (players: PlayerConfig[], targetLength: number, isScrol
   if (isScrolling) { return listHtml + listHtml; } else { return listHtml; }
 };
 
-// --- Goal Scorer Render Function ---
+// --- CORRECTED Goal Scorer Render Function ---
 const renderGoalScorers = (teamPlayers: PlayerConfig[], opponentPlayers: PlayerConfig[]): string => {
-  const teamGoals = teamPlayers.flatMap(p => p.goals.filter(g => g > 0).map(g => ({ minute: g, playerName: p.name, playerNumber: p.number, type: 'Goal' })));
-  const opponentOwnGoals = opponentPlayers.flatMap(p => p.goals.filter(g => g < 0).map(g => ({ minute: Math.abs(g), playerName: p.name, playerNumber: p.number, type: 'Own Goal' })));
-  const allEvents = [...teamGoals, ...opponentOwnGoals].sort((a, b) => a.minute - b.minute);
-  if (allEvents.length === 0) { return '<span></span>'; }
-  return allEvents.map(event => `<div class="overlay-goal-scorer"><span class="player-number">#${event.playerNumber}</span><span class="player-name">${event.playerName} ${event.type === 'Own Goal' ? '(OG)' : ''}</span><span class="goal-minutes">${event.minute}'</span></div>`).join('');
+  
+  // 1. Get normal goals from THIS team
+  const teamGoals = teamPlayers.flatMap(p => 
+    p.goals
+      .filter(g => !g.isOwnGoal) // Check boolean
+      .map(g => ({ 
+        reg: g.regMinute,
+        add: g.addMinute,
+        playerName: p.name, 
+        playerNumber: p.number, 
+        type: 'Goal' 
+      }))
+  );
+
+  // 2. Get own goals from OPPONENT team
+  const opponentOwnGoals = opponentPlayers.flatMap(p => 
+    p.goals
+      .filter(g => g.isOwnGoal) // Check boolean
+      .map(g => ({ 
+        reg: g.regMinute,
+        add: g.addMinute, 
+        playerName: p.name, 
+        playerNumber: p.number, 
+        type: 'Own Goal' 
+      }))
+  );
+
+  // 3. Merge and Sort (Reg then Add)
+  const allEvents = [...teamGoals, ...opponentOwnGoals].sort((a, b) => {
+      if (a.reg !== b.reg) return a.reg - b.reg;
+      return a.add - b.add;
+  });
+
+  if (allEvents.length === 0) {
+    return '<span></span>'; 
+  }
+
+  return allEvents.map(event => {
+    const timeString = event.add > 0 ? `${event.reg}+${event.add}'` : `${event.reg}'`;
+    return `
+    <div class="overlay-goal-scorer">
+      <span class="player-number">#${event.playerNumber}</span>
+      <span class="player-name">${event.playerName} ${event.type === 'Own Goal' ? '(OG)' : ''}</span>
+      <span class="goal-minutes">${timeString}</span>
+    </div>
+  `}).join('');
 };
 
 const renderRedCards = (count: number): string => {
@@ -159,10 +198,7 @@ function updateUI() {
 
   // Update Game Report
   if (config && gameReportContainer) {
-    // --- New: Update Period Text ---
-    if (gameReportPeriod && config.currentPeriod) {
-        gameReportPeriod.textContent = config.currentPeriod;
-    }
+    if (gameReportPeriod && config.currentPeriod) { gameReportPeriod.textContent = config.currentPeriod; }
 
     checkAndApplyScroll(reportTeamAName.parentElement, config.teamA.name); 
     if (reportTeamAScore) reportTeamAScore.textContent = config.teamA.score.toString();
@@ -178,6 +214,8 @@ function updateUI() {
     if (reportMiddleStripASecondary) reportMiddleStripASecondary.style.backgroundColor = config.teamA.colors.secondary;
     if (reportMiddleStripBPrimary) reportMiddleStripBPrimary.style.backgroundColor = config.teamB.colors.primary;
     if (reportMiddleStripBSecondary) reportMiddleStripBSecondary.style.backgroundColor = config.teamB.colors.secondary;
+    
+    // --- Pass both arrays to updated renderer ---
     gameReportGoalsA.innerHTML = renderGoalScorers(config.teamA.players, config.teamB.players);
     gameReportGoalsB.innerHTML = renderGoalScorers(config.teamB.players, config.teamA.players);
   }
