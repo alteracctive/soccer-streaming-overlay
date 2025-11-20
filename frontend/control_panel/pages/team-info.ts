@@ -15,7 +15,7 @@ import {
   subscribe,
   unsubscribe,
   setScore,
-  getPeriods, // <-- Import to get limits
+  getPeriods, 
   type PlayerConfig,
   type Goal,
   type PeriodSetting
@@ -27,7 +27,7 @@ type ConfirmAction = (() => Promise<void>) | null;
 export function render(container: HTMLElement) {
   const { config } = getState();
   let allPeriods: PeriodSetting[] = [];
-  let currentPeriodLimit = 45; // Fallback
+  let currentPeriodLimit = 45; 
 
   container.innerHTML = `
     <style>
@@ -207,28 +207,28 @@ export function render(container: HTMLElement) {
     </div> 
   `;
 
-  // ... (Ref Variables, Handlers, and Initial Selectors - Unchanged) ...
+  // ... (Refs and Logic) ...
   let isTeamAUnsaved = false;
   let isTeamBUnsaved = false;
   let playerToEdit: PlayerConfig | null = null;
   let teamToEdit: 'teamA' | 'teamB' | null = null;
-  let editGoals: Goal[] = []; // <-- Changed Type
+  let editGoals: Goal[] = [];
   let editYellowCards: number[] = [];
   let editRedCards: number[] = [];
 
+  // ... (Element Refs - Same as before) ...
   const teamAName = container.querySelector('#team-a-name') as HTMLInputElement;
   const teamAAbbr = container.querySelector('#team-a-abbr') as HTMLInputElement;
   const teamBName = container.querySelector('#team-b-name') as HTMLInputElement;
   const teamBAbbr = container.querySelector('#team-b-abbr') as HTMLInputElement;
-  // ... all other standard refs ...
-  const teamAPrimary = container.querySelector('#team-a-primary') as HTMLInputElement;
-  const teamASecondary = container.querySelector('#team-a-secondary') as HTMLInputElement;
-  const teamBPrimary = container.querySelector('#team-b-primary') as HTMLInputElement;
-  const teamBSecondary = container.querySelector('#team-b-secondary') as HTMLInputElement;
   const teamANameLabel = container.querySelector('label[for="team-a-name"]') as HTMLLabelElement;
   const teamAAbbrLabel = container.querySelector('label[for="team-a-abbr"]') as HTMLLabelElement;
   const teamBNameLabel = container.querySelector('label[for="team-b-name"]') as HTMLLabelElement;
   const teamBAbbrLabel = container.querySelector('label[for="team-b-abbr"]') as HTMLLabelElement;
+  const teamAPrimary = container.querySelector('#team-a-primary') as HTMLInputElement;
+  const teamASecondary = container.querySelector('#team-a-secondary') as HTMLInputElement;
+  const teamBPrimary = container.querySelector('#team-b-primary') as HTMLInputElement;
+  const teamBSecondary = container.querySelector('#team-b-secondary') as HTMLInputElement;
   const teamAPrimaryLabel = container.querySelector('label[for="team-a-primary"]') as HTMLLabelElement;
   const teamASecondaryLabel = container.querySelector('label[for="team-a-secondary"]') as HTMLLabelElement;
   const teamBPrimaryLabel = container.querySelector('label[for="team-b-primary"]') as HTMLLabelElement;
@@ -256,7 +256,7 @@ export function render(container: HTMLElement) {
   const editPlayerName = container.querySelector('#edit-player-name') as HTMLInputElement;
   const editGoalsList = container.querySelector('#edit-player-goals-list') as HTMLUListElement;
   const editAddGoalBtn = container.querySelector('#edit-add-goal-btn') as HTMLButtonElement;
-  const editAddOwnGoalBtn = container.querySelector('#edit-add-own-goal-btn') as HTMLButtonElement;
+  const editAddOwnGoalBtn = container.querySelector('#edit-add-own-goal-btn') as HTMLButtonElement; 
   const editYellowCardsList = container.querySelector('#edit-yellow-cards-list') as HTMLUListElement;
   const editAddYellowBtn = container.querySelector('#edit-add-yellow-btn') as HTMLButtonElement;
   const editRedCardsList = container.querySelector('#edit-red-cards-list') as HTMLUListElement;
@@ -275,9 +275,9 @@ export function render(container: HTMLElement) {
   const playerTotalsA = container.querySelector('#player-totals-a') as HTMLDivElement;
   const playerTotalsB = container.querySelector('#player-totals-b') as HTMLDivElement;
 
-  // ... (Basic helpers unchanged) ...
   const teamAFields: [HTMLInputElement, HTMLLabelElement][] = [[teamAName, teamANameLabel],[teamAAbbr, teamAAbbrLabel],[teamAPrimary, teamAPrimaryLabel],[teamASecondary, teamASecondaryLabel]];
   const teamBFields: [HTMLInputElement, HTMLLabelElement][] = [[teamBName, teamBNameLabel],[teamBAbbr, teamBAbbrLabel],[teamBPrimary, teamBPrimaryLabel],[teamBSecondary, teamBSecondaryLabel]];
+
   const updateUnsavedIndicators = () => { if (unsavedA) unsavedA.textContent = isTeamAUnsaved ? '(unsaved data)' : ''; if (unsavedB) unsavedB.textContent = isTeamBUnsaved ? '(unsaved data)' : ''; };
   let confirmAction: ConfirmAction = null;
   const showConfirmModal = (message: string, onConfirm: ConfirmAction) => { modalMessage.textContent = message; confirmAction = onConfirm; confirmModal.style.display = 'flex'; };
@@ -286,7 +286,6 @@ export function render(container: HTMLElement) {
   modalCancelBtn.addEventListener('click', hideConfirmModal);
   confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) { hideConfirmModal(); } });
 
-  // --- Helper to find current period limit ---
   const loadPeriodLimit = async () => {
     try {
         const periods = await getPeriods();
@@ -298,45 +297,47 @@ export function render(container: HTMLElement) {
     } catch (e) { console.error(e); }
   };
 
-  // --- Calculate Time Helper ---
   const getCurrentGameTime = (): { reg: number, add: number } => {
       const { timer } = getState();
       const totalSeconds = timer.seconds;
       const limitSeconds = currentPeriodLimit * 60;
-      
       let reg, add;
-      if (totalSeconds <= limitSeconds) {
-          reg = Math.floor(totalSeconds / 60) + 1;
-          add = 0;
-      } else {
-          reg = currentPeriodLimit;
-          add = Math.ceil((totalSeconds - limitSeconds) / 60);
-      }
+      if (totalSeconds <= limitSeconds) { reg = Math.floor(totalSeconds / 60) + 1; add = 0; } else { reg = currentPeriodLimit; add = Math.ceil((totalSeconds - limitSeconds) / 60); }
       return { reg, add };
   };
 
+  const renderMinuteList = (listEl: HTMLUListElement, minutes: number[], type: string) => {
+    listEl.innerHTML = '';
+    if (minutes.length === 0) { listEl.innerHTML = `<li class="goal-list-item">No ${type}s</li>`; return; }
+    minutes.sort((a, b) => Math.abs(a) - Math.abs(b));
+    minutes.forEach((minute, index) => {
+      const li = document.createElement('li');
+      li.className = 'goal-list-item';
+      let displayType = type;
+      let displayMinute = minute;
+      if (type === 'Goal' && minute < 0) { displayType = 'Own Goal'; displayMinute = Math.abs(minute); }
+      li.innerHTML = `
+        <div class="goal-item-content">
+            <span>${displayType} @</span>
+            <input type="number" class="goal-minute-input" value="${displayMinute}" data-index="${index}" min="1" max="999">
+            <span>'</span>
+        </div>
+        <button class="goal-delete-btn" data-index="${index}">❌</button>
+      `;
+      listEl.appendChild(li);
+    });
+    listEl.querySelectorAll('.goal-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const index = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10); if (index > -1) { minutes.splice(index, 1); renderMinuteList(listEl, minutes, type); } }); });
+    listEl.querySelectorAll('.goal-minute-input').forEach(input => { input.addEventListener('change', (e) => { const target = e.currentTarget as HTMLInputElement; const index = parseInt(target.dataset.index || '-1', 10); let newVal = parseInt(target.value, 10); if (isNaN(newVal) || newVal < 1) newVal = 1; if (index > -1) { if (minutes[index] < 0) minutes[index] = -newVal; else minutes[index] = newVal; } }); });
+  };
 
-  // --- Updated: Goals Renderer (Supports Goal objects) ---
   const renderGoalList = (listEl: HTMLUListElement, goals: Goal[]) => {
     listEl.innerHTML = '';
-    if (goals.length === 0) {
-      listEl.innerHTML = `<li class="goal-list-item">No Goals</li>`;
-      return;
-    }
-    
-    // Sort by absolute time (reg + add)
+    if (goals.length === 0) { listEl.innerHTML = `<li class="goal-list-item">No Goals</li>`; return; }
     goals.sort((a, b) => (a.regMinute + a.addMinute) - (b.regMinute + b.addMinute));
-    
     goals.forEach((goal, index) => {
       const li = document.createElement('li');
       li.className = 'goal-list-item';
-      
       const label = goal.isOwnGoal ? "Own Goal" : "Goal";
-      // Value to show in input: "90" (if add=0) or "90+5" (if add>0)
-      // Actually, for editing, we probably want to edit reg/add separately? 
-      // The prompt implies a simple text display or basic input.
-      // Let's show two inputs: Reg + Add
-      
       li.innerHTML = `
         <div class="goal-item-content">
             <span>${label} @</span>
@@ -349,35 +350,11 @@ export function render(container: HTMLElement) {
       `;
       listEl.appendChild(li);
     });
-
-    // Listeners
-    listEl.querySelectorAll('.goal-delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10);
-        if (idx > -1) { goals.splice(idx, 1); renderGoalList(listEl, goals); }
-      });
-    });
-    
-    listEl.querySelectorAll('.reg-input').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const target = e.currentTarget as HTMLInputElement;
-        const idx = parseInt(target.dataset.index || '-1', 10);
-        const val = parseInt(target.value, 10) || 1;
-        if (idx > -1) goals[idx].regMinute = val;
-      });
-    });
-    
-    listEl.querySelectorAll('.add-input').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const target = e.currentTarget as HTMLInputElement;
-        const idx = parseInt(target.dataset.index || '-1', 10);
-        const val = parseInt(target.value, 10) || 0;
-        if (idx > -1) goals[idx].addMinute = val;
-      });
-    });
+    listEl.querySelectorAll('.goal-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10); if (idx > -1) { goals.splice(idx, 1); renderGoalList(listEl, goals); } }); });
+    listEl.querySelectorAll('.reg-input').forEach(input => { input.addEventListener('change', (e) => { const target = e.currentTarget as HTMLInputElement; const idx = parseInt(target.dataset.index || '-1', 10); const val = parseInt(target.value, 10) || 1; if (idx > -1) goals[idx].regMinute = val; }); });
+    listEl.querySelectorAll('.add-input').forEach(input => { input.addEventListener('change', (e) => { const target = e.currentTarget as HTMLInputElement; const idx = parseInt(target.dataset.index || '-1', 10); const val = parseInt(target.value, 10) || 0; if (idx > -1) goals[idx].addMinute = val; }); });
   };
-
-  // --- Cards Renderer (Simple List of Integers) ---
+  
   const renderCardList = (listEl: HTMLUListElement, minutes: number[], type: string) => {
       listEl.innerHTML = '';
       if (minutes.length === 0) { listEl.innerHTML = `<li class="goal-list-item">No ${type}s</li>`; return; }
@@ -395,89 +372,60 @@ export function render(container: HTMLElement) {
           `;
           listEl.appendChild(li);
       });
-      
-      listEl.querySelectorAll('.card-delete-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-              const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10);
-              if (idx > -1) { minutes.splice(idx, 1); renderCardList(listEl, minutes, type); }
-          });
-      });
-      listEl.querySelectorAll('.card-minute-input').forEach(input => {
-          input.addEventListener('change', (e) => {
-              const idx = parseInt((e.currentTarget as HTMLInputElement).dataset.index || '-1', 10);
-              const val = parseInt((e.currentTarget as HTMLInputElement).value, 10) || 1;
-              if (idx > -1) minutes[idx] = val;
-          });
-      });
+      listEl.querySelectorAll('.card-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10); if (idx > -1) { minutes.splice(idx, 1); renderCardList(listEl, minutes, type); } }); });
+      listEl.querySelectorAll('.card-minute-input').forEach(input => { input.addEventListener('change', (e) => { const idx = parseInt((e.currentTarget as HTMLInputElement).dataset.index || '-1', 10); const val = parseInt((e.currentTarget as HTMLInputElement).value, 10) || 1; if (idx > -1) minutes[idx] = val; }); });
   };
 
-
-  // --- Show Edit Modal ---
   const showPlayerEditModal = (player: PlayerConfig, team: 'teamA' | 'teamB') => {
     playerToEdit = player;
     teamToEdit = team;
-    
     const { config } = getState();
-    if (!config) return;
-    
-    const teamConfig = config[team];
-    const players = teamConfig.players;
-    const currentIndex = players.findIndex(p => p.number === player.number);
-    
-    modalTeamName.textContent = teamConfig.name;
-    modalTeamPrimary.style.backgroundColor = teamConfig.colors.primary;
-    modalTeamSecondary.style.backgroundColor = teamConfig.colors.secondary;
-
-    const prevPlayer = players[currentIndex - 1];
-    const nextPlayer = players[currentIndex + 1];
-    if (prevPlayer) { prevPlayerNum.textContent = `#${prevPlayer.number}`; prevPlayerBtn.disabled = false; } else { prevPlayerNum.textContent = ''; prevPlayerBtn.disabled = true; }
-    if (nextPlayer) { nextPlayerNum.textContent = `#${nextPlayer.number}`; nextPlayerBtn.disabled = false; } else { nextPlayerNum.textContent = ''; nextPlayerBtn.disabled = true; }
-
-    // Deep copy complex objects
+    if (config) {
+      const teamConfig = config[team];
+      const players = teamConfig.players;
+      const currentIndex = players.findIndex(p => p.number === player.number);
+      modalTeamName.textContent = teamConfig.name;
+      modalTeamPrimary.style.backgroundColor = teamConfig.colors.primary;
+      modalTeamSecondary.style.backgroundColor = teamConfig.colors.secondary;
+      const prevPlayer = players[currentIndex - 1];
+      const nextPlayer = players[currentIndex + 1];
+      if (prevPlayer) { prevPlayerNum.textContent = `#${prevPlayer.number}`; prevPlayerBtn.disabled = false; } else { prevPlayerNum.textContent = ''; prevPlayerBtn.disabled = true; }
+      if (nextPlayer) { nextPlayerNum.textContent = `#${nextPlayer.number}`; nextPlayerBtn.disabled = false; } else { nextPlayerNum.textContent = ''; nextPlayerBtn.disabled = true; }
+    }
     editGoals = player.goals.map(g => ({ ...g }));
     editYellowCards = [...player.yellowCards];
     editRedCards = [...player.redCards];
-
     playerEditTitle.textContent = `#${player.number} ${player.name}`;
     editPlayerNumber.value = player.number.toString();
     editPlayerName.value = player.name;
-    
     renderGoalList(editGoalsList, editGoals);
     renderCardList(editYellowCardsList, editYellowCards, 'Yellow');
     renderCardList(editRedCardsList, editRedCards, 'Red');
-    
     playerEditModal.style.display = 'flex';
   };
-  
   const hidePlayerEditModal = () => { playerEditModal.style.display = 'none'; playerToEdit = null; teamToEdit = null; editGoals = []; editYellowCards = []; editRedCards = []; };
   const navigatePlayer = (direction: 'prev' | 'next') => { if (!playerToEdit || !teamToEdit) return; const { config } = getState(); if (!config) return; const players = config[teamToEdit].players; const currentIndex = players.findIndex(p => p.number === playerToEdit!.number); const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1; if (newIndex >= 0 && newIndex < players.length) { showPlayerEditModal(players[newIndex], teamToEdit); } };
   prevPlayerBtn.addEventListener('click', () => navigatePlayer('prev'));
   nextPlayerBtn.addEventListener('click', () => navigatePlayer('next'));
 
-  // --- Add Goal Logic ---
   editAddGoalBtn.addEventListener('click', () => {
     const { reg, add } = getCurrentGameTime();
     editGoals.push({ regMinute: reg, addMinute: add, isOwnGoal: false });
     renderGoalList(editGoalsList, editGoals);
   });
-
+  
   editAddOwnGoalBtn.addEventListener('click', () => {
       const { reg, add } = getCurrentGameTime();
       editGoals.push({ regMinute: reg, addMinute: add, isOwnGoal: true });
       renderGoalList(editGoalsList, editGoals);
   });
 
-  // --- Add Card Logic ---
-  // Note: Cards still use simple integer minutes for now based on previous requirements
-  // We will calculate total minutes (reg + add) for simplicity in display if backend expects int
-  // Or if backend expects int, we just sum them.
   editAddYellowBtn.addEventListener('click', () => {
     if (editYellowCards.length >= 2) { showNotification('Max 2 yellow cards.', 'error'); return; }
     const { reg, add } = getCurrentGameTime();
     const totalMin = reg + add; 
     editYellowCards.push(totalMin);
     renderCardList(editYellowCardsList, editYellowCards, 'Yellow');
-    
     const { isAutoConvertYellowToRedOn } = getState();
     if (editYellowCards.length === 2 && isAutoConvertYellowToRedOn && editRedCards.length < 1) {
       editRedCards.push(totalMin);
@@ -485,7 +433,6 @@ export function render(container: HTMLElement) {
       showNotification('2nd yellow auto-added a red card!');
     }
   });
-
   editAddRedBtn.addEventListener('click', () => {
     if (editRedCards.length >= 1) { showNotification('Max 1 red card.', 'error'); return; }
     const { reg, add } = getCurrentGameTime();
@@ -496,7 +443,6 @@ export function render(container: HTMLElement) {
   modalEditCancelBtn.addEventListener('click', hidePlayerEditModal);
   modalDeletePlayerBtn.addEventListener('click', () => { if (!playerToEdit || !teamToEdit) return; const player = playerToEdit; const team = teamToEdit; hidePlayerEditModal(); showConfirmModal(`Are you sure you want to delete ${player.name} (#${player.number})?`, async () => { await deletePlayer(team, player.number); showNotification(`${player.name} deleted!`); }); });
   
-  // --- SAVE & AUTO-SCORE LOGIC ---
   modalSaveBtn.addEventListener('click', async () => { 
       if (!playerToEdit || !teamToEdit) return; 
       const newNumber = parseInt(editPlayerNumber.value, 10); 
@@ -504,33 +450,21 @@ export function render(container: HTMLElement) {
       if (isNaN(newNumber) || newNumber < 0 || newNumber > 99) { showNotification('Player number must be between 0 and 99.', 'error'); return; } 
       if (!newName) { showNotification('Player name cannot be empty.', 'error'); return; } 
       
-      // 1. Calculate Differences
       const oldRegular = playerToEdit.goals.filter(g => !g.isOwnGoal).length;
       const oldOwn = playerToEdit.goals.filter(g => g.isOwnGoal).length;
-      
       const newRegular = editGoals.filter(g => !g.isOwnGoal).length;
       const newOwn = editGoals.filter(g => g.isOwnGoal).length;
-      
       const diffRegular = newRegular - oldRegular;
       const diffOwn = newOwn - oldOwn;
 
-      const updatedPlayerData: PlayerConfig = { 
-          ...playerToEdit, 
-          number: newNumber, 
-          name: newName, 
-          yellowCards: editYellowCards, 
-          redCards: editRedCards, 
-          goals: editGoals, // Updated list
-      }; 
+      const updatedPlayerData: PlayerConfig = { ...playerToEdit, number: newNumber, name: newName, yellowCards: editYellowCards, redCards: editRedCards, goals: editGoals, }; 
       
       try { 
           await editPlayer(teamToEdit, playerToEdit.number, updatedPlayerData); 
           showNotification(`Player #${updatedPlayerData.number} ${updatedPlayerData.name} saved!`); 
           
-          // 2. Apply Auto-Score based on Diff
           const { config, isAutoAddScoreOn } = getState();
           if (isAutoAddScoreOn && config) {
-              // A. Regular Goals -> Add to THIS team
               if (diffRegular !== 0) {
                   const currentScore = config[teamToEdit].score;
                   const newScore = Math.max(0, currentScore + diffRegular);
@@ -538,8 +472,6 @@ export function render(container: HTMLElement) {
                   if (diffRegular > 0) showNotification(`Auto-added ${diffRegular} goal(s) to ${config[teamToEdit].name}!`);
                   else showNotification(`Auto-removed ${Math.abs(diffRegular)} goal(s) from ${config[teamToEdit].name}!`);
               }
-              
-              // B. Own Goals -> Add to OPPONENT team
               if (diffOwn !== 0) {
                   const opponentTeam = teamToEdit === 'teamA' ? 'teamB' : 'teamA';
                   const opponentScore = config[opponentTeam].score;
@@ -549,27 +481,22 @@ export function render(container: HTMLElement) {
                   else showNotification(`Auto-removed ${Math.abs(diffOwn)} own goal(s) from Opponent!`);
               }
           }
-
           hidePlayerEditModal(); 
-      } catch (error: any) { 
-          showNotification(`Error: ${error.message}`, 'error'); 
-      } 
+      } catch (error: any) { showNotification(`Error: ${error.message}`, 'error'); } 
   });
 
-
-  // --- Player List Rendering ---
+  // --- Render Tables ---
   const updatePlayerLists = () => {
     const { config } = getState();
     if (!config) return;
 
-    // Team A Stats
+    // Team A
     const teamAPlayers = config.teamA.players;
     const totalAGoals = teamAPlayers.reduce((sum, p) => sum + p.goals.filter(g => !g.isOwnGoal).length, 0);
     const totalAYellow = teamAPlayers.reduce((sum, p) => sum + p.yellowCards.length, 0);
     const totalARed = teamAPlayers.reduce((sum, p) => sum + p.redCards.length, 0);
     const totalAOnField = teamAPlayers.filter(p => p.onField).length;
     
-    // Opponent Own Goals (B -> A)
     const teamBOwnGoals = config.teamB.players.reduce((sum, p) => sum + p.goals.filter(g => g.isOwnGoal).length, 0);
     const displayScoreA = teamBOwnGoals > 0 ? `${totalAGoals} (+${teamBOwnGoals} O.G.)` : `${totalAGoals}`;
 
@@ -581,14 +508,13 @@ export function render(container: HTMLElement) {
       <span class="player-total-item">👥 Total: ${teamAPlayers.length}</span>
     `;
 
-    // Team B Stats
+    // Team B
     const teamBPlayers = config.teamB.players;
     const totalBGoals = teamBPlayers.reduce((sum, p) => sum + p.goals.filter(g => !g.isOwnGoal).length, 0);
     const totalBYellow = teamBPlayers.reduce((sum, p) => sum + p.yellowCards.length, 0);
     const totalBRed = teamBPlayers.reduce((sum, p) => sum + p.redCards.length, 0);
     const totalBOnField = teamBPlayers.filter(p => p.onField).length;
     
-    // Opponent Own Goals (A -> B)
     const teamAOwnGoals = teamAPlayers.reduce((sum, p) => sum + p.goals.filter(g => g.isOwnGoal).length, 0);
     const displayScoreB = teamAOwnGoals > 0 ? `${totalBGoals} (+${teamAOwnGoals} O.G.)` : `${totalBGoals}`;
 
@@ -600,26 +526,51 @@ export function render(container: HTMLElement) {
       <span class="player-total-item">👥 Total: ${teamBPlayers.length}</span>
     `;
 
-    // Tables
+    // --- Render Rows: Replaces Action Buttons with Stat Counters ---
     const renderRows = (team: 'teamA' | 'teamB', players: PlayerConfig[]) => {
         if (players.length === 0) return '<p>No players on roster.</p>';
         return `
         <table class="player-list-table">
-          <thead><tr><th>#</th><th>Name</th><th>⚽</th><th>🟨</th><th>🟥</th><th>✅</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>⚽</th>
+              <th>OG</th>
+              <th>🟨</th>
+              <th>🟥</th>
+              <th>✅</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
           <tbody>
             ${players.map(player => `
               <tr>
                 <td>${player.number}</td>
                 <td>${player.name}</td>
-                <td>${player.goals.filter(g => !g.isOwnGoal).length}</td>
-                <td>${player.yellowCards.length}</td>
-                <td>${player.redCards.length}</td>
+                <td>
+                  <button class="player-stat-btn player-goal-btn" data-team="${team}" data-number="${player.number}">
+                    ${player.goals.filter(g => !g.isOwnGoal).length}
+                  </button>
+                </td>
+                <td>
+                  <button class="player-stat-btn player-own-goal-btn" data-team="${team}" data-number="${player.number}">
+                    ${player.goals.filter(g => g.isOwnGoal).length}
+                  </button>
+                </td>
+                <td>
+                  <button class="player-stat-btn player-yellow-btn" data-team="${team}" data-number="${player.number}">
+                    ${player.yellowCards.length}
+                  </button>
+                </td>
+                <td>
+                  <button class="player-stat-btn player-red-btn" data-team="${team}" data-number="${player.number}">
+                    ${player.redCards.length}
+                  </button>
+                </td>
                 <td><input type="checkbox" class="on-field-checkbox" data-team="${team}" data-number="${player.number}" ${player.onField ? 'checked' : ''}></td>
                 <td>
                   <div class="player-action-cell">
-                    <button class="player-action-btn player-goal-btn" data-team="${team}" data-number="${player.number}">⚽</button>
-                    <button class="player-action-btn player-yellow-btn" data-team="${team}" data-number="${player.number}">🟨</button>
-                    <button class="player-action-btn player-red-btn" data-team="${team}" data-number="${player.number}">🟥</button>
                     <button class="player-action-btn player-edit-btn" data-team="${team}" data-number="${player.number}">✏️</button>
                     <button class="player-action-btn player-delete-btn" data-team="${team}" data-number="${player.number}">🗑️</button>
                   </div>
@@ -633,29 +584,36 @@ export function render(container: HTMLElement) {
     playerListA.innerHTML = renderRows('teamA', config.teamA.players);
     playerListB.innerHTML = renderRows('teamB', config.teamB.players);
     
-    // Attach listeners
     attachTableListeners(container, config);
   };
   
-  // Extracted listener attachment to keep things clean
   const attachTableListeners = (container: HTMLElement, config: any) => {
       container.querySelectorAll('.on-field-checkbox').forEach(box => { box.addEventListener('change', async (e) => { const target = e.currentTarget as HTMLInputElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (team && !isNaN(number)) { await toggleOnField(team, number); } }); });
       container.querySelectorAll('.player-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find((p: PlayerConfig) => p.number === number); showConfirmModal(`Are you sure you want to delete ${player.name}?`, async () => { await deletePlayer(team, number); showNotification(`${player.name} deleted!`); }); }); });
       container.querySelectorAll('.player-edit-btn').forEach(btn => { btn.addEventListener('click', (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find((p: PlayerConfig) => p.number === number); if (player) showPlayerEditModal(player, team); }); });
       
-      // Quick Actions
+      // --- New Stat Button Listeners ---
       container.querySelectorAll('.player-goal-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
           const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
-          const { timer } = getState(); const { reg, add } = getCurrentGameTime(); // use helper!
+          const { timer } = getState(); const { reg, add } = getCurrentGameTime(); 
           await addGoal(team, number, reg, add, false);
           showNotification(`Goal given to #${number}`);
       }); });
+      
+      container.querySelectorAll('.player-own-goal-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
+          const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
+          const { timer } = getState(); const { reg, add } = getCurrentGameTime(); 
+          await addGoal(team, number, reg, add, true);
+          showNotification(`Own Goal given to #${number}`);
+      }); });
+
       container.querySelectorAll('.player-yellow-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
           const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
           const { timer } = getState(); const { reg, add } = getCurrentGameTime(); const total = reg + add; 
           await addCard(team, number, 'yellow', total);
           showNotification(`Yellow card given to #${number}`);
       }); });
+      
       container.querySelectorAll('.player-red-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
           const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
           const { timer } = getState(); const { reg, add } = getCurrentGameTime(); const total = reg + add; 
@@ -664,8 +622,7 @@ export function render(container: HTMLElement) {
       }); });
   };
   
-
-  // --- Add Event Listeners ---
+  // ... (Rest of Init logic) ...
   const numberInputHandler = (e: Event) => { const target = e.target as HTMLInputElement; target.value = target.value.replace(/[^0-9]/g, ''); if (target.value.length > 2) { target.value = target.value.slice(0, 2); } if (target.value === '') return; if (parseInt(target.value, 10) > 99) { target.value = '99'; } if (parseInt(target.value, 10) < 0) { target.value = '0'; } };
   teamAPlayerNum.addEventListener('input', numberInputHandler); teamBPlayerNum.addEventListener('input', numberInputHandler); editPlayerNumber.addEventListener('input', numberInputHandler);
   teamAFields.forEach(([input, label]) => { if (input) { input.addEventListener('input', () => { isTeamAUnsaved = true; if (label) label.style.fontStyle = 'italic'; updateUnsavedIndicators(); }); } });
@@ -685,7 +642,7 @@ export function render(container: HTMLElement) {
 
   const onStateUpdate = () => {
     updatePlayerLists();
-    loadPeriodLimit(); // Refresh limit if periods changed
+    loadPeriodLimit(); 
   };
   
   subscribe(onStateUpdate); 

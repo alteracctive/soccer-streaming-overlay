@@ -14,6 +14,7 @@
   --accent-dark: #00aaff;
   --green: #28a745;
   --red: #dc3545;
+  --purple: #6f42c1; /* New Purple Color */
 
   --bg-color: var(--bg-light);
   --sidebar-bg: var(--sidebar-bg-light);
@@ -148,57 +149,6 @@ input[type='number'] {
 input[type='number'] {
   width: 60px;
 }
-
-/* --- Custom Styled Dropdowns (Select) --- */
-select {
-  appearance: none; /* Remove default system styling */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  
-  width: 100%;
-  padding: 9px 36px 9px 12px; /* Right padding makes room for the arrow */
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  border-radius: 4px;
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-  line-height: 1.3;
-  
-  /* Custom SVG Arrow (Black for light mode) */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23212121' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 16px;
-  
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-select:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
-}
-
-select:hover {
-  border-color: #b0b0b0;
-}
-
-/* Dark Mode Select Overrides */
-body.dark-mode select {
-  background-color: var(--bg-dark); /* Darker than card for input feel */
-  color: var(--text-dark);
-  border-color: var(--border-dark);
-  
-  /* Custom SVG Arrow (White for dark mode) */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23eeeeee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-}
-
-body.dark-mode select:hover {
-  border-color: #555;
-}
-/* --------------------------------------- */
 
 
 input[type='color'] {
@@ -342,11 +292,10 @@ button.btn-red {
   text-align: center;
 }
 
-/* --- Updated Timer Layout --- */
 .timer-display-wrapper {
   display: flex;
   justify-content: center;
-  align-items: baseline; /* Aligns text by the bottom baseline */
+  align-items: baseline;
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -359,14 +308,13 @@ button.btn-red {
 }
 
 .timer-display-additional {
-  font-size: 20px; /* Smaller */
+  font-size: 20px;
   font-weight: bold;
   font-family: 'Courier New', Courier, monospace;
-  color: var(--accent-color); /* Use accent color to distinguish */
+  color: var(--accent-color);
   opacity: 0.8;
   line-height: 1;
 }
-/* --------------------------- */
 
 .timer-grid {
   display: grid;
@@ -699,7 +647,7 @@ body.dark-mode .color-picker-row input[type='color'] {
   flex-direction: column;
 }
 
-/* --- Updated Modal Header Wrapper --- */
+/* Modal Header Wrapper */
 .modal-header-wrapper {
   margin-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
@@ -743,7 +691,7 @@ body.dark-mode .color-picker-row input[type='color'] {
 .nav-arrow-btn {
   background: none;
   border: none;
-  font-size: 14px; /* Adjust for number text */
+  font-size: 14px; 
   cursor: pointer;
   color: var(--text-color);
   padding: 4px 8px;
@@ -778,7 +726,6 @@ body.dark-mode .color-picker-row input[type='color'] {
   border-radius: 4px;
 }
 
-/* ----------------------------------------- */
 
 .modal-content p {
   margin-bottom: 20px;
@@ -813,9 +760,9 @@ body.dark-mode .color-picker-row input[type='color'] {
 
 .player-list-table th,
 .player-list-table td {
-  padding: 6px 8px;
+  padding: 6px 4px; /* Reduce padding slightly for dense content */
   border: 1px solid var(--border-color);
-  text-align: left;
+  text-align: center; /* Default to center for counts */
   font-size: 13px;
   vertical-align: middle;
 }
@@ -827,12 +774,15 @@ body.dark-mode .color-picker-row input[type='color'] {
   z-index: 1; 
 }
 
-.player-list-table th:nth-child(1), .player-list-table td:nth-child(1) { width: 40px; text-align: center; } /* Number */
-.player-list-table th:nth-child(3), .player-list-table td:nth-child(3) { width: 40px; text-align: center; } /* ⚽ */
-.player-list-table th:nth-child(4), .player-list-table td:nth-child(4) { width: 40px; text-align: center; } /* 🟨 */
-.player-list-table th:nth-child(5), .player-list-table td:nth-child(5) { width: 40px; text-align: center; } /* 🟥 */
-.player-list-table th:nth-child(6), .player-list-table td:nth-child(6) { width: 40px; text-align: center; } /* ✅ */
-.player-list-table th:nth-child(7), .player-list-table td:nth-child(7) { width: 180px; text-align: center; } /* Actions */
+/* --- Updated Column Widths for New Layout --- */
+.player-list-table th:nth-child(1), .player-list-table td:nth-child(1) { width: 30px; } /* # */
+.player-list-table th:nth-child(2), .player-list-table td:nth-child(2) { text-align: left; width: auto; } /* Name */
+.player-list-table th:nth-child(3), .player-list-table td:nth-child(3) { width: 40px; } /* ⚽ */
+.player-list-table th:nth-child(4), .player-list-table td:nth-child(4) { width: 40px; } /* OG */
+.player-list-table th:nth-child(5), .player-list-table td:nth-child(5) { width: 40px; } /* 🟨 */
+.player-list-table th:nth-child(6), .player-list-table td:nth-child(6) { width: 40px; } /* 🟥 */
+.player-list-table th:nth-child(7), .player-list-table td:nth-child(7) { width: 30px; } /* ✅ */
+.player-list-table th:nth-child(8), .player-list-table td:nth-child(8) { width: 70px; } /* Actions */
 
 
 .player-action-cell {
@@ -848,11 +798,11 @@ body.dark-mode .color-picker-row input[type='color'] {
   cursor: pointer;
   font-weight: bold;
   color: white;
-  width: 28px;
-  height: 28px;
+  width: 24px; /* Smaller action buttons in actions col */
+  height: 24px;
   padding: 0;
-  font-size: 16px;
-  line-height: 28px;
+  font-size: 14px;
+  line-height: 24px;
   text-align: center;
   flex-shrink: 0;
 }
@@ -860,12 +810,32 @@ body.dark-mode .color-picker-row input[type='color'] {
   opacity: 0.8;
 }
 
+/* --- New Stat Button Style for Table Cells --- */
+.player-stat-btn {
+  width: 100%;
+  min-width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 28px;
+  display: inline-block;
+}
+.player-stat-btn:hover {
+  opacity: 0.85;
+}
+
+/* Colors */
 .player-goal-btn { background: var(--green); }
 .player-yellow-btn { background: #EECB0B; color: #1a1a1a; }
 .player-red-btn { background: var(--red); }
 .player-edit-btn { background: var(--accent-color); }
 .player-delete-btn { background: #6c757d; }
-.player-own-goal-btn { background: #6c757d; }
+.player-own-goal-btn { background: var(--purple); } /* Dark Purple */
 
 
 /* Custom Checkbox */
@@ -1111,14 +1081,13 @@ body.dark-mode .color-picker-row input[type='color'] {
   margin-top: 8px;
 }
 
-/* --- New Timeline Styles --- */
+/* --- Timeline Styles --- */
 .timeline-wrapper {
   position: relative;
   padding: 20px 0;
   margin-top: 10px;
 }
 
-/* The vertical line in the center */
 .timeline-line {
   position: absolute;
   top: 0;
@@ -1135,7 +1104,7 @@ body.dark-mode .color-picker-row input[type='color'] {
   align-items: center;
   position: relative;
   z-index: 1;
-  margin-bottom: 12px; /* Spacing between events */
+  margin-bottom: 12px; 
 }
 
 .timeline-side {
@@ -1144,7 +1113,6 @@ body.dark-mode .color-picker-row input[type='color'] {
   align-items: center;
   gap: 8px;
   padding: 4px 12px;
-  /* Ensure empty sides take up space */
   min-height: 1px; 
 }
 
@@ -1161,7 +1129,7 @@ body.dark-mode .color-picker-row input[type='color'] {
 .timeline-minute {
   width: 32px;
   height: 32px;
-  background-color: var(--sidebar-bg); /* Matches card bg */
+  background-color: var(--sidebar-bg); 
   border: 2px solid var(--border-color);
   border-radius: 50%;
   display: flex;
@@ -1174,7 +1142,6 @@ body.dark-mode .color-picker-row input[type='color'] {
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* Event styling */
 .timeline-event-content {
   display: flex;
   align-items: center;
@@ -1186,7 +1153,6 @@ body.dark-mode .color-picker-row input[type='color'] {
   font-size: 13px;
 }
 
-/* Flip order for right side so icon is near the center line */
 .timeline-side.right .timeline-event-content {
   flex-direction: row-reverse;
 }
