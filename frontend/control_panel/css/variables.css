@@ -1,0 +1,31 @@
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  --bg-light: #f4f7fa;
+  --bg-dark: #1a1a1a;
+  --sidebar-bg-light: #ffffff;
+  --sidebar-bg-dark: #242424;
+  --border-light: #e0e0e0;
+  --border-dark: #3a3a3a;
+  --text-light: #212121;
+  --text-dark: #eeeeee;
+  --accent-light: #007aff;
+  --accent-dark: #00aaff;
+  --green: #28a745;
+  --red: #dc3545;
+  --purple: #6f42c1;
+
+  --bg-color: var(--bg-light);
+  --sidebar-bg: var(--sidebar-bg-light);
+  --border-color: var(--border-light);
+  --text-color: var(--text-light);
+  --accent-color: var(--accent-light);
+}
+
+body.dark-mode {
+  --bg-color: var(--bg-dark);
+  --sidebar-bg: var(--sidebar-bg-dark);
+  --border-color: var(--border-dark);
+  --text-color: var(--text-dark);
+  --accent-color: var(--accent-dark);
+}

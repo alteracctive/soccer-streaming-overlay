@@ -18,6 +18,7 @@ import {
   getPeriods, 
   type PlayerConfig,
   type Goal,
+  type Card,
   type PeriodSetting
 } from '../stateManager';
 import { showNotification } from '../notification';
@@ -207,16 +208,15 @@ export function render(container: HTMLElement) {
     </div> 
   `;
 
-  // ... (Refs and Logic) ...
+  // ... (Refs) ...
   let isTeamAUnsaved = false;
   let isTeamBUnsaved = false;
   let playerToEdit: PlayerConfig | null = null;
   let teamToEdit: 'teamA' | 'teamB' | null = null;
   let editGoals: Goal[] = [];
-  let editYellowCards: number[] = [];
-  let editRedCards: number[] = [];
+  let editYellowCards: Card[] = [];
+  let editRedCards: Card[] = [];
 
-  // ... (Element Refs - Same as before) ...
   const teamAName = container.querySelector('#team-a-name') as HTMLInputElement;
   const teamAAbbr = container.querySelector('#team-a-abbr') as HTMLInputElement;
   const teamBName = container.querySelector('#team-b-name') as HTMLInputElement;
@@ -277,7 +277,6 @@ export function render(container: HTMLElement) {
 
   const teamAFields: [HTMLInputElement, HTMLLabelElement][] = [[teamAName, teamANameLabel],[teamAAbbr, teamAAbbrLabel],[teamAPrimary, teamAPrimaryLabel],[teamASecondary, teamASecondaryLabel]];
   const teamBFields: [HTMLInputElement, HTMLLabelElement][] = [[teamBName, teamBNameLabel],[teamBAbbr, teamBAbbrLabel],[teamBPrimary, teamBPrimaryLabel],[teamBSecondary, teamBSecondaryLabel]];
-
   const updateUnsavedIndicators = () => { if (unsavedA) unsavedA.textContent = isTeamAUnsaved ? '(unsaved data)' : ''; if (unsavedB) unsavedB.textContent = isTeamBUnsaved ? '(unsaved data)' : ''; };
   let confirmAction: ConfirmAction = null;
   const showConfirmModal = (message: string, onConfirm: ConfirmAction) => { modalMessage.textContent = message; confirmAction = onConfirm; confirmModal.style.display = 'flex'; };
@@ -306,28 +305,51 @@ export function render(container: HTMLElement) {
       return { reg, add };
   };
 
-  const renderMinuteList = (listEl: HTMLUListElement, minutes: number[], type: string) => {
-    listEl.innerHTML = '';
-    if (minutes.length === 0) { listEl.innerHTML = `<li class="goal-list-item">No ${type}s</li>`; return; }
-    minutes.sort((a, b) => Math.abs(a) - Math.abs(b));
-    minutes.forEach((minute, index) => {
-      const li = document.createElement('li');
-      li.className = 'goal-list-item';
-      let displayType = type;
-      let displayMinute = minute;
-      if (type === 'Goal' && minute < 0) { displayType = 'Own Goal'; displayMinute = Math.abs(minute); }
-      li.innerHTML = `
-        <div class="goal-item-content">
-            <span>${displayType} @</span>
-            <input type="number" class="goal-minute-input" value="${displayMinute}" data-index="${index}" min="1" max="999">
-            <span>'</span>
-        </div>
-        <button class="goal-delete-btn" data-index="${index}">❌</button>
-      `;
-      listEl.appendChild(li);
-    });
-    listEl.querySelectorAll('.goal-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const index = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10); if (index > -1) { minutes.splice(index, 1); renderMinuteList(listEl, minutes, type); } }); });
-    listEl.querySelectorAll('.goal-minute-input').forEach(input => { input.addEventListener('change', (e) => { const target = e.currentTarget as HTMLInputElement; const index = parseInt(target.dataset.index || '-1', 10); let newVal = parseInt(target.value, 10); if (isNaN(newVal) || newVal < 1) newVal = 1; if (index > -1) { if (minutes[index] < 0) minutes[index] = -newVal; else minutes[index] = newVal; } }); });
+  // --- Updated Card Renderer ---
+  const renderCardList = (listEl: HTMLUListElement, cards: Card[], type: string) => {
+      listEl.innerHTML = '';
+      if (cards.length === 0) { listEl.innerHTML = `<li class="goal-list-item">No ${type}s</li>`; return; }
+      // Sort
+      cards.sort((a, b) => (a.regMinute + a.addMinute) - (b.regMinute + b.addMinute));
+      
+      cards.forEach((card, index) => {
+          const li = document.createElement('li');
+          li.className = 'goal-list-item';
+          // --- Updated to use two inputs ---
+          li.innerHTML = `
+            <div class="goal-item-content">
+                <span>${type} @</span>
+                <input type="number" class="goal-minute-input reg-input" value="${card.regMinute}" data-index="${index}" min="1" max="999" style="width: 40px;">
+                <span>+</span>
+                <input type="number" class="goal-minute-input add-input" value="${card.addMinute}" data-index="${index}" min="0" max="99" style="width: 40px;">
+                <span>'</span>
+            </div>
+            <button class="goal-delete-btn" data-index="${index}">❌</button>
+          `;
+          listEl.appendChild(li);
+      });
+      
+      // Note: We reused 'goal-delete-btn' and 'goal-minute-input' classes for CSS consistency
+      listEl.querySelectorAll('.goal-delete-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10);
+              if (idx > -1) { cards.splice(idx, 1); renderCardList(listEl, cards, type); }
+          });
+      });
+      listEl.querySelectorAll('.reg-input').forEach(input => {
+          input.addEventListener('change', (e) => {
+              const idx = parseInt((e.currentTarget as HTMLInputElement).dataset.index || '-1', 10);
+              const val = parseInt((e.currentTarget as HTMLInputElement).value, 10) || 1;
+              if (idx > -1) cards[idx].regMinute = val;
+          });
+      });
+      listEl.querySelectorAll('.add-input').forEach(input => {
+          input.addEventListener('change', (e) => {
+              const idx = parseInt((e.currentTarget as HTMLInputElement).dataset.index || '-1', 10);
+              const val = parseInt((e.currentTarget as HTMLInputElement).value, 10) || 0;
+              if (idx > -1) cards[idx].addMinute = val;
+          });
+      });
   };
 
   const renderGoalList = (listEl: HTMLUListElement, goals: Goal[]) => {
@@ -354,27 +376,6 @@ export function render(container: HTMLElement) {
     listEl.querySelectorAll('.reg-input').forEach(input => { input.addEventListener('change', (e) => { const target = e.currentTarget as HTMLInputElement; const idx = parseInt(target.dataset.index || '-1', 10); const val = parseInt(target.value, 10) || 1; if (idx > -1) goals[idx].regMinute = val; }); });
     listEl.querySelectorAll('.add-input').forEach(input => { input.addEventListener('change', (e) => { const target = e.currentTarget as HTMLInputElement; const idx = parseInt(target.dataset.index || '-1', 10); const val = parseInt(target.value, 10) || 0; if (idx > -1) goals[idx].addMinute = val; }); });
   };
-  
-  const renderCardList = (listEl: HTMLUListElement, minutes: number[], type: string) => {
-      listEl.innerHTML = '';
-      if (minutes.length === 0) { listEl.innerHTML = `<li class="goal-list-item">No ${type}s</li>`; return; }
-      minutes.sort((a, b) => a - b);
-      minutes.forEach((m, i) => {
-          const li = document.createElement('li');
-          li.className = 'goal-list-item';
-          li.innerHTML = `
-            <div class="goal-item-content">
-                <span>${type} @</span>
-                <input type="number" class="card-minute-input" value="${m}" data-index="${i}" min="1" max="999">
-                <span>'</span>
-            </div>
-            <button class="card-delete-btn" data-index="${i}">❌</button>
-          `;
-          listEl.appendChild(li);
-      });
-      listEl.querySelectorAll('.card-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10); if (idx > -1) { minutes.splice(idx, 1); renderCardList(listEl, minutes, type); } }); });
-      listEl.querySelectorAll('.card-minute-input').forEach(input => { input.addEventListener('change', (e) => { const idx = parseInt((e.currentTarget as HTMLInputElement).dataset.index || '-1', 10); const val = parseInt((e.currentTarget as HTMLInputElement).value, 10) || 1; if (idx > -1) minutes[idx] = val; }); });
-  };
 
   const showPlayerEditModal = (player: PlayerConfig, team: 'teamA' | 'teamB') => {
     playerToEdit = player;
@@ -393,8 +394,9 @@ export function render(container: HTMLElement) {
       if (nextPlayer) { nextPlayerNum.textContent = `#${nextPlayer.number}`; nextPlayerBtn.disabled = false; } else { nextPlayerNum.textContent = ''; nextPlayerBtn.disabled = true; }
     }
     editGoals = player.goals.map(g => ({ ...g }));
-    editYellowCards = [...player.yellowCards];
-    editRedCards = [...player.redCards];
+    // Map cards to ensure we have object copies if needed
+    editYellowCards = player.yellowCards.map(c => ({ ...c }));
+    editRedCards = player.redCards.map(c => ({ ...c }));
     playerEditTitle.textContent = `#${player.number} ${player.name}`;
     editPlayerNumber.value = player.number.toString();
     editPlayerName.value = player.name;
@@ -423,12 +425,11 @@ export function render(container: HTMLElement) {
   editAddYellowBtn.addEventListener('click', () => {
     if (editYellowCards.length >= 2) { showNotification('Max 2 yellow cards.', 'error'); return; }
     const { reg, add } = getCurrentGameTime();
-    const totalMin = reg + add; 
-    editYellowCards.push(totalMin);
+    editYellowCards.push({ regMinute: reg, addMinute: add });
     renderCardList(editYellowCardsList, editYellowCards, 'Yellow');
     const { isAutoConvertYellowToRedOn } = getState();
     if (editYellowCards.length === 2 && isAutoConvertYellowToRedOn && editRedCards.length < 1) {
-      editRedCards.push(totalMin);
+      editRedCards.push({ regMinute: reg, addMinute: add });
       renderCardList(editRedCardsList, editRedCards, 'Red');
       showNotification('2nd yellow auto-added a red card!');
     }
@@ -436,7 +437,7 @@ export function render(container: HTMLElement) {
   editAddRedBtn.addEventListener('click', () => {
     if (editRedCards.length >= 1) { showNotification('Max 1 red card.', 'error'); return; }
     const { reg, add } = getCurrentGameTime();
-    editRedCards.push(reg + add);
+    editRedCards.push({ regMinute: reg, addMinute: add });
     renderCardList(editRedCardsList, editRedCards, 'Red');
   });
   
@@ -485,7 +486,6 @@ export function render(container: HTMLElement) {
       } catch (error: any) { showNotification(`Error: ${error.message}`, 'error'); } 
   });
 
-  // --- Render Tables ---
   const updatePlayerLists = () => {
     const { config } = getState();
     if (!config) return;
@@ -526,48 +526,20 @@ export function render(container: HTMLElement) {
       <span class="player-total-item">👥 Total: ${teamBPlayers.length}</span>
     `;
 
-    // --- Render Rows: Replaces Action Buttons with Stat Counters ---
     const renderRows = (team: 'teamA' | 'teamB', players: PlayerConfig[]) => {
         if (players.length === 0) return '<p>No players on roster.</p>';
         return `
         <table class="player-list-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>⚽</th>
-              <th>OG</th>
-              <th>🟨</th>
-              <th>🟥</th>
-              <th>✅</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+          <thead><tr><th>#</th><th>Name</th><th>⚽</th><th>OG</th><th>🟨</th><th>🟥</th><th>✅</th><th>Actions</th></tr></thead>
           <tbody>
             ${players.map(player => `
               <tr>
                 <td>${player.number}</td>
                 <td>${player.name}</td>
-                <td>
-                  <button class="player-stat-btn player-goal-btn" data-team="${team}" data-number="${player.number}">
-                    ${player.goals.filter(g => !g.isOwnGoal).length}
-                  </button>
-                </td>
-                <td>
-                  <button class="player-stat-btn player-own-goal-btn" data-team="${team}" data-number="${player.number}">
-                    ${player.goals.filter(g => g.isOwnGoal).length}
-                  </button>
-                </td>
-                <td>
-                  <button class="player-stat-btn player-yellow-btn" data-team="${team}" data-number="${player.number}">
-                    ${player.yellowCards.length}
-                  </button>
-                </td>
-                <td>
-                  <button class="player-stat-btn player-red-btn" data-team="${team}" data-number="${player.number}">
-                    ${player.redCards.length}
-                  </button>
-                </td>
+                <td><button class="player-stat-btn player-goal-btn" data-team="${team}" data-number="${player.number}">${player.goals.filter(g => !g.isOwnGoal).length}</button></td>
+                <td><button class="player-stat-btn player-own-goal-btn" data-team="${team}" data-number="${player.number}">${player.goals.filter(g => g.isOwnGoal).length}</button></td>
+                <td><button class="player-stat-btn player-yellow-btn" data-team="${team}" data-number="${player.number}">${player.yellowCards.length}</button></td>
+                <td><button class="player-stat-btn player-red-btn" data-team="${team}" data-number="${player.number}">${player.redCards.length}</button></td>
                 <td><input type="checkbox" class="on-field-checkbox" data-team="${team}" data-number="${player.number}" ${player.onField ? 'checked' : ''}></td>
                 <td>
                   <div class="player-action-cell">
@@ -592,7 +564,6 @@ export function render(container: HTMLElement) {
       container.querySelectorAll('.player-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find((p: PlayerConfig) => p.number === number); showConfirmModal(`Are you sure you want to delete ${player.name}?`, async () => { await deletePlayer(team, number); showNotification(`${player.name} deleted!`); }); }); });
       container.querySelectorAll('.player-edit-btn').forEach(btn => { btn.addEventListener('click', (e) => { const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10); if (!team || isNaN(number)) return; const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find((p: PlayerConfig) => p.number === number); if (player) showPlayerEditModal(player, team); }); });
       
-      // --- New Stat Button Listeners ---
       container.querySelectorAll('.player-goal-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
           const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
           const { timer } = getState(); const { reg, add } = getCurrentGameTime(); 
@@ -609,20 +580,19 @@ export function render(container: HTMLElement) {
 
       container.querySelectorAll('.player-yellow-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
           const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
-          const { timer } = getState(); const { reg, add } = getCurrentGameTime(); const total = reg + add; 
-          await addCard(team, number, 'yellow', total);
+          const { reg, add } = getCurrentGameTime(); 
+          await addCard(team, number, 'yellow', reg, add);
           showNotification(`Yellow card given to #${number}`);
       }); });
       
       container.querySelectorAll('.player-red-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
           const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
-          const { timer } = getState(); const { reg, add } = getCurrentGameTime(); const total = reg + add; 
-          await addCard(team, number, 'red', total);
+          const { reg, add } = getCurrentGameTime(); 
+          await addCard(team, number, 'red', reg, add);
           showNotification(`Red card given to #${number}`);
       }); });
   };
   
-  // ... (Rest of Init logic) ...
   const numberInputHandler = (e: Event) => { const target = e.target as HTMLInputElement; target.value = target.value.replace(/[^0-9]/g, ''); if (target.value.length > 2) { target.value = target.value.slice(0, 2); } if (target.value === '') return; if (parseInt(target.value, 10) > 99) { target.value = '99'; } if (parseInt(target.value, 10) < 0) { target.value = '0'; } };
   teamAPlayerNum.addEventListener('input', numberInputHandler); teamBPlayerNum.addEventListener('input', numberInputHandler); editPlayerNumber.addEventListener('input', numberInputHandler);
   teamAFields.forEach(([input, label]) => { if (input) { input.addEventListener('input', () => { isTeamAUnsaved = true; if (label) label.style.fontStyle = 'italic'; updateUnsavedIndicators(); }); } });

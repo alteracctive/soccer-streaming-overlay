@@ -1,0 +1,213 @@
+.player-list-container {
+  max-height: 490px;
+  overflow-y: auto;
+}
+
+.player-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0; 
+  border-radius: 0 0 6px 6px;
+  border-top: none;
+}
+
+.player-list-table th,
+.player-list-table td {
+  padding: 6px 4px; 
+  border: 1px solid var(--border-color);
+  text-align: center; 
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.player-list-table th {
+  background-color: var(--bg-color);
+  position: sticky;
+  top: 0;
+  z-index: 1; 
+}
+
+/* Column Widths */
+.player-list-table th:nth-child(1), .player-list-table td:nth-child(1) { width: 30px; } /* # */
+.player-list-table th:nth-child(2), .player-list-table td:nth-child(2) { text-align: left; width: auto; } /* Name */
+.player-list-table th:nth-child(3), .player-list-table td:nth-child(3) { width: 40px; } /* ⚽ */
+.player-list-table th:nth-child(4), .player-list-table td:nth-child(4) { width: 40px; } /* OG */
+.player-list-table th:nth-child(5), .player-list-table td:nth-child(5) { width: 40px; } /* 🟨 */
+.player-list-table th:nth-child(6), .player-list-table td:nth-child(6) { width: 40px; } /* 🟥 */
+.player-list-table th:nth-child(7), .player-list-table td:nth-child(7) { width: 30px; } /* ✅ */
+.player-list-table th:nth-child(8), .player-list-table td:nth-child(8) { width: 70px; } /* Actions */
+
+.player-action-cell {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Table Buttons */
+.player-action-btn {
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  width: 24px; 
+  height: 24px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.player-action-btn:hover {
+  opacity: 0.8;
+}
+
+.player-stat-btn {
+  width: 100%;
+  min-width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 28px;
+  display: inline-block;
+}
+.player-stat-btn:hover {
+  opacity: 0.85;
+}
+
+.player-goal-btn { background: var(--green); }
+.player-yellow-btn { background: #EECB0B; color: #1a1a1a; }
+.player-red-btn { background: var(--red); }
+.player-edit-btn { background: var(--accent-color); }
+.player-delete-btn { background: #6c757d; }
+.player-own-goal-btn { background: var(--purple); }
+
+/* Checkboxes */
+.on-field-checkbox {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  background-color: var(--bg-color);
+  margin: 0; 
+}
+.on-field-checkbox:checked {
+  background-color: var(--green);
+  border-color: var(--green);
+}
+.on-field-checkbox:checked::after {
+  content: '✔';
+  color: white;
+  font-size: 14px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  line-height: 1;
+}
+
+/* Modal Card Control */
+.card-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-control label {
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+.card-control input[type='number'] {
+  width: 60px;
+  text-align: center;
+}
+.card-control-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 30px;
+  flex-shrink: 0;
+}
+
+/* Goal List in Modal */
+.goal-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+.goal-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+.goal-list-item:last-child {
+  border-bottom: none;
+}
+.goal-item-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.goal-list-item span {
+  font-weight: 500;
+  margin-right: 4px;
+}
+.goal-list-item input.goal-minute-input,
+.goal-list-item input.card-minute-input { 
+    width: 50px; 
+    padding: 4px;
+    font-size: 13px;
+    text-align: center;
+    margin-right: 4px;
+}
+
+.goal-delete-btn {
+  background: none;
+  border: none;
+  color: var(--red);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.goal-delete-btn:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.player-totals-row {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  margin-top: 10px;
+}
+.player-total-item {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
+}

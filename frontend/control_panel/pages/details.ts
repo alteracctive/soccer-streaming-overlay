@@ -4,28 +4,21 @@ import {
   subscribe,
   unsubscribe,
   type PlayerConfig,
-  type Goal, // Ensure Goal is imported
+  type Goal, 
 } from '../stateManager';
 
-/**
- * Helper to format time string (e.g., "45+2'" or "12'")
- */
 function formatGoalTime(g: Goal): string {
   return g.addMinute > 0 ? `${g.regMinute}+${g.addMinute}'` : `${g.regMinute}'`;
 }
 
-/**
- * Helper function to generate the HTML for a team's goal list (Game Report)
- */
 function renderGoalList(
   teamPlayers: PlayerConfig[], 
   opponentPlayers: PlayerConfig[]
 ): string {
   
-  // 1. Get normal goals from THIS team
   const teamGoals = teamPlayers.flatMap(p => 
     p.goals
-      .filter(g => !g.isOwnGoal) // Check boolean
+      .filter(g => !g.isOwnGoal) 
       .map(g => ({ 
         goal: g,
         playerName: p.name, 
@@ -34,10 +27,9 @@ function renderGoalList(
       }))
   );
 
-  // 2. Get own goals from OPPONENT team
   const opponentOwnGoals = opponentPlayers.flatMap(p => 
     p.goals
-      .filter(g => g.isOwnGoal) // Check boolean
+      .filter(g => g.isOwnGoal) 
       .map(g => ({ 
         goal: g,
         playerName: p.name, 
@@ -46,7 +38,6 @@ function renderGoalList(
       }))
   );
 
-  // 3. Merge and Sort
   const allScoringEvents = [...teamGoals, ...opponentOwnGoals].sort((a, b) => {
     if (a.goal.regMinute !== b.goal.regMinute) return a.goal.regMinute - b.goal.regMinute;
     return a.goal.addMinute - b.goal.addMinute;
@@ -65,9 +56,6 @@ function renderGoalList(
   `).join('');
 }
 
-/**
- * Helper: Render Timeline
- */
 interface TimelineEvent {
   regMinute: number;
   addMinute: number;
@@ -78,7 +66,6 @@ interface TimelineEvent {
 }
 
 function getEventPriority(type: string): number {
-  // Visual Stack (Bottom-Up): Goal (1) -> Yellow (2) -> Red (3)
   if (type === 'Red') return 3;
   if (type === 'Yellow') return 2;
   return 1; 
@@ -104,47 +91,40 @@ function renderTimeline(
   teamAPlayers.forEach(p => {
     p.goals.forEach(g => {
       if (g.isOwnGoal) {
-        // Own Goal: Display on Opponent's side (Team B)
         events.push({ regMinute: g.regMinute, addMinute: g.addMinute, type: 'Own Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' });
       } else {
-        // Normal Goal: Display on Team A side
         events.push({ regMinute: g.regMinute, addMinute: g.addMinute, type: 'Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' });
       }
     });
-    // Cards (stored as integers in current stateManager, need to handle if they are ints)
-    // Assuming cards are still integers based on previous stateManager:
-    p.yellowCards.forEach(m => events.push({ regMinute: m, addMinute: 0, type: 'Yellow', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }));
-    p.redCards.forEach(m => events.push({ regMinute: m, addMinute: 0, type: 'Red', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }));
+    // --- Updated for Card Objects ---
+    p.yellowCards.forEach(c => events.push({ regMinute: c.regMinute, addMinute: c.addMinute, type: 'Yellow', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }));
+    p.redCards.forEach(c => events.push({ regMinute: c.regMinute, addMinute: c.addMinute, type: 'Red', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' }));
   });
 
   // 2. Gather Team B Events
   teamBPlayers.forEach(p => {
     p.goals.forEach(g => {
       if (g.isOwnGoal) {
-        // Own Goal: Display on Opponent's side (Team A)
         events.push({ regMinute: g.regMinute, addMinute: g.addMinute, type: 'Own Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamA' });
       } else {
-        // Normal Goal: Display on Team B side
         events.push({ regMinute: g.regMinute, addMinute: g.addMinute, type: 'Goal', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' });
       }
     });
-    p.yellowCards.forEach(m => events.push({ regMinute: m, addMinute: 0, type: 'Yellow', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }));
-    p.redCards.forEach(m => events.push({ regMinute: m, addMinute: 0, type: 'Red', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }));
+    // --- Updated for Card Objects ---
+    p.yellowCards.forEach(c => events.push({ regMinute: c.regMinute, addMinute: c.addMinute, type: 'Yellow', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }));
+    p.redCards.forEach(c => events.push({ regMinute: c.regMinute, addMinute: c.addMinute, type: 'Red', playerName: p.name, playerNumber: p.number, visualTeam: 'teamB' }));
   });
 
   if (events.length === 0) {
     return '<div class="no-events-text">Match started - No events yet</div>';
   }
 
-  // 3. Sort Events (Descending for Top-Down HTML rendering)
-  // Latest events at the top
   events.sort((a, b) => {
     if (b.regMinute !== a.regMinute) return b.regMinute - a.regMinute;
     if (b.addMinute !== a.addMinute) return b.addMinute - a.addMinute;
     return getEventPriority(b.type) - getEventPriority(a.type);
   });
 
-  // 4. Generate HTML
   return `
     <div class="timeline-wrapper">
       <div class="timeline-line"></div>
@@ -215,7 +195,6 @@ export function render(container: HTMLElement) {
     </div>
   `;
 
-  // --- Get Element References ---
   const reportHeaderA = container.querySelector('#cp-report-header-a') as HTMLHeadingElement;
   const reportHeaderB = container.querySelector('#cp-report-header-b') as HTMLHeadingElement;
   const reportListA = container.querySelector('#cp-report-list-a') as HTMLDivElement;
@@ -223,30 +202,21 @@ export function render(container: HTMLElement) {
   const timelineContainer = container.querySelector('#cp-timeline-container') as HTMLDivElement;
 
 
-  // Function to update the UI
   const updateUI = () => {
     const { config } = getState();
     
     if (config) {
       reportHeaderA.textContent = config.teamA.name;
       reportHeaderB.textContent = config.teamB.name;
-      
-      // Render Game Report
       reportListA.innerHTML = renderGoalList(config.teamA.players, config.teamB.players);
       reportListB.innerHTML = renderGoalList(config.teamB.players, config.teamA.players);
-
-      // Render Timeline
       timelineContainer.innerHTML = renderTimeline(config.teamA.players, config.teamB.players);
     }
   };
 
-  // Subscribe to state changes
   subscribe(updateUI);
-  
-  // Set initial state
   updateUI();
 
-  // Return a cleanup function
   return () => {
     unsubscribe(updateUI);
   };

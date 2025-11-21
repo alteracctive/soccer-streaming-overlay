@@ -6,20 +6,25 @@ export interface ColorConfig {
   secondary: string;
 }
 
-// --- New Interface ---
 export interface Goal {
   regMinute: number;
   addMinute: number;
   isOwnGoal: boolean;
 }
 
+// --- New Interface ---
+export interface Card {
+  regMinute: number;
+  addMinute: number;
+}
+
 export interface PlayerConfig {
   number: number;
   name: string;
   onField: boolean;
-  yellowCards: number[];
-  redCards: number[];
-  goals: Goal[]; // <-- Updated
+  yellowCards: Card[]; // <-- Updated
+  redCards: Card[];    // <-- Updated
+  goals: Goal[];
 }
 
 export interface TeamConfig {
@@ -387,7 +392,6 @@ export async function deletePlayer(team: 'teamA' | 'teamB', number: number) {
   await post('/api/player/delete', { team, number });
 }
 
-// --- Updated Function ---
 export async function addGoal(
   team: 'teamA' | 'teamB',
   number: number,
@@ -413,13 +417,15 @@ export async function addGoal(
   }
 }
 
+// --- Updated Function ---
 export async function addCard(
   team: 'teamA' | 'teamB',
   number: number,
   cardType: 'yellow' | 'red',
-  minute: number,
+  regMinute: number, // <-- Updated
+  addMinute: number  // <-- Updated
 ) {
-  await post('/api/player/card', { team, number, card_type: cardType, minute });
+  await post('/api/player/card', { team, number, card_type: cardType, regMinute, addMinute });
 }
 
 export async function toggleOnField(team: 'teamA' | 'teamB', number: number) {
