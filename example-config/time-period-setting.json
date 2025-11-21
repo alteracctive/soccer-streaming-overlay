@@ -1,0 +1,12 @@
+[
+  { "name": "First Half", "endTime": 45 },
+  { "name": "Half Time", "endTime": 45 },
+  { "name": "Second Half", "endTime": 90 },
+  { "name": "Full Time", "endTime": 90 },
+  { "name": "End of Regulation Time", "endTime": 90 },
+  { "name": "First Extra Half", "endTime": 105 },
+  { "name": "End of First Extra Half", "endTime": 105 },
+  { "name": "Second Extra Half", "endTime": 120 },
+  { "name": "After Extra Time", "endTime": 120 },
+  { "name": "Penalty Shootout", "endTime": 120 }
+]

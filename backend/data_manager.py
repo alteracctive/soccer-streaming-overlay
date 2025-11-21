@@ -10,8 +10,10 @@ from typing import Literal, List
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
+        # Not in a PyInstaller bundle, use normal path
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
@@ -46,7 +48,6 @@ class Goal(BaseModel):
     addMinute: int = 0
     isOwnGoal: bool = False
 
-# --- New Card Model ---
 class Card(BaseModel):
     regMinute: int
     addMinute: int = 0
@@ -55,8 +56,8 @@ class PlayerConfig(BaseModel):
     number: int
     name: str
     onField: bool = False
-    yellowCards: List[Card] = [] # <-- Updated
-    redCards: List[Card] = []    # <-- Updated
+    yellowCards: List[Card] = []
+    redCards: List[Card] = []
     goals: List[Goal] = []
 
 class TeamConfig(BaseModel):
@@ -106,7 +107,6 @@ class AddGoalUpdate(BaseModel):
     addMinute: int
     isOwnGoal: bool
 
-# --- Updated AddCardUpdate ---
 class AddCardUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
     number: int
@@ -125,8 +125,8 @@ class EditPlayerUpdate(BaseModel):
     number: int
     name: str
     onField: bool
-    yellowCards: List[Card] # <-- Updated
-    redCards: List[Card]    # <-- Updated
+    yellowCards: List[Card]
+    redCards: List[Card]
     goals: List[Goal]
 
 class ResetStatsUpdate(BaseModel):
@@ -323,10 +323,20 @@ class DataManager:
         await self.save_config()
         return config
 
+    # --- Updated get_raw_json to include time-period-setting.json ---
     async def get_raw_json(self, file_name: str) -> str:
         path_to_read = None
-        if file_name == "team-info-config.json": path_to_read = self.file_path
-        elif file_name == "scoreboard-customization.json": path_to_read = self.scoreboard_style_path
+        if file_name == "team-info-config.json": 
+            path_to_read = self.file_path
+        elif file_name == "scoreboard-customization.json": 
+            path_to_read = self.scoreboard_style_path
+        elif file_name == "time-period-setting.json":
+            # Check writable first, then bundled
+            if os.path.exists(WRITABLE_PERIOD_FILE):
+                path_to_read = WRITABLE_PERIOD_FILE
+            else:
+                path_to_read = BUNDLED_PERIOD_FILE
+
         if path_to_read and os.path.exists(path_to_read):
             async with aiofiles.open(path_to_read, mode='r') as f: return await f.read()
         raise FileNotFoundError(f"{file_name} not found.")
@@ -343,10 +353,23 @@ class DataManager:
                 model = ScoreboardStyleConfig.model_validate_json(raw_json_data)
                 path_to_write = self.scoreboard_style_path
                 data_to_write = model.model_dump_json(indent=2)
+            elif file_name == "time-period-setting.json":
+                # Validate list of periods
+                raw_list = json.loads(raw_json_data)
+                if not isinstance(raw_list, list):
+                    raise ValueError("Root element must be a list")
+                models = [PeriodSetting.model_validate(item) for item in raw_list]
+                path_to_write = WRITABLE_PERIOD_FILE
+                data_to_write = json.dumps([m.model_dump() for m in models], indent=2)
             else: raise Exception("Invalid file name.")
+            
             async with aiofiles.open(path_to_write, mode='w') as f: await f.write(data_to_write)
-            await self.load_config()
-            await self.load_scoreboard_style()
+            
+            # Reload
+            if file_name == "team-info-config.json": await self.load_config()
+            elif file_name == "scoreboard-customization.json": await self.load_scoreboard_style()
+            elif file_name == "time-period-setting.json": await self.load_period_settings()
+
         except ValidationError as e:
             raise Exception(f"Invalid JSON structure. {str(e)}")
         except Exception as e: raise e
@@ -449,7 +472,6 @@ class DataManager:
                 break
         return config
 
-    # --- Updated Method ---
     async def add_card(self, update: AddCardUpdate) -> ScoreboardConfig:
         config = self.get_config()
         team = getattr(config, update.team)
@@ -476,7 +498,6 @@ class DataManager:
                 break
         return config
 
-    # --- Updated Method ---
     async def edit_player(self, update: EditPlayerUpdate) -> ScoreboardConfig:
         config = self.get_config()
         team = getattr(config, update.team)
