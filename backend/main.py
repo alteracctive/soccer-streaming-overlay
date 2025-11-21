@@ -25,25 +25,23 @@ from data_manager import (
     MatchInfoUpdate,
     TimerPositionUpdate,
     LayoutUpdate,
-    PeriodSetting, # <-- Import
-    PeriodUpdate   # <-- Import
+    PeriodSetting,
+    PeriodUpdate
 )
 from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Application starting up...")
-    # 1. Load all configs
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
     await data_manager.load_period_settings()
     
-    # 2. Force set the period to the first option on startup
+    # Force set the period to the first option on startup
     periods = data_manager.get_period_settings()
     if periods and len(periods) > 0:
         first_period = periods[0].name
         print(f"Setting default period to: {first_period}")
-        # Update in-memory config (doesn't persist to file due to exclude={'currentPeriod'})
         await data_manager.set_current_period(first_period)
 
     yield
@@ -97,11 +95,6 @@ async def start_timer():
 async def stop_timer():
     websocket_manager.stop()
     return {"message": "Timer stopped"}
-
-@app.post("/api/timer/reset", tags=["Timer Control"])
-async def reset_timer():
-    websocket_manager.reset()
-    return {"message": "Timer reset"}
 
 class SetTimeUpdate(BaseModel):
     seconds: int
@@ -321,8 +314,9 @@ async def get_json_file(file_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- Updated Literal for file_name ---
 class UploadData(BaseModel):
-    file_name: Literal["team-info-config.json", "scoreboard-customization.json"]
+    file_name: Literal["team-info-config.json", "scoreboard-customization.json", "time-period-setting.json"]
     json_data: str
 
 @app.post("/api/json/upload", tags=["Import & Export"])

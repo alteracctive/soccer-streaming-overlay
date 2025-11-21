@@ -1,5 +1,216 @@
 {
   "teamA": {
+    "name": "FC Barcelona",
+    "abbreviation": "BAR",
+    "score": 0,
+    "colors": {
+      "primary": "#bd0052",
+      "secondary": "#004d98"
+    },
+    "players": [
+      {
+        "number": 1,
+        "name": "Marc-Andre ter Stegen",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 2,
+        "name": "Pau Cubarsi",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 3,
+        "name": "Alejandro Balde",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 4,
+        "name": "Ronald Araujo",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 5,
+        "name": "Inigo Martinez",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 6,
+        "name": "Gavi",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 7,
+        "name": "Ferran Torres",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 8,
+        "name": "Pedri",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 9,
+        "name": "Robert Lewandowski",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 10,
+        "name": "Dani Olmo",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 11,
+        "name": "Raphinha",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 13,
+        "name": "Inaki Pena",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 14,
+        "name": "Joao Felix",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 15,
+        "name": "Andreas Christensen",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 16,
+        "name": "Fermin Lopez",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 17,
+        "name": "Mikel Merino",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 18,
+        "name": "Pablo Torre",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 19,
+        "name": "Vitor Roque",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 20,
+        "name": "Sergi Roberto",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 21,
+        "name": "Frenkie de Jong",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 22,
+        "name": "Ilkay Guendogan",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 23,
+        "name": "Jules Kounde",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 24,
+        "name": "Eric Garcia",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 25,
+        "name": "Ander Astralaga",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      },
+      {
+        "number": 27,
+        "name": "Lamine Yamal",
+        "onField": false,
+        "yellowCards": [],
+        "redCards": [],
+        "goals": []
+      }
+    ]
+  },
+  "teamB": {
     "name": "FC Bayern Munich",
     "abbreviation": "FCB",
     "score": 0,
@@ -203,217 +414,6 @@
       {
         "number": 45,
         "name": "Aleksandar Pavlovic",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      }
-    ]
-  },
-  "teamB": {
-    "name": "FC Barcelona",
-    "abbreviation": "BAR",
-    "score": 0,
-    "colors": {
-      "primary": "#a50044",
-      "secondary": "#004d98"
-    },
-    "players": [
-      {
-        "number": 1,
-        "name": "Marc-Andre ter Stegen",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 2,
-        "name": "Pau Cubarsi",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 3,
-        "name": "Alejandro Balde",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 4,
-        "name": "Ronald Araujo",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 5,
-        "name": "Inigo Martinez",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 6,
-        "name": "Gavi",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 7,
-        "name": "Ferran Torres",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 8,
-        "name": "Pedri",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 9,
-        "name": "Robert Lewandowski",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 10,
-        "name": "Dani Olmo",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 11,
-        "name": "Raphinha",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 13,
-        "name": "Inaki Pena",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 14,
-        "name": "Joao Felix",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 15,
-        "name": "Andreas Christensen",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 16,
-        "name": "Fermin Lopez",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 17,
-        "name": "Mikel Merino",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 18,
-        "name": "Pablo Torre",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 19,
-        "name": "Vitor Roque",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 20,
-        "name": "Sergi Roberto",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 21,
-        "name": "Frenkie de Jong",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 22,
-        "name": "Ilkay Guendogan",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 23,
-        "name": "Jules Kounde",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 24,
-        "name": "Eric Garcia",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 25,
-        "name": "Ander Astralaga",
-        "onField": false,
-        "yellowCards": [],
-        "redCards": [],
-        "goals": []
-      },
-      {
-        "number": 27,
-        "name": "Lamine Yamal",
         "onField": false,
         "yellowCards": [],
         "redCards": [],
