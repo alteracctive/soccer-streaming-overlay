@@ -4,6 +4,7 @@ import { render as renderBroadcast } from './pages/broadcast';
 import { render as renderCustomization } from './pages/customization';
 import { render as renderTeamInfo } from './pages/team-info';
 import { render as renderSetting } from './pages/setting';
+import { render as renderDetails } from './pages/details'; // <-- New import
 import {
   initStateManager,
   stateEmitter,
@@ -13,12 +14,10 @@ import {
 } from './stateManager';
 import { showNotification } from './notification';
 
-// --- Updated Function ---
 function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
   
-  // Only pad minutes if less than 100
   const min = (totalMinutes < 100) 
     ? totalMinutes.toString().padStart(2, '0') 
     : totalMinutes.toString();
@@ -43,6 +42,7 @@ const pages: Record<string, PageModule> = {
   customization: { render: renderCustomization },
   'team-info': { render: renderTeamInfo },
   setting: { render: renderSetting },
+  details: { render: renderDetails }, // <-- New page
 };
 
 const contentContainer = document.getElementById(

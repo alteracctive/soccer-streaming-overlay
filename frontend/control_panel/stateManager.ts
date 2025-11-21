@@ -6,13 +6,25 @@ export interface ColorConfig {
   secondary: string;
 }
 
+export interface Goal {
+  regMinute: number;
+  addMinute: number;
+  isOwnGoal: boolean;
+}
+
+// --- New Interface ---
+export interface Card {
+  regMinute: number;
+  addMinute: number;
+}
+
 export interface PlayerConfig {
   number: number;
   name: string;
   onField: boolean;
-  yellowCards: number[]; // <-- Updated
-  redCards: number[];   // <-- Updated
-  goals: number[];
+  yellowCards: Card[]; // <-- Updated
+  redCards: Card[];    // <-- Updated
+  goals: Goal[];
 }
 
 export interface TeamConfig {
@@ -26,6 +38,12 @@ export interface TeamConfig {
 export interface ScoreboardConfig {
   teamA: TeamConfig;
   teamB: TeamConfig;
+  currentPeriod: string;
+}
+
+export interface PeriodSetting {
+  name: string;
+  endTime: number;
 }
 
 export interface TimerStatus {
@@ -41,14 +59,20 @@ export interface ExtraTimeStatus {
 export interface ScoreboardStyleConfig {
   primary: string;
   secondary: string;
+  tertiary: string;
   opacity: number;
   scale: number;
   matchInfo: string;
   timerPosition: "Under" | "Right";
+  showRedCardIndicators: boolean;
 }
 
-// --- Type for partial style updates ---
-export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition'>;
+export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition' | 'showRedCardIndicators'>;
+
+export interface LayoutConfig {
+  position: "Under" | "Right";
+  showRedCardIndicators: boolean;
+}
 
 
 // --- API and WebSocket URLs ---
@@ -66,20 +90,33 @@ let appState: {
   isPlayersListVisible: boolean;
   isAutoAddScoreOn: boolean;
   isAutoConvertYellowToRedOn: boolean;
+  isAutoAdvancePeriodOn: boolean;
   extraTime: ExtraTimeStatus;
   isMatchInfoVisible: boolean;
+  isFutsalClockOn: boolean;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
-  scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', opacity: 75, scale: 100, matchInfo: "", timerPosition: "Under" },
+  scoreboardStyle: { 
+    primary: '#000000', 
+    secondary: '#FFFFFF', 
+    tertiary: '#ffd700', 
+    opacity: 75, 
+    scale: 100, 
+    matchInfo: "", 
+    timerPosition: "Under",
+    showRedCardIndicators: false
+  },
   isGameReportVisible: false, 
   isScoreboardVisible: true,
   isPlayersListVisible: false,
   isAutoAddScoreOn: false,
   isAutoConvertYellowToRedOn: false,
+  isAutoAdvancePeriodOn: false,
   extraTime: { minutes: 0, isVisible: false },
   isMatchInfoVisible: false,
+  isFutsalClockOn: false,
 };
 
 export const stateEmitter = new EventTarget();
@@ -135,6 +172,11 @@ function updateExtraTimeStatus(status: ExtraTimeStatus) {
 
 function updateMatchInfoVisibility(isVisible: boolean) {
   appState.isMatchInfoVisible = isVisible;
+  stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
+function updateFutsalClockStatus(isOn: boolean) {
+  appState.isFutsalClockOn = isOn;
   stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
 }
 
@@ -194,6 +236,9 @@ function connectWebSocket() {
     else if (message.type === 'match_info_visibility') {
       updateMatchInfoVisibility(message.isVisible as boolean);
     }
+    else if (message.type === 'futsal_clock_status') {
+      updateFutsalClockStatus(message.isOn as boolean);
+    }
   };
 
   ws.onclose = () => {
@@ -211,12 +256,14 @@ function connectWebSocket() {
 
 // --- Public Interface ---
 export async function initStateManager() {
-  // Load local settings
   const savedAutoScore = localStorage.getItem('autoAddScore');
   appState.isAutoAddScoreOn = savedAutoScore === 'true';
 
   const savedAutoConvert = localStorage.getItem('autoConvertYellowToRed');
   appState.isAutoConvertYellowToRedOn = savedAutoConvert === 'true';
+
+  const savedAutoAdvance = localStorage.getItem('autoAdvancePeriod');
+  appState.isAutoAdvancePeriodOn = savedAutoAdvance === 'true';
 
   connectWebSocket();
 }
@@ -243,13 +290,32 @@ export function setAutoConvertYellowToRed(isOn: boolean) {
   localStorage.setItem('autoConvertYellowToRed', isOn ? 'true' : 'false');
 }
 
+export function setAutoAdvancePeriod(isOn: boolean) {
+  appState.isAutoAdvancePeriodOn = isOn;
+  localStorage.setItem('autoAdvancePeriod', isOn ? 'true' : 'false');
+  if (appState.timer.isRunning) timerControls.stop();
+}
+
 // --- API-Calling Functions ---
 export const timerControls = {
   start: () => post('/api/timer/start', {}),
   stop: () => post('/api/timer/stop', {}),
-  reset: () => post('/api/timer/reset', {}),
   set: (seconds: number) => post('/api/timer/set', { seconds }),
 };
+
+export async function setFutsalClock(isOn: boolean) {
+  await post('/api/timer/futsal-toggle', { is_on: isOn });
+}
+
+export async function getPeriods(): Promise<PeriodSetting[]> {
+  const response = await fetch(`${API_URL}/api/periods`);
+  if (!response.ok) throw new Error("Failed to load periods");
+  return await response.json();
+}
+
+export async function setPeriod(name: string) {
+  await post('/api/period', { name });
+}
 
 export async function setExtraTime(minutes: number) {
   await post('/api/extra-time/set', { minutes });
@@ -278,8 +344,8 @@ export async function saveMatchInfo(info: string) {
   await post('/api/match-info', { info });
 }
 
-export async function saveTimerPosition(position: 'Under' | 'Right') {
-  await post('/api/timer-position', { position });
+export async function saveLayout(layout: LayoutConfig) {
+  await post('/api/layout', layout);
 }
 
 export async function toggleGameReport() {
@@ -296,6 +362,10 @@ export async function togglePlayersList() {
 
 export async function toggleMatchInfoVisibility() {
   await post('/api/match-info/toggle', {});
+}
+
+export async function toggleRedCardVisibility() {
+  await post('/api/red-card-visibility/toggle', {});
 }
 
 export async function addPlayer(
@@ -325,17 +395,25 @@ export async function deletePlayer(team: 'teamA' | 'teamB', number: number) {
 export async function addGoal(
   team: 'teamA' | 'teamB',
   number: number,
-  minute: number,
+  regMinute: number,
+  addMinute: number,
+  isOwnGoal: boolean
 ) {
-  // First, add the goal to the player's stats
-  await post('/api/player/goal', { team, number, minute });
+  await post('/api/player/goal', { team, number, regMinute, addMinute, isOwnGoal });
   
   if (appState.isAutoAddScoreOn) {
     const { config } = getState();
     if (!config) return;
     
-    const currentScore = (team === 'teamA') ? config.teamA.score : config.teamB.score;
-    setScore(team, currentScore + 1);
+    // Own Goal Logic for auto-score
+    if (isOwnGoal) {
+         const opponent = team === 'teamA' ? 'teamB' : 'teamA';
+         const currentScore = config[opponent].score;
+         setScore(opponent, currentScore + 1);
+    } else {
+         const currentScore = config[team].score;
+         setScore(team, currentScore + 1);
+    }
   }
 }
 
@@ -344,9 +422,10 @@ export async function addCard(
   team: 'teamA' | 'teamB',
   number: number,
   cardType: 'yellow' | 'red',
-  minute: number, // <-- Added minute
+  regMinute: number, // <-- Updated
+  addMinute: number  // <-- Updated
 ) {
-  await post('/api/player/card', { team, number, card_type: cardType, minute });
+  await post('/api/player/card', { team, number, card_type: cardType, regMinute, addMinute });
 }
 
 export async function toggleOnField(team: 'teamA' | 'teamB', number: number) {
@@ -371,11 +450,21 @@ export async function resetTeamStats(team: 'teamA' | 'teamB') {
 }
 
 export async function downloadJson(fileName: string): Promise<Blob> {
-  const response = await fetch(`${API_URL}/api/json/${fileName}`);
+  const url = `${API_URL}/api/json/${fileName}`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('File not found or backend error.');
   }
   return await response.blob();
+}
+
+export async function getRawJson(fileName: string): Promise<string> {
+  const url = `${API_URL}/api/json/${fileName}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('File not found or backend error.');
+  }
+  return await response.text();
 }
 
 export async function uploadJson(fileName: string, jsonData: string) {

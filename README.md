@@ -8,22 +8,24 @@ The application is a hybrid: a **FastAPI (Python)** backend handles data, a **Vi
 
 ### Key Features
 
-* **Real-time Scoreboard:**
-    * Full control over team names, abbreviations, scores, and primary/secondary colors.
-    * Separate **Match Info** bar for event titles (e.g., "Regional Finals").
-    * Dynamic **Timer** with start, stop, reset, and set functions (up to 999:59).
-    * **Additional Time** module for stoppage time (e.g., "+5'").
-    * **Red Card Indicators** that appear next to the team score for each on-field player who has been sent off.
-    * **Customizable Layout:** Choose to display the timer *under* the scoreboard or move it to the *right* of the score row.
+* **Advanced Scoreboard & Game Management:**
+    * **Period Manager:** Easily switch between game states (First Half, Second Half, Break Time, Extra Time, Penalty Shootout, etc.) with a single click.
+    * **Full Team Control:** Manage team names, abbreviations, and scores.
+    * **Triple Color System:** Customize Primary, Secondary, and Tertiary colors for intricate team branding.
+    * **Dynamic Timer:**
+        * Supports standard count-up timers.
+        * **Futsal Mode:** Toggle a countdown timer via the Settings page.
+        * Includes start, stop, reset, set time, and Additional Time (+5') controls.
+    * **Red Card Indicators:** Visual indicators appear on the overlay next to the team score for each player sent off.
 
 * **Full Roster & Stat Management (in Team Info page):**
     * Add, edit, and delete players for each team.
     * Track individual player stats:
         * **Goals:** A list of minutes when goals were scored.
+        * **Own Goals:** specific tracking for own goals, differentiating them from standard scoring.
         * **Yellow Cards:** A list of minutes (max 2).
         * **Red Cards:** A list of minutes (max 1).
     * Toggle a player's **On Field** status.
-    * "Reset Stats" and "Delete List" buttons for full team management.
     * Automatic conflict detection when adding a player with a duplicate number.
 
 * **Live Dashboard Controls:**
@@ -34,13 +36,16 @@ The application is a hybrid: a **FastAPI (Python)** backend handles data, a **Vi
 
 * **Dynamic Overlays (Toggleable from Broadcast page):**
     * **Scoreboard:** The main scoreboard, match info bar, and timer.
-    * **Game Report:** A full-screen graphic showing team names, colors, scores, and a detailed list of goal scorers for each team.
+    * **Details Page:** A comprehensive view containing:
+        * **Game Report:** Full-screen graphic showing team names, colors, scores, and a detailed list of goal scorers.
+        * **Match Timeline:** A chronological visual representation of match events (goals, cards, substitutions).
     * **Players List:** A full-screen graphic displaying both team rosters side-by-side, complete with color patches. Players are sorted by "On Field" status, then by number. Lists are synchronized and will scroll continuously if they exceed 15 players.
 
 * **Smart Settings (in Setting page):**
-    * **Auto-add Score:** Automatically increment the team score when a goal is given to a player from the Team Info or Dashboard page.
+    * **Futsal Timer:** Toggle between standard soccer count-up or Futsal count-down timer logic.
+    * **Auto-add Score:** Automatically increment the team score when a goal is given to a player.
     * **Auto-convert Cards:** Automatically issue a red card when a player is given their second yellow card.
-    * **Import/Export:** Download (Export) your current `team-info-config.json` or `scoreboard-customization.json` files as backups. Upload (Import) a file to instantly overwrite and load a new configuration.
+    * **Import/Export:** Download (Export) your current files as backups. Upload (Import) a file to instantly overwrite and load a new configuration.
 
 ---
 
@@ -53,11 +58,11 @@ This application is distributed as a portable Windows executable (`.exe`). No in
 3.  The application window will open, displaying the Control Panel. The backend API and overlay web server will start automatically.
 
 ### Control Panel Overview
-* **Dashboard:** Your live production hub. Control the timer, adjust scores, set additional time, and quickly add goals using the player grid.
-* **Broadcast:** Toggle the visibility of the three main overlay components: Scoreboard, Game Report, and Players List.
-* **Team Info:** Your pre-game setup page. Set team names, colors, and build your player rosters. You can also manage detailed stats (goals, cards) from here.
-* **Customization:** Adjust the visual appearance of the overlay, including colors, opacity, scale, timer position, and the Match Info text.
-* **Setting:** Configure application behavior (like dark mode and auto-stat rules) and manage your config files using the Import/Export tool.
+* **Dashboard:** Your live production hub. Control the timer, manage periods (Halves/Breaks), adjust scores, set additional time, and quickly add goals using the player grid.
+* **Broadcast:** Toggle the visibility of the main overlay components: Scoreboard, Details Page (Report/Timeline), and Players List.
+* **Team Info:** Your pre-game setup page. Set team names, the three team colors, and build your player rosters. You can also manage detailed stats (goals, own goals, cards) from here.
+* **Customization:** Adjust the visual appearance of the overlay, including colors, opacity, scale, timer position, and text settings.
+* **Setting:** Configure application behavior (Futsal timer mode, auto-stat rules) and manage your config files using the Import/Export tool.
 
 ---
 
@@ -78,7 +83,7 @@ To display the overlays on your stream, you add them as **Browser Sources** in O
         * **Width:** `1920` (or your canvas width).
         * **Height:** `1080` (or your canvas height).
         * **Custom CSS:** Delete *everything* in this field.
-        * Ensure "Shutdown source when not visible" is **unchecked**. This is important for keeping animations and data synced.
+        * **Shutdown source when not visible:** Ensure this is **unchecked**. This is important for keeping animations and data synced.
     * Click **OK**.
 
 The overlays will now appear on your canvas. Use the **Broadcast** page in the Control Panel to toggle their visibility live during your stream.

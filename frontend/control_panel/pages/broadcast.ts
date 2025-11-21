@@ -6,31 +6,7 @@ import {
   toggleGameReport,
   toggleScoreboard,
   togglePlayersList,
-  type PlayerConfig,
 } from '../stateManager';
-// Removed: saveMatchInfo, toggleMatchInfoVisibility, showNotification
-
-/**
- * Helper function to generate the HTML for a team's goal list
- */
-function renderGoalList(players: PlayerConfig[]): string {
-  const scorers = players
-    .filter(p => p.goals.length > 0)
-    .sort((a, b) => a.number - b.number);
-
-  if (scorers.length === 0) {
-    return '<p class="no-goals-text">No goals yet.</p>';
-  }
-
-  return scorers.map(player => `
-    <div class="goal-scorer-row">
-      <span class="player-number">#${player.number}</span>
-      <span class="player-name">${player.name}</span>
-      <span class="goal-minutes">${player.goals.map(g => `${g}'`).join(' ')}</span>
-    </div>
-  `).join('');
-}
-
 
 export function render(container: HTMLElement) {
   
@@ -60,31 +36,10 @@ export function render(container: HTMLElement) {
           </button>
         </div>
       </div>
-
-      <div class="card">
-        <h4>Game Report</h4>
-        <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start;">
-          <div>
-            <h5 id="cp-report-header-a">Team A</h5>
-            <div id="cp-report-list-a">
-              <p class="no-goals-text">No goals yet.</p>
-            </div>
-          </div>
-          
-          <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
-
-          <div>
-            <h5 id="cp-report-header-b">Team B</h5>
-            <div id="cp-report-list-b">
-              <p class="no-goals-text">No goals yet.</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   `;
 
-  // --- Get Element Refs ---
+  // --- Get Element References ---
   const gameReportToggleButton = container.querySelector(
     '#toggle-game-report',
   ) as HTMLButtonElement;
@@ -97,22 +52,10 @@ export function render(container: HTMLElement) {
     '#toggle-players-list',
   ) as HTMLButtonElement;
 
-  // --- Removed Match Info Refs ---
 
-  // --- Report Display Elements ---
-  const reportHeaderA = container.querySelector('#cp-report-header-a') as HTMLHeadingElement;
-  const reportHeaderB = container.querySelector('#cp-report-header-b') as HTMLHeadingElement;
-  const reportListA = container.querySelector('#cp-report-list-a') as HTMLDivElement;
-  const reportListB = container.querySelector('#cp-report-list-b') as HTMLDivElement;
-
-  
-  // --- Removed UnsavedMatchInfo helper ---
-
-
-  // Function to update the UI (buttons and report display)
+  // Function to update the UI (buttons)
   const updateUI = () => {
-    // Removed isMatchInfoVisible from destructuring
-    const { config, isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
+    const { isGameReportVisible, isScoreboardVisible, isPlayersListVisible } = getState();
     
     // Update Toggle Buttons
     if (gameReportToggleButton) {
@@ -148,18 +91,6 @@ export function render(container: HTMLElement) {
           playersListToggleButton.classList.add('btn-red');
         }
     }
-    
-    // --- Removed Match Info Toggle Button UI ---
-
-    // --- Update Report Display ---
-    if (config) {
-      reportHeaderA.textContent = config.teamA.name;
-      reportHeaderB.textContent = config.teamB.name;
-      reportListA.innerHTML = renderGoalList(config.teamA.players);
-      reportListB.innerHTML = renderGoalList(config.teamB.players);
-    }
-    
-    // --- Removed Match Info Input update ---
   };
 
   // --- Add click listeners ---
@@ -174,9 +105,6 @@ export function render(container: HTMLElement) {
   playersListToggleButton.addEventListener('click', () => {
     togglePlayersList();
   });
-
-  // --- Removed Match Info Listeners ---
-
 
   // Subscribe to state changes
   subscribe(updateUI);
