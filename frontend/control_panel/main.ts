@@ -4,7 +4,10 @@ import { render as renderBroadcast } from './pages/broadcast';
 import { render as renderCustomization } from './pages/customization';
 import { render as renderTeamInfo } from './pages/team-info';
 import { render as renderSetting } from './pages/setting';
-import { render as renderDetails } from './pages/details'; // <-- New import
+import { render as renderDetails } from './pages/details';
+import { render as renderShortcuts } from './pages/shortcuts'; // <-- New Import
+import { initGlobalShortcuts } from './globalShortcuts'; // <-- Import Global Init
+
 import {
   initStateManager,
   stateEmitter,
@@ -42,7 +45,8 @@ const pages: Record<string, PageModule> = {
   customization: { render: renderCustomization },
   'team-info': { render: renderTeamInfo },
   setting: { render: renderSetting },
-  details: { render: renderDetails }, // <-- New page
+  details: { render: renderDetails },
+  shortcuts: { render: renderShortcuts }, // <-- Added Route
 };
 
 const contentContainer = document.getElementById(
@@ -194,8 +198,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Initialize State Manager
-  // This connects to the WebSocket and will trigger the first connection event
   await initStateManager();
+  
+  // Initialize Global Key Listener
+  await initGlobalShortcuts();
 
   // Now render the default page
   navigate('dashboard');

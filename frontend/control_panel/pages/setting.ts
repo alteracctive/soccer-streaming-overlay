@@ -1,15 +1,14 @@
-// frontend/control_panel/pages/setting.ts
 import { showNotification } from '../notification';
 import { 
   getState, 
   setAutoAddScore, 
-  setAutoConvertYellowToRed,
+  setAutoConvertYellowToRed, 
   setAutoAdvancePeriod,
   setFutsalClock,
-  downloadJson,
-  uploadJson,
-  getRawJson,
-  subscribe,
+  downloadJson, 
+  uploadJson, 
+  getRawJson, 
+  subscribe, 
   unsubscribe,
   type ScoreboardConfig,
   type TeamConfig
@@ -21,8 +20,10 @@ function getFriendlyFileName(fileName: string): string {
       return 'Team Info & Rosters';
     case 'scoreboard-customization.json':
       return 'Scoreboard Style & Layout';
-    case 'time-period-setting.json': // <-- New
+    case 'time-period-setting.json':
       return 'Match Period Settings';
+    case 'shortcuts.json':
+      return 'Keyboard Shortcuts';
     case 'teamA':
       return 'Team A Info Only';
     case 'teamB':
@@ -259,6 +260,7 @@ export function render(container: HTMLElement) {
               <option value="team-info-config.json">All Team Info</option>
               <option value="scoreboard-customization.json">Scoreboard Style & Layout</option>
               <option value="time-period-setting.json">Match Period Settings</option>
+              <option value="shortcuts.json">Keyboard Shortcuts</option>
             </select>
           </div>
           <button id="import-btn" class="btn-secondary" style="flex-shrink: 0;">Import (Upload)</button>
@@ -340,7 +342,7 @@ export function render(container: HTMLElement) {
   exportOptionsCancelBtn.addEventListener('click', hideExportOptionsModal);
   
   exportBtn.addEventListener('click', async () => { const fileName = fileSelect.value; if (fileName === 'team-info-config.json') { exportOptionsModal.style.display = 'flex'; } else { try { const blob = await downloadJson(fileName); const content = await blob.text(); showExportViewModal(fileName, content, blob); } catch (error: any) { showNotification(`Error exporting: ${error.message}`, 'error'); } } });
-  importBtn.addEventListener('click', () => { const fileName = fileSelect.value; if (fileName !== 'team-info-config.json' && fileName !== 'scoreboard-customization.json' && fileName !== 'time-period-setting.json') { showNotification('Please select a full config file to import.', 'error'); return; } importModalTitle.textContent = `Import (Upload) to ${getFriendlyFileName(fileName)}`; importTextarea.value = ''; importFileName.textContent = 'No file chosen'; importFileInput.value = ''; importModal.style.display = 'flex'; });
+  importBtn.addEventListener('click', () => { const fileName = fileSelect.value; if (fileName !== 'team-info-config.json' && fileName !== 'scoreboard-customization.json' && fileName !== 'time-period-setting.json' && fileName !== 'shortcuts.json') { showNotification('Please select a full config file to import.', 'error'); return; } importModalTitle.textContent = `Import (Upload) to ${getFriendlyFileName(fileName)}`; importTextarea.value = ''; importFileName.textContent = 'No file chosen'; importFileInput.value = ''; importModal.style.display = 'flex'; });
   modalImportCancelBtn.addEventListener('click', () => { importModal.style.display = 'none'; });
   importFileInput.addEventListener('change', () => { const file = importFileInput.files?.[0]; if (file) { importFileName.textContent = file.name; const reader = new FileReader(); reader.onload = (e) => { importTextarea.value = e.target?.result as string; }; reader.readAsText(file); } else { importFileName.textContent = 'No file chosen'; } });
 
@@ -350,17 +352,47 @@ export function render(container: HTMLElement) {
   assignTeamBBtn.addEventListener('click', () => handleTeamImport('teamB'));
   assignCancelBtn.addEventListener('click', hideTeamAssignModal);
   
+  // --- Updated Import Save Listener ---
   modalImportSaveBtn.addEventListener('click', async () => { 
-    const fileName = fileSelect.value as "team-info-config.json" | "scoreboard-customization.json" | "time-period-setting.json"; 
+    const fileName = fileSelect.value as any; // Cast to bypass TS checks if needed, or update TS definition
     const jsonData = importTextarea.value; 
     if (!jsonData.trim()) { showNotification('No JSON data to import.', 'error'); return; } 
     try { 
         modalImportSaveBtn.disabled = true; 
         modalImportSaveBtn.textContent = 'Validating...'; 
-        let uploadedConfig; try { uploadedConfig = JSON.parse(jsonData); } catch (e) { throw new Error('Data is not valid JSON.'); } 
-        if (fileName === 'team-info-config.json') { if (uploadedConfig.teamA && uploadedConfig.teamB && uploadedConfig.teamB.score === -1) { teamDataToImport = uploadedConfig.teamA as TeamConfig; importModal.style.display = 'none'; teamAssignModal.style.display = 'flex'; return; } } 
-        await uploadJson(fileName, jsonData); showNotification(`Successfully imported ${getFriendlyFileName(fileName)}! Data is now active.`); importModal.style.display = 'none'; 
-    } catch (error: any) { console.error(error); showNotification(`Import Failed: ${error.message}`, 'error'); } finally { modalImportSaveBtn.disabled = false; modalImportSaveBtn.textContent = 'Validate and Overwrite'; } 
+        
+        let uploadedConfig; 
+        try { uploadedConfig = JSON.parse(jsonData); } catch (e) { throw new Error('Data is not valid JSON.'); } 
+        
+        // Handle Team Info specific "Assign Team" logic
+        if (fileName === 'team-info-config.json') { 
+            if (uploadedConfig.teamA && uploadedConfig.teamB && uploadedConfig.teamB.score === -1) { 
+                teamDataToImport = uploadedConfig.teamA as TeamConfig; 
+                importModal.style.display = 'none'; 
+                teamAssignModal.style.display = 'flex'; 
+                return; 
+            } 
+        } 
+        
+        // --- Call Upload API ---
+        const warnings = await uploadJson(fileName, jsonData); 
+        
+        // --- Show Results ---
+        if (warnings && warnings.length > 0) {
+            warnings.forEach(w => showNotification(w, 'error'));
+            showNotification(`Import completed with ${warnings.length} warning(s).`);
+        } else {
+            showNotification(`Successfully imported ${getFriendlyFileName(fileName)}! Data is now active.`);
+        }
+        
+        importModal.style.display = 'none'; 
+    } catch (error: any) { 
+        console.error(error); 
+        showNotification(`Import Failed: ${error.message}`, 'error'); 
+    } finally { 
+        modalImportSaveBtn.disabled = false; 
+        modalImportSaveBtn.textContent = 'Validate and Overwrite'; 
+    } 
   });
 
   return () => {

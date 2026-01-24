@@ -3,13 +3,13 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, ValidationError
-from typing import Literal, List
+from typing import Literal, List, Optional
 
 from data_manager import (
     data_manager, ScoreboardConfig, TeamInfoUpdate, CustomizationUpdate, SetScoreUpdate, ScoreboardStyleConfig,
     StyleUpdate, AddPlayerUpdate, ClearPlayersUpdate, DeletePlayerUpdate, AddGoalUpdate, AddCardUpdate,
     ToggleOnFieldUpdate, EditPlayerUpdate, ResetStatsUpdate, ReplacePlayerUpdate, MatchInfoUpdate,
-    TimerPositionUpdate, LayoutUpdate, PeriodSetting, PeriodUpdate
+    TimerPositionUpdate, LayoutUpdate, PeriodSetting, PeriodUpdate, Shortcut, ShortcutUpdate
 )
 from websocket_manager import websocket_manager
 
@@ -19,6 +19,8 @@ async def lifespan(app: FastAPI):
     await data_manager.load_config()
     await data_manager.load_scoreboard_style()
     await data_manager.load_period_settings()
+    await data_manager.load_shortcuts() # <-- Load Shortcuts
+    
     periods = data_manager.get_period_settings()
     if periods and len(periods) > 0:
         await data_manager.set_current_period(periods[0].name)
@@ -67,6 +69,19 @@ async def get_periods() -> List[PeriodSetting]: return data_manager.get_period_s
 
 @app.post("/api/period", tags=["Timer Control"])
 async def set_current_period(update: PeriodUpdate): config = await data_manager.set_current_period(update.name); await websocket_manager.broadcast_config(config); return {"message": f"Period set to {update.name}"}
+
+# --- Shortcut Endpoints ---
+@app.get("/api/shortcuts", tags=["Shortcuts"])
+async def get_shortcuts() -> List[Shortcut]:
+    return data_manager.get_shortcuts()
+
+@app.post("/api/shortcuts", tags=["Shortcuts"])
+async def update_shortcut(update: ShortcutUpdate):
+    shortcuts = await data_manager.update_shortcut(update)
+    # Broadcast or let client refetch? Let's just return list.
+    # Ideally broadcast to all clients if multiple are open.
+    # For now, let's keep it simple.
+    return shortcuts
 
 # --- Team & Player Data ---
 @app.get("/api/config", tags=["Team & Player Data"])
@@ -127,7 +142,6 @@ async def toggle_game_report(): status = await websocket_manager.toggle_game_rep
 @app.post("/api/scoreboard/toggle", tags=["Scoreboard & Overlays"])
 async def toggle_scoreboard(): status = await websocket_manager.toggle_scoreboard(); return status
 
-# --- Updated Player List Endpoints ---
 class SetPlayersListVisibility(BaseModel):
     visibleA: bool
     visibleB: bool
@@ -152,16 +166,19 @@ async def get_json_file(file_name: str):
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 class UploadData(BaseModel):
-    file_name: Literal["team-info-config.json", "scoreboard-customization.json", "time-period-setting.json"]
+    file_name: Literal["team-info-config.json", "scoreboard-customization.json", "time-period-setting.json", "shortcuts.json"]
     json_data: str
 
 @app.post("/api/json/upload", tags=["Import & Export"])
 async def upload_json_file(data: UploadData):
     try:
-        await data_manager.set_raw_json(data.file_name, data.json_data)
+        # data_manager.set_raw_json returns list of warnings now
+        warnings = await data_manager.set_raw_json(data.file_name, data.json_data)
+        
         await websocket_manager.broadcast_config(data_manager.get_config())
         await websocket_manager.broadcast_scoreboard_style(data_manager.get_scoreboard_style())
-        return {"message": "File imported successfully."}
+        
+        return {"message": "File imported successfully.", "warnings": warnings}
     except ValidationError as e: raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
     except Exception as e: raise HTTPException(status_code=500, detail=f"Error: {e}")
 

@@ -1,0 +1,7 @@
+[
+  {
+    "action_id": "toggle_timer",
+    "label": "Start/Stop Timer",
+    "key": "Ctrl+KeyF+Shift"
+  }
+]
