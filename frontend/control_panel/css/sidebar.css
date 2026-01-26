@@ -113,7 +113,7 @@
   background-color: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 12px;
   margin-bottom: 16px;
   font-family: 'Courier New', Courier, monospace;
   text-align: center;
@@ -123,44 +123,79 @@
   display: flex;
   justify-content: center;
   align-items: center; 
-  font-size: 24px;
-  font-weight: bold;
   gap: 8px;
+  margin-bottom: 8px;
 }
 
 .sidebar .mini-score-row .dash {
   flex-shrink: 0;
   color: var(--text-color);
+  font-weight: bold;
 }
 
-.sidebar .mini-score-row span {
-  flex-grow: 1;
-  width: 35px;
+/* Updated Score Button Style */
+.sidebar .mini-score-btn {
+  width: 40px;
+  height: 40px;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--accent-color); 
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-.sidebar .mini-score-row span:first-child {
-  text-align: right;
-  color: var(--accent-color); 
-}
-.sidebar .mini-score-row span:last-child {
-  text-align: left;
-  color: var(--accent-color); 
+.sidebar .mini-score-btn:hover {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
 }
 
 .sidebar .mini-timer-row {
-  font-size: 16px;
-  margin-top: 4px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 4px;
-  opacity: 0.8;
   display: flex;
   justify-content: center;
-  gap: 8px;
+}
+
+/* Updated Timer Button Style */
+.sidebar .mini-timer-btn {
+  background-color: transparent;
+  width: 100%;
+  padding: 6px 0;
+  border: 2px solid transparent; /* Placeholder for state colors */
+  border-radius: 6px;
+  font-size: 18px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: border-color 0.3s, background-color 0.2s;
+}
+
+.sidebar .mini-timer-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Timer Running State (Green Outline) */
+.sidebar .mini-timer-btn.timer-running {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* Timer Stopped State (Red Outline) */
+.sidebar .mini-timer-btn.timer-stopped {
+  border-color: var(--red);
+  color: var(--red);
 }
 
 .sidebar .team-color-strip {
-  width: 8px;
-  height: 28px;
+  width: 6px;
+  height: 40px; /* Match button height */
   display: flex;
   flex-direction: column;
   border-radius: 2px;
