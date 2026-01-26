@@ -1,5 +1,14 @@
 // frontend/control_panel/globalShortcuts.ts
-import { timerControls, getState } from './stateManager';
+import { 
+    timerControls, 
+    getState,
+    toggleScoreboard,
+    toggleMatchInfoVisibility,
+    toggleGameReport,
+    togglePlayersListA,
+    togglePlayersListB,
+    setPlayersListVisibility 
+} from './stateManager';
 import { showNotification } from './notification';
 
 declare global {
@@ -11,10 +20,6 @@ declare global {
 // Track currently held keys
 const activeKeys = new Set<string>();
 
-/**
- * Maps raw event codes to user-friendly canonical names.
- * Merges Left/Right modifiers into single keys.
- */
 export function normalizeKey(code: string): string {
     if (code === 'ControlLeft' || code === 'ControlRight') return 'Ctrl';
     if (code === 'ShiftLeft' || code === 'ShiftRight') return 'Shift';
@@ -23,16 +28,12 @@ export function normalizeKey(code: string): string {
     return code;
 }
 
-/**
- * Generates the canonical ID for a set of keys.
- * Sorts them alphabetically to ensure order doesn't matter.
- * e.g. {KeyA, KeyB} -> "KeyA+KeyB"
- */
 export function generateComboId(keys: Set<string>): string {
     return Array.from(keys).sort().join('+');
 }
 
-export async function initGlobalShortcuts() {
+// --- Updated Function Signature ---
+export async function initGlobalShortcuts(enableNotifications: boolean = true) {
     window.__isBindingShortcut = false;
 
     // 1. Disable Context Menu
@@ -41,36 +42,28 @@ export async function initGlobalShortcuts() {
         return false;
     });
 
-    // 2. Clear keys on window blur to prevent "stuck" keys
+    // 2. Clear keys on window blur
     window.addEventListener('blur', () => {
         activeKeys.clear();
     });
 
     // 3. Global Key Down
     window.addEventListener('keydown', (e) => {
-        // A. Ignore inputs
         const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
             return;
         }
 
-        // B. Block default browser actions for modifiers
         if (e.ctrlKey || e.altKey || e.metaKey) {
             e.preventDefault();
         }
 
-        // C. Ignore if repeat (Hardware auto-repeat)
-        // This solves the "Trigger only once" requirement
         if (e.repeat) return;
-
-        // D. Ignore if binding
         if (window.__isBindingShortcut) return;
 
-        // E. Update State
         const keyName = normalizeKey(e.code);
         activeKeys.add(keyName);
 
-        // F. Check Match
         const comboId = generateComboId(activeKeys);
         if (!comboId) return;
 
@@ -81,20 +74,61 @@ export async function initGlobalShortcuts() {
             e.preventDefault();
             console.log(`Shortcut triggered: ${match.action_id} [${comboId}]`);
             
+            // Helper to conditionally show notification
+            const notify = (msg: string) => {
+                if (enableNotifications) showNotification(msg);
+            };
+
             switch (match.action_id) {
                 case 'toggle_timer':
                     const { timer } = getState();
                     if (timer.isRunning) {
                         timerControls.stop();
-                        showNotification(`Timer Stopped (${match.label})`);
+                        notify(`Timer Stopped (${match.label})`);
                     } else {
                         timerControls.start();
-                        showNotification(`Timer Started (${match.label})`);
+                        notify(`Timer Started (${match.label})`);
+                    }
+                    break;
+
+                case 'toggle_scoreboard':
+                    toggleScoreboard();
+                    notify("Scoreboard toggled via Shortcut");
+                    break;
+
+                case 'toggle_match_info':
+                    toggleMatchInfoVisibility();
+                    notify("Match Info toggled via Shortcut");
+                    break;
+
+                case 'toggle_game_report':
+                    toggleGameReport();
+                    notify("Game Report toggled via Shortcut");
+                    break;
+
+                case 'toggle_players_list_a':
+                    togglePlayersListA();
+                    notify("Team A List toggled via Shortcut");
+                    break;
+
+                case 'toggle_players_list_b':
+                    togglePlayersListB();
+                    notify("Team B List toggled via Shortcut");
+                    break;
+
+                case 'toggle_players_list_all':
+                    const { isPlayersListVisibleA, isPlayersListVisibleB } = getState();
+                    if (isPlayersListVisibleA || isPlayersListVisibleB) {
+                        setPlayersListVisibility(false, false);
+                        notify("All Lists Hidden via Shortcut");
+                    } else {
+                        setPlayersListVisibility(true, true);
+                        notify("All Lists Shown via Shortcut");
                     }
                     break;
                 
                 default:
-                    showNotification(`Action: ${match.label}`);
+                    notify(`Action triggered: ${match.label}`);
                     break;
             }
         }

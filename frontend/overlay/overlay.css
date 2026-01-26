@@ -8,6 +8,10 @@ body {
   
   --scoreboard-text-secondary: #FFFFFF;
   --scoreboard-text-tertiary: #ffd700;
+  
+  /* Shared Notification Colors (used elsewhere if needed, but not for popup notifications) */
+  --green: #28a745;
+  --red: #dc3545;
 }
 
 /* Container positions the scoreboard boxes */
@@ -225,34 +229,30 @@ body {
 @keyframes scroll-left-paused { 0% { transform: translateX(0); } 20% { transform: translateX(0); } 80% { transform: translateX(-200%); } 100% { transform: translateX(-200%); } }
 
 
-/* --- Updated Players List Styles (Split) --- */
+/* Players List Styles */
 .players-list-container {
-  display: none; /* Hidden by default */
+  display: none; 
   position: fixed;
   background-color: rgba(0, 0, 0, 0.75); 
   color: var(--scoreboard-text-secondary);
   border-radius: 10px;
   padding: 15px 20px;
   max-height: 80vh; 
-  /* "top" is set via specific classes below */
 }
 
-/* Specific Positions */
 .team-a-list {
   top: 50%;
   left: 40px;
-  transform: translateY(-50%); /* Base transform */
+  transform: translateY(-50%); 
   transform-origin: left center;
 }
 
 .team-b-list {
   top: 50%;
   right: 40px;
-  transform: translateY(-50%); /* Base transform */
+  transform: translateY(-50%); 
   transform-origin: right center;
 }
-
-/* Removed divider since they are separate now */
 
 .players-list-team {
   width: 300px;
@@ -287,7 +287,6 @@ body {
 
 .players-table th, .players-table td { padding: 6px; text-align: left; font-size: 18px; font-weight: 500; white-space: nowrap; }
 
-/* Player List Table Alignment */
 #players-list-a td:first-child { width: 40px; text-align: right; padding-right: 10px; }
 #players-list-a td:last-child { text-align: left; }
 

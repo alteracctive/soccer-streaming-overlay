@@ -23,12 +23,12 @@ WRITABLE_DIR = os.path.abspath(".")
 WRITABLE_CONFIG_FILE = os.path.join(WRITABLE_DIR, "team-info-config.json")
 WRITABLE_STYLE_FILE = os.path.join(WRITABLE_DIR, "scoreboard-customization.json")
 WRITABLE_PERIOD_FILE = os.path.join(WRITABLE_DIR, "time-period-setting.json")
-WRITABLE_SHORTCUT_FILE = os.path.join(WRITABLE_DIR, "shortcuts.json") # <-- New
+WRITABLE_SHORTCUT_FILE = os.path.join(WRITABLE_DIR, "shortcuts.json")
 
 BUNDLED_CONFIG_FILE = resource_path("team-info-config.json")
 BUNDLED_STYLE_FILE = resource_path("scoreboard-customization.json")
 BUNDLED_PERIOD_FILE = resource_path("time-period-setting.json")
-BUNDLED_SHORTCUT_FILE = resource_path("shortcuts.json") # <-- New
+BUNDLED_SHORTCUT_FILE = resource_path("shortcuts.json")
 
 
 class ScoreboardStyleConfig(BaseModel):
@@ -78,11 +78,10 @@ class PeriodSetting(BaseModel):
     name: str
     endTime: int
 
-# --- New Shortcut Model ---
 class Shortcut(BaseModel):
     action_id: str
     label: str
-    key: Optional[str] = None # Key code, e.g. "Space", "KeyA"
+    key: Optional[str] = None 
 
 class ShortcutUpdate(BaseModel):
     action_id: str
@@ -177,7 +176,7 @@ class DataManager:
         self.config: ScoreboardConfig | None = None
         self.scoreboard_style: ScoreboardStyleConfig | None = None
         self.period_settings: List[PeriodSetting] = []
-        self.shortcuts: List[Shortcut] = [] # <-- Shortcuts state
+        self.shortcuts: List[Shortcut] = [] 
         self._config_lock = asyncio.Lock()
         self._style_lock = asyncio.Lock()
 
@@ -212,10 +211,17 @@ class DataManager:
         async with self._style_lock:
             await self._save_scoreboard_style_nolock()
 
-    # --- New Shortcut Methods ---
+    # --- Updated Shortcut Logic ---
     async def load_shortcuts(self):
+        # Default Shortcuts
         default_shortcuts = [
-            Shortcut(action_id="toggle_timer", label="Start/Stop Timer", key="Space")
+            Shortcut(action_id="toggle_timer", label="Start/Stop Timer", key="Space"),
+            Shortcut(action_id="toggle_scoreboard", label="Toggle Scoreboard", key="Ctrl+KeyS"),
+            Shortcut(action_id="toggle_match_info", label="Toggle Match Info", key="Ctrl+KeyM"),
+            Shortcut(action_id="toggle_game_report", label="Toggle Game Report", key="Ctrl+KeyG"),
+            Shortcut(action_id="toggle_players_list_all", label="Toggle All Player Lists", key="Ctrl+KeyP"),
+            Shortcut(action_id="toggle_players_list_a", label="Toggle Team A List", key=None),
+            Shortcut(action_id="toggle_players_list_b", label="Toggle Team B List", key=None),
         ]
         
         try:
@@ -233,10 +239,12 @@ class DataManager:
                 data = json.loads(content)
                 loaded_shortcuts = [Shortcut.model_validate(item) for item in data]
                 
-                # Merge with defaults to ensure all actions exist (in case of updates)
+                # Merge logic: Ensure new defaults appear in existing files
                 final_shortcuts = []
                 loaded_map = {s.action_id: s for s in loaded_shortcuts}
                 
+                # Preserve existing, add missing defaults
+                # We iterate defaults to keep a nice order
                 for default in default_shortcuts:
                     if default.action_id in loaded_map:
                         final_shortcuts.append(loaded_map[default.action_id])
@@ -258,12 +266,11 @@ class DataManager:
                 s.key = update.key
                 break
         
-        # Save to file
         async with aiofiles.open(WRITABLE_SHORTCUT_FILE, mode='w') as f:
             await f.write(json.dumps([s.model_dump() for s in self.shortcuts], indent=2))
         return self.shortcuts
 
-    # ... (load_config, load_scoreboard_style, load_period_settings remain unchanged) ...
+    # ... (Rest of file unchanged: load_config, get_raw_json, etc.) ...
     async def load_config(self):
         async with self._config_lock:
             try:
@@ -377,7 +384,6 @@ class DataManager:
         await self.save_config()
         return config
 
-    # --- Updated Raw JSON handling ---
     async def get_raw_json(self, file_name: str) -> str:
         path_to_read = None
         if file_name == "team-info-config.json": path_to_read = self.file_path
@@ -390,7 +396,6 @@ class DataManager:
         raise FileNotFoundError(f"{file_name} not found.")
 
     async def set_raw_json(self, file_name: str, raw_json_data: str) -> List[str]:
-        """Returns a list of warning messages (e.g. failed shortcut imports)"""
         path_to_write = None
         data_to_write = ""
         warnings = []
@@ -412,27 +417,17 @@ class DataManager:
                 data_to_write = json.dumps([m.model_dump() for m in models], indent=2)
                 
             elif file_name == "shortcuts.json":
-                # --- Specific Import Logic for Shortcuts ---
                 imported_shortcuts = json.loads(raw_json_data)
                 if not isinstance(imported_shortcuts, list):
                     raise ValueError("Root element must be a list")
-                
-                # 1. Map existing valid shortcuts by ID
                 existing_map = {s.action_id: s for s in self.shortcuts}
-                
-                # 2. Iterate imported data
                 for item in imported_shortcuts:
                     action_id = item.get("action_id")
                     key = item.get("key")
-                    
                     if action_id in existing_map:
-                        # Valid action: update key
                         existing_map[action_id].key = key
                     else:
-                        # Unknown action: ignore and warn
                         warnings.append(f"Unknown shortcut action ignored: {action_id}")
-                
-                # 3. Save Updated List
                 path_to_write = WRITABLE_SHORTCUT_FILE
                 data_to_write = json.dumps([s.model_dump() for s in self.shortcuts], indent=2)
                 
@@ -440,7 +435,6 @@ class DataManager:
             
             async with aiofiles.open(path_to_write, mode='w') as f: await f.write(data_to_write)
             
-            # Reload
             if file_name == "team-info-config.json": await self.load_config()
             elif file_name == "scoreboard-customization.json": await self.load_scoreboard_style()
             elif file_name == "time-period-setting.json": await self.load_period_settings()
@@ -452,7 +446,6 @@ class DataManager:
             raise Exception(f"Invalid JSON structure. {str(e)}")
         except Exception as e: raise e
 
-    # ... (Rest of DataManager methods unchanged: get_scoreboard_style, update_scoreboard_style, update_match_info, update_layout, get_config, update_team_info, update_colors, set_score, add_player, clear_player_list, delete_player, add_goal, add_card, toggle_on_field, edit_player, reset_team_stats, replace_player) ...
     def get_scoreboard_style(self) -> ScoreboardStyleConfig:
         if self.scoreboard_style is None: raise Exception("Scoreboard style not loaded")
         return self.scoreboard_style

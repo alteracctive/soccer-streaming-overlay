@@ -8,7 +8,12 @@ import {
   type Goal
 } from '../control_panel/stateManager';
 
-// ... (Get Element References - Same as previous steps) ...
+// Import Global Shortcuts
+import { initGlobalShortcuts } from '../control_panel/globalShortcuts';
+
+// ... (Rest of Variable Declarations and Render Functions Unchanged) ...
+// ... (Keep the rest of the file content as is, only the bottom Init block changes) ...
+
 const scoreboardContainer = document.getElementById('scoreboard-container') as HTMLDivElement;
 const gameReportContainer = document.querySelector('.game-report-container') as HTMLDivElement;
 const scoreRow = document.querySelector('.score-row') as HTMLDivElement;
@@ -59,7 +64,6 @@ const teamBRedCards = document.getElementById('team-b-red-cards') as HTMLDivElem
 const timerSectionRow = document.getElementById('timer-section-row') as HTMLDivElement;
 const gameReportPeriod = document.getElementById('game-report-period') as HTMLDivElement;
 
-// ... (Utility functions unchanged) ...
 function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
@@ -115,19 +119,16 @@ const renderRedCards = (count: number): string => {
   return Array(count).fill('').map(() => `<div class="red-card-box"></div>`).join('');
 };
 
-
-// --- Main UI Update Function ---
 function updateUI() {
   const { 
     config, timer, extraTime, scoreboardStyle, 
     isGameReportVisible, isScoreboardVisible, isMatchInfoVisible,
-    isPlayersListVisibleA, isPlayersListVisibleB // <-- New States
+    isPlayersListVisibleA, isPlayersListVisibleB
   } = getState();
   
   const SCROLL_TRIGGER_LIMIT = 15;
   let teamBRedCount = 0;
   
-  // --- Update Player Lists ---
   if (config && playersListContainerA && playersListContainerB) {
     const headerASpan = playersListHeaderA.querySelector('span'); if (headerASpan) headerASpan.textContent = config.teamA.name;
     const headerBSpan = playersListHeaderB.querySelector('span'); if (headerBSpan) headerBSpan.textContent = config.teamB.name;
@@ -149,7 +150,6 @@ function updateUI() {
     if (wrapperB) { wrapperB.classList.toggle('scrolling', isScrolling); wrapperB.style.setProperty('--scroll-duration', `${duration}s`); }
   }
 
-  // ... (Other standard updates) ...
   if (config) {
     teamAAbbr.textContent = config.teamA.abbreviation;
     teamAScore.textContent = config.teamA.score.toString();
@@ -191,7 +191,6 @@ function updateUI() {
     else { extraTimeBox.style.display = 'none'; }
   }
 
-  // --- Apply Styles ---
   if (scoreboardStyle) {
     const backgroundColorWithOpacity = hexToRgba(scoreboardStyle.primary, scoreboardStyle.opacity);
     const scaleValue = Math.max(0.5, Math.min(1.5, scoreboardStyle.scale / 100));
@@ -216,7 +215,6 @@ function updateUI() {
     }
     if (gameReportContainer) { gameReportContainer.style.backgroundColor = backgroundColorWithOpacity; gameReportContainer.style.color = scoreboardStyle.secondary; gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`; }
     
-    // --- Updated Transforms for Separate Lists ---
     if (playersListContainerA) {
         playersListContainerA.style.backgroundColor = backgroundColorWithOpacity;
         playersListContainerA.style.color = scoreboardStyle.secondary;
@@ -229,7 +227,6 @@ function updateUI() {
     }
 
   } else {
-    // Fallbacks...
     if (scoreboardContainer) { scoreboardContainer.style.transform = 'scale(1)'; }
     if (playersListContainerA) { playersListContainerA.style.transform = 'translateY(-50%) scale(1)'; }
     if (playersListContainerB) { playersListContainerB.style.transform = 'translateY(-50%) scale(1)'; }
@@ -241,14 +238,16 @@ function updateUI() {
   if (matchInfoRow) { matchInfoRow.style.display = isMatchInfoVisible ? 'flex' : 'none'; }
   if (gameReportContainer) { gameReportContainer.style.display = isGameReportVisible ? 'flex' : 'none'; }
   
-  // --- Independent Toggle Logic ---
   if (playersListContainerA) playersListContainerA.style.display = isPlayersListVisibleA ? 'flex' : 'none';
   if (playersListContainerB) playersListContainerB.style.display = isPlayersListVisibleB ? 'flex' : 'none';
 }
 
-// --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
   await initStateManager();
+  
+  // --- Initialize Shortcuts: FALSE = No Notifications ---
+  await initGlobalShortcuts(false);
+  
   subscribe(updateUI);
   updateUI();
 });

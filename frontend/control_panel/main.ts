@@ -14,19 +14,15 @@ import {
   CONNECTION_STATUS_EVENT,
   STATE_UPDATE_EVENT,
   getState,
-  setScore,      // <-- Import setScore
-  timerControls  // <-- Import timerControls
+  setScore,
+  timerControls
 } from './stateManager';
 import { showNotification } from './notification';
 
 function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
-  
-  const min = (totalMinutes < 100) 
-    ? totalMinutes.toString().padStart(2, '0') 
-    : totalMinutes.toString();
-    
+  const min = (totalMinutes < 100) ? totalMinutes.toString().padStart(2, '0') : totalMinutes.toString();
   return `${min}:${sec}`;
 }
 
@@ -49,9 +45,7 @@ const pages: Record<string, PageModule> = {
   shortcuts: { render: renderShortcuts },
 };
 
-const contentContainer = document.getElementById(
-  'app-content',
-) as HTMLElement;
+const contentContainer = document.getElementById('app-content') as HTMLElement;
 const navLinks = document.querySelectorAll('.nav-link');
 
 let currentPageCleanup: (() => void) | null = null;
@@ -103,8 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
       const overlayUrl = 'http://localhost:8001/overlay/index.html';
-      navigator.clipboard
-        .writeText(overlayUrl)
+      navigator.clipboard.writeText(overlayUrl)
         .then(() => { showNotification('Overlay URL copied!'); })
         .catch((err) => { showNotification('Failed to copy URL', 'error'); });
     });
@@ -126,7 +119,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // --- Mini Scoreboard Logic ---
   const miniScoreA = document.getElementById('mini-score-a') as HTMLButtonElement;
   const miniScoreB = document.getElementById('mini-score-b') as HTMLButtonElement;
   const miniTimerBtn = document.getElementById('mini-timer-btn') as HTMLButtonElement;
@@ -137,8 +129,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const stripBSecondary = document.getElementById('mini-strip-b-secondary') as HTMLDivElement;
 
   if (miniScoreA && miniScoreB && miniTimerBtn) {
-    
-    // 1. Add Click Listeners
     miniScoreA.addEventListener('click', () => {
         const { config } = getState();
         if (config) setScore('teamA', config.teamA.score + 1);
@@ -155,7 +145,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         else timerControls.start();
     });
 
-    // 2. Update Function
     const updateMiniScoreboard = () => {
       const { config, timer } = getState();
 
@@ -174,7 +163,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       miniTimerBtn.textContent = formatTime(timer.seconds);
       
-      // Update Timer Outline
       if (timer.isRunning) {
           miniTimerBtn.classList.add('timer-running');
           miniTimerBtn.classList.remove('timer-stopped');
@@ -189,6 +177,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   await initStateManager();
-  await initGlobalShortcuts();
+  
+  // --- Initialize Shortcuts: TRUE = Enable Notifications ---
+  await initGlobalShortcuts(true);
+  
   navigate('dashboard');
 });
