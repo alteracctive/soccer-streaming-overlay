@@ -2,9 +2,9 @@
 
 // ... (Existing Imports and Types Unchanged) ...
 export interface ColorConfig { primary: string; secondary: string; }
-export interface Goal { regMinute: number; addMinute: number; isOwnGoal: boolean; }
+export interface Goal { regMinute: number; addMinute: number; isOwnGoal: boolean; isPenalty: boolean; }
 export interface Card { regMinute: number; addMinute: number; }
-export interface PlayerConfig { number: number; name: string; onField: boolean; yellowCards: Card[]; redCards: Card[]; goals: Goal[]; }
+export interface PlayerConfig { number: number; name: string; onField: boolean; timeOnField: number; yellowCards: Card[]; redCards: Card[]; goals: Goal[]; }
 export interface TeamConfig { name: string; abbreviation: string; score: number; colors: ColorConfig; players: PlayerConfig[]; }
 export interface ScoreboardConfig { teamA: TeamConfig; teamB: TeamConfig; currentPeriod: string; }
 export interface PeriodSetting { name: string; endTime: number; }
@@ -39,7 +39,8 @@ let appState: {
   extraTime: ExtraTimeStatus;
   isMatchInfoVisible: boolean;
   isFutsalClockOn: boolean;
-  shortcuts: Shortcut[]; // <-- Added to state
+  shortcuts: Shortcut[];
+  playerToEdit: { team: 'teamA' | 'teamB', number: number } | null;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
@@ -56,7 +57,8 @@ let appState: {
   extraTime: { minutes: 0, isVisible: false },
   isMatchInfoVisible: false,
   isFutsalClockOn: false,
-  shortcuts: [], // <-- Initialize
+  shortcuts: [],
+  playerToEdit: null,
 };
 
 export const stateEmitter = new EventTarget();
@@ -130,6 +132,16 @@ export function setAutoAddScore(isOn: boolean) { appState.isAutoAddScoreOn = isO
 export function setAutoConvertYellowToRed(isOn: boolean) { appState.isAutoConvertYellowToRedOn = isOn; localStorage.setItem('autoConvertYellowToRed', isOn ? 'true' : 'false'); }
 export function setAutoAdvancePeriod(isOn: boolean) { appState.isAutoAdvancePeriodOn = isOn; localStorage.setItem('autoAdvancePeriod', isOn ? 'true' : 'false'); if (appState.timer.isRunning) timerControls.stop(); }
 
+export function setPlayerToEdit(team: 'teamA' | 'teamB', number: number) {
+    appState.playerToEdit = { team, number };
+}
+
+export function getPlayerToEdit() {
+    const player = appState.playerToEdit;
+    appState.playerToEdit = null;
+    return player;
+}
+
 // ... (Other functions: timerControls, setFutsalClock, getPeriods, setPeriod, setExtraTime, toggleExtraTimeVisibility, setScore, saveTeamInfo, saveColors, saveScoreboardStyle, saveMatchInfo, saveLayout, toggleGameReport, toggleScoreboard, toggleMatchInfoVisibility, togglePlayersListA, togglePlayersListB, setPlayersListVisibility, addPlayer, replacePlayer, clearPlayerList, deletePlayer, addGoal, addCard, toggleOnField, editPlayer, resetTeamStats, downloadJson, getRawJson, uploadJson - ALL UNCHANGED) ...
 export const timerControls = { start: () => post('/api/timer/start', {}), stop: () => post('/api/timer/stop', {}), set: (seconds: number) => post('/api/timer/set', { seconds }) };
 export async function setFutsalClock(isOn: boolean) { await post('/api/timer/futsal-toggle', { is_on: isOn }); }
@@ -153,8 +165,8 @@ export async function addPlayer(team: 'teamA' | 'teamB', number: number, name: s
 export async function replacePlayer(team: 'teamA' | 'teamB', number: number, name: string) { await post('/api/player/replace', { team, number, name }); }
 export async function clearPlayerList(team: 'teamA' | 'teamB') { await post('/api/player/clear', { team }); }
 export async function deletePlayer(team: 'teamA' | 'teamB', number: number) { await post('/api/player/delete', { team, number }); }
-export async function addGoal(team: 'teamA' | 'teamB', number: number, regMinute: number, addMinute: number, isOwnGoal: boolean) { 
-  await post('/api/player/goal', { team, number, regMinute, addMinute, isOwnGoal }); 
+export async function addGoal(team: 'teamA' | 'teamB', number: number, regMinute: number, addMinute: number, isOwnGoal: boolean, isPenalty: boolean) { 
+  await post('/api/player/goal', { team, number, regMinute, addMinute, isOwnGoal, isPenalty }); 
   if (appState.isAutoAddScoreOn) { 
     const { config } = getState(); if (!config) return; 
     if (isOwnGoal) { const opponent = team === 'teamA' ? 'teamB' : 'teamA'; setScore(opponent, config[opponent].score + 1); } 
@@ -163,7 +175,7 @@ export async function addGoal(team: 'teamA' | 'teamB', number: number, regMinute
 }
 export async function addCard(team: 'teamA' | 'teamB', number: number, cardType: 'yellow' | 'red', regMinute: number, addMinute: number) { await post('/api/player/card', { team, number, card_type: cardType, regMinute, addMinute }); }
 export async function toggleOnField(team: 'teamA' | 'teamB', number: number) { await post('/api/player/togglefield', { team, number }); }
-export async function editPlayer(team: 'teamA' | 'teamB', originalNumber: number, playerData: Omit<PlayerConfig, 'onField'> & { onField: boolean }) { await post('/api/player/edit', { team, original_number: originalNumber, ...playerData }); }
+export async function editPlayer(team: 'teamA' | 'teamB', originalNumber: number, playerData: PlayerConfig) { await post('/api/player/edit', { team, original_number: originalNumber, ...playerData }); }
 export async function resetTeamStats(team: 'teamA' | 'teamB') { await post('/api/player/resetstats', { team }); }
 export async function downloadJson(fileName: string): Promise<Blob> { const url = `${API_URL}/api/json/${fileName}`; const response = await fetch(url); if (!response.ok) throw new Error('Error'); return await response.blob(); }
 export async function getRawJson(fileName: string): Promise<string> { const url = `${API_URL}/api/json/${fileName}`; const response = await fetch(url); if (!response.ok) throw new Error('Error'); return await response.text(); }

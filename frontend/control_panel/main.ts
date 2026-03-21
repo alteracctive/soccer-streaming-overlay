@@ -50,7 +50,7 @@ const navLinks = document.querySelectorAll('.nav-link');
 
 let currentPageCleanup: (() => void) | null = null;
 
-function navigate(pageName: string) {
+export function navigate(pageName: string) {
   if (currentPageCleanup) {
     currentPageCleanup();
     currentPageCleanup = null;

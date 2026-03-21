@@ -106,11 +106,16 @@ const renderPlayerList = (players: PlayerConfig[], targetLength: number, isScrol
 };
 
 const renderGoalScorers = (teamPlayers: PlayerConfig[], opponentPlayers: PlayerConfig[]): string => {
-  const teamGoals = teamPlayers.flatMap(p => p.goals.filter(g => !g.isOwnGoal).map(g => ({ reg: g.regMinute, add: g.addMinute, playerName: p.name, playerNumber: p.number, type: 'Goal' })));
-  const opponentOwnGoals = opponentPlayers.flatMap(p => p.goals.filter(g => g.isOwnGoal).map(g => ({ reg: g.regMinute, add: g.addMinute, playerName: p.name, playerNumber: p.number, type: 'Own Goal' })));
+  const teamGoals = teamPlayers.flatMap(p => p.goals.filter(g => !g.isOwnGoal).map(g => ({ reg: g.regMinute, add: g.addMinute, playerName: p.name, playerNumber: p.number, type: 'Goal', isPenalty: g.isPenalty })));
+  const opponentOwnGoals = opponentPlayers.flatMap(p => p.goals.filter(g => g.isOwnGoal).map(g => ({ reg: g.regMinute, add: g.addMinute, playerName: p.name, playerNumber: p.number, type: 'Own Goal', isPenalty: false })));
   const allEvents = [...teamGoals, ...opponentOwnGoals].sort((a, b) => { if (a.reg !== b.reg) return a.reg - b.reg; return a.add - b.add; });
   if (allEvents.length === 0) { return '<span></span>'; }
-  return allEvents.map(event => { const timeString = event.add > 0 ? `${event.reg}+${event.add}'` : `${event.reg}'`; return `<div class="overlay-goal-scorer"><span class="player-number">#${event.playerNumber}</span><span class="player-name">${event.playerName} ${event.type === 'Own Goal' ? '(OG)' : ''}</span><span class="goal-minutes">${timeString}</span></div>`}).join('');
+  return allEvents.map(event => {
+    const timeString = event.add > 0 ? `${event.reg}+${event.add}'` : `${event.reg}'`;
+    const penaltyString = event.type === 'Goal' && event.isPenalty ? ' (P)' : '';
+    const ogString = event.type === 'Own Goal' ? ' (OG)' : '';
+    return `<div class="overlay-goal-scorer"><span class="player-number">#${event.playerNumber}</span><span class="player-name">${event.playerName}${ogString}${penaltyString}</span><span class="goal-minutes">${timeString}</span></div>`;
+  }).join('');
 };
 
 const renderRedCards = (count: number): string => {

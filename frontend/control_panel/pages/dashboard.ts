@@ -1,4 +1,5 @@
 // frontend/control_panel/pages/dashboard.ts
+import { navigate } from '../main';
 import {
   getState,
   subscribe,
@@ -8,8 +9,11 @@ import {
   setExtraTime,
   toggleExtraTimeVisibility,
   addGoal,
+  addCard,
+  toggleOnField,
   getPeriods, 
   setPeriod, 
+  setPlayerToEdit,
   type PlayerConfig,
   type PeriodSetting 
 } from '../stateManager';
@@ -30,6 +34,34 @@ function renderPlayerGrid(players: PlayerConfig[]): string {
     return `<button class="player-btn ${btnClass}" title="${player.name}" data-number="${player.number}">${player.number}</button>`;
   }).join('');
 }
+
+function renderContextMenu(player: PlayerConfig, team: 'teamA' | 'teamB', x: number, y: number) {
+    const menu = document.createElement('div');
+    menu.id = 'player-context-menu';
+    menu.className = 'context-menu';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+
+    menu.innerHTML = `
+        <div class="context-menu-item" data-action="toggle-on-field">
+            <span>On Field</span>
+            <span class="status">${player.onField ? '✅' : '❌'}</span>
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="add-goal">Add Goal</div>
+        <div class="context-menu-item" data-action="add-own-goal">Add Own Goal</div>
+        <div class="context-menu-item" data-action="add-penalty-goal">Add Penalty Goal</div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="add-yellow-card">Add Yellow Card</div>
+        <div class="context-menu-item" data-action="add-red-card">Add Red Card</div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="edit-player">Edit Player Data...</div>
+    `;
+
+    document.body.appendChild(menu);
+    return menu;
+}
+
 
 export function render(container: HTMLElement) {
   const { config, timer, extraTime } = getState();
@@ -221,8 +253,16 @@ export function render(container: HTMLElement) {
     if (extraTimeActionBtn) { if (document.activeElement !== extraTimeInput) { extraTimeInput.value = extraTime.minutes.toString(); } if (extraTime.isVisible) { extraTimeActionBtn.textContent = 'Showing'; extraTimeActionBtn.classList.remove('btn-secondary'); extraTimeActionBtn.classList.add('btn-green'); } else { extraTimeActionBtn.textContent = 'Set and Show'; extraTimeActionBtn.classList.remove('btn-green'); extraTimeActionBtn.classList.add('btn-secondary'); } }
   };
 
+  const closeContextMenu = () => {
+      const menu = document.getElementById('player-context-menu');
+      if (menu) {
+          menu.remove();
+      }
+  };
+
   // --- Updated Grid Click ---
-  const handleGridClick = async (e: Event) => {
+  const handleGridClick = async (e: MouseEvent) => {
+    closeContextMenu();
     const target = e.target as HTMLElement;
     const scoreBtnId = target.id;
     if (scoreBtnId === 'team-a-inc') { setScore('teamA', (getState().config?.teamA.score ?? 0) + 1); return; }
@@ -231,35 +271,71 @@ export function render(container: HTMLElement) {
     if (scoreBtnId === 'team-b-dec') { setScore('teamB', (getState().config?.teamB.score ?? 0) - 1); return; }
 
     if (target.classList.contains('player-btn')) {
-      const grid = target.closest('.player-grid') as HTMLDivElement;
-      const team = grid?.dataset.team as 'teamA' | 'teamB';
-      const number = parseInt(target.dataset.number || '', 10);
-      if (!team || isNaN(number)) return;
-      const { config, timer } = getState();
-      if (!config) return;
-      const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
-      if (!player) return;
-      
-      // --- Calculate Times ---
-      const totalSeconds = timer.seconds;
-      const limitSeconds = currentPeriodLimit * 60;
-      let regMinute, addMinute;
-      
-      if (totalSeconds <= limitSeconds) {
-          regMinute = Math.floor(totalSeconds / 60) + 1;
-          addMinute = 0;
-      } else {
-          regMinute = currentPeriodLimit; // Cap at 45 or 90
-          addMinute = Math.ceil((totalSeconds - limitSeconds) / 60);
-      }
+        const grid = target.closest('.player-grid') as HTMLDivElement;
+        const team = grid?.dataset.team as 'teamA' | 'teamB';
+        const number = parseInt(target.dataset.number || '', 10);
+        if (!team || isNaN(number)) return;
 
-      // Calls backend with new params
-      await addGoal(team, number, regMinute, addMinute, false); 
-      
-      // Manual score update if needed (handled by backend auto-add usually, but here we mimic)
-      // Note: `addGoal` function in stateManager already handles the auto-score logic locally via state check
-      
-      showNotification(`Goal given to #${player.number} ${player.name}`);
+        const { config, timer } = getState();
+        if (!config) return;
+
+        const player = (team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === number);
+        if (!player) return;
+
+        const menu = renderContextMenu(player, team, e.clientX, e.clientY);
+
+        menu.addEventListener('click', async (menuEvent) => {
+            const actionTarget = menuEvent.target as HTMLElement;
+            const actionElement = actionTarget.closest('.context-menu-item');
+            if (!actionElement) return;
+
+            const action = actionElement.getAttribute('data-action');
+            if (!action) return;
+
+            const totalSeconds = timer.seconds;
+            const limitSeconds = currentPeriodLimit * 60;
+            let regMinute, addMinute;
+
+            if (totalSeconds <= limitSeconds) {
+                regMinute = Math.floor(totalSeconds / 60) + 1;
+                addMinute = 0;
+            } else {
+                regMinute = currentPeriodLimit;
+                addMinute = Math.ceil((totalSeconds - limitSeconds) / 60);
+            }
+
+            switch (action) {
+                case 'toggle-on-field':
+                    await toggleOnField(team, number);
+                    showNotification(`Toggled on-field status for #${number}`);
+                    break;
+                case 'add-goal':
+                    await addGoal(team, number, regMinute, addMinute, false, false);
+                    showNotification(`Goal for #${number}`);
+                    break;
+                case 'add-own-goal':
+                    await addGoal(team, number, regMinute, addMinute, true, false);
+                    showNotification(`Own goal for #${number}`);
+                    break;
+                case 'add-penalty-goal':
+                    await addGoal(team, number, regMinute, addMinute, false, true);
+                    showNotification(`Penalty goal for #${number}`);
+                    break;
+              case 'add-yellow-card':
+                  await addCard(team, number, 'yellow', regMinute, addMinute);
+                  showNotification(`Yellow card for #${number}`);
+                  break;
+              case 'add-red-card':
+                  await addCard(team, number, 'red', regMinute, addMinute);
+                  showNotification(`Red card for #${number}`);
+                  break;
+              case 'edit-player':
+                  setPlayerToEdit(team, number);
+                  navigate('team-info');
+                  break;
+            }
+            closeContextMenu();
+        });
     }
   };
 
@@ -291,7 +367,13 @@ export function render(container: HTMLElement) {
     }
   };
 
-  controllerGrid.addEventListener('click', handleGridClick);
+  document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.context-menu') && !target.classList.contains('player-btn')) {
+          closeContextMenu();
+      }
+  });
+  controllerGrid.addEventListener('click', (e: MouseEvent) => handleGridClick(e));
   controllerGrid.addEventListener('mouseover', handleGridMouseOver);
   controllerGrid.addEventListener('mouseout', handleGridMouseOut);
 
@@ -343,8 +425,9 @@ export function render(container: HTMLElement) {
 
   return () => {
     unsubscribe(updateUI);
-    controllerGrid.removeEventListener('click', handleGridClick);
+    controllerGrid.removeEventListener('click', handleGridClick as EventListener);
     controllerGrid.removeEventListener('mouseover', handleGridMouseOver);
     controllerGrid.removeEventListener('mouseout', handleGridMouseOut);
+    document.removeEventListener('click', closeContextMenu);
   };
 }

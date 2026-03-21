@@ -2,7 +2,7 @@
   {
     "action_id": "toggle_timer",
     "label": "Start/Stop Timer",
-    "key": "Space"
+    "key": "KeyL"
   },
   {
     "action_id": "toggle_scoreboard",

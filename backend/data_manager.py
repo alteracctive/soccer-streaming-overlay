@@ -49,6 +49,7 @@ class Goal(BaseModel):
     regMinute: int
     addMinute: int = 0
     isOwnGoal: bool = False
+    isPenalty: bool = False
 
 class Card(BaseModel):
     regMinute: int
@@ -58,6 +59,7 @@ class PlayerConfig(BaseModel):
     number: int
     name: str
     onField: bool = False
+    timeOnField: int = 0
     yellowCards: List[Card] = []
     redCards: List[Card] = []
     goals: List[Goal] = []
@@ -117,6 +119,7 @@ class AddGoalUpdate(BaseModel):
     regMinute: int
     addMinute: int
     isOwnGoal: bool
+    isPenalty: bool
 
 class AddCardUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
@@ -136,6 +139,7 @@ class EditPlayerUpdate(BaseModel):
     number: int
     name: str
     onField: bool
+    timeOnField: int
     yellowCards: List[Card]
     redCards: List[Card]
     goals: List[Goal]
@@ -281,6 +285,9 @@ class DataManager:
                     for team_key in ['teamA', 'teamB']:
                         if team_key in data and 'players' in data[team_key]:
                             for player in data[team_key]['players']:
+                                if 'timeOnField' not in player:
+                                    player['timeOnField'] = 0
+                                    migrated = True
                                 if isinstance(player.get('yellowCards'), int):
                                     player['yellowCards'] = []
                                     migrated = True
@@ -293,9 +300,13 @@ class DataManager:
                                         if isinstance(g, int):
                                             is_og = g < 0
                                             minute = abs(g)
-                                            new_goals.append({"regMinute": minute, "addMinute": 0, "isOwnGoal": is_og})
+                                            new_goals.append({"regMinute": minute, "addMinute": 0, "isOwnGoal": is_og, "isPenalty": False})
                                             migrated = True
-                                        else: new_goals.append(g)
+                                        else: 
+                                            if 'isPenalty' not in g:
+                                                g['isPenalty'] = False
+                                                migrated = True
+                                            new_goals.append(g)
                                     player['goals'] = new_goals
                                 if 'yellowCards' in player:
                                     new_yellows = []
@@ -536,7 +547,8 @@ class DataManager:
                 new_goal = Goal(
                     regMinute=update.regMinute,
                     addMinute=update.addMinute,
-                    isOwnGoal=update.isOwnGoal
+                    isOwnGoal=update.isOwnGoal,
+                    isPenalty=update.isPenalty
                 )
                 player.goals.append(new_goal)
                 player.goals.sort(key=lambda g: (g.regMinute, g.addMinute))
@@ -581,6 +593,7 @@ class DataManager:
                 player.number = update.number
                 player.name = update.name
                 player.onField = update.onField
+                player.timeOnField = update.timeOnField
                 player.yellowCards = sorted(update.yellowCards, key=lambda c: (c.regMinute, c.addMinute))[:2]
                 player.redCards = sorted(update.redCards, key=lambda c: (c.regMinute, c.addMinute))[:1]
                 player.goals = sorted(update.goals, key=lambda g: (g.regMinute, g.addMinute))

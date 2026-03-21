@@ -1,6 +1,6 @@
 import asyncio
 from fastapi import WebSocket
-from data_manager import ScoreboardConfig, ScoreboardStyleConfig
+from data_manager import data_manager, ScoreboardConfig, ScoreboardStyleConfig
 
 class WebSocketManager:
     def __init__(self):
@@ -68,6 +68,15 @@ class WebSocketManager:
                 else: self._seconds = 0; self.stop()
             else:
                 self._seconds += 1
+            
+            config = data_manager.get_config()
+            for team in [config.teamA, config.teamB]:
+                for player in team.players:
+                    if player.onField:
+                        player.timeOnField += 1
+            
+            asyncio.create_task(data_manager.save_config())
+
             await self.broadcast_time()
 
     async def broadcast_time(self):
