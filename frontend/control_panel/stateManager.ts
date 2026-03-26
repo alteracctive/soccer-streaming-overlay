@@ -41,6 +41,7 @@ let appState: {
   isFutsalClockOn: boolean;
   shortcuts: Shortcut[];
   playerToEdit: { team: 'teamA' | 'teamB', number: number } | null;
+  isTeamInfoCollapsed: boolean;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
@@ -59,6 +60,7 @@ let appState: {
   isFutsalClockOn: false,
   shortcuts: [],
   playerToEdit: null,
+  isTeamInfoCollapsed: false,
 };
 
 export const stateEmitter = new EventTarget();
@@ -115,6 +117,7 @@ export async function initStateManager() {
   appState.isAutoAddScoreOn = localStorage.getItem('autoAddScore') === 'true';
   appState.isAutoConvertYellowToRedOn = localStorage.getItem('autoConvertYellowToRed') === 'true';
   appState.isAutoAdvancePeriodOn = localStorage.getItem('autoAdvancePeriod') === 'true';
+  appState.isTeamInfoCollapsed = localStorage.getItem('isTeamInfoCollapsed') === 'true';
   
   // Load initial shortcuts
   try {
@@ -132,6 +135,12 @@ export function setAutoAddScore(isOn: boolean) { appState.isAutoAddScoreOn = isO
 export function setAutoConvertYellowToRed(isOn: boolean) { appState.isAutoConvertYellowToRedOn = isOn; localStorage.setItem('autoConvertYellowToRed', isOn ? 'true' : 'false'); }
 export function setAutoAdvancePeriod(isOn: boolean) { appState.isAutoAdvancePeriodOn = isOn; localStorage.setItem('autoAdvancePeriod', isOn ? 'true' : 'false'); if (appState.timer.isRunning) timerControls.stop(); }
 
+export function setTeamInfoCollapsed(isCollapsed: boolean) {
+    appState.isTeamInfoCollapsed = isCollapsed;
+    localStorage.setItem('isTeamInfoCollapsed', isCollapsed ? 'true' : 'false');
+    stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
 export function setPlayerToEdit(team: 'teamA' | 'teamB', number: number) {
     appState.playerToEdit = { team, number };
 }
@@ -145,7 +154,11 @@ export function getPlayerToEdit() {
 // ... (Other functions: timerControls, setFutsalClock, getPeriods, setPeriod, setExtraTime, toggleExtraTimeVisibility, setScore, saveTeamInfo, saveColors, saveScoreboardStyle, saveMatchInfo, saveLayout, toggleGameReport, toggleScoreboard, toggleMatchInfoVisibility, togglePlayersListA, togglePlayersListB, setPlayersListVisibility, addPlayer, replacePlayer, clearPlayerList, deletePlayer, addGoal, addCard, toggleOnField, editPlayer, resetTeamStats, downloadJson, getRawJson, uploadJson - ALL UNCHANGED) ...
 export const timerControls = { start: () => post('/api/timer/start', {}), stop: () => post('/api/timer/stop', {}), set: (seconds: number) => post('/api/timer/set', { seconds }) };
 export async function setFutsalClock(isOn: boolean) { await post('/api/timer/futsal-toggle', { is_on: isOn }); }
-export async function getPeriods(): Promise<PeriodSetting[]> { const response = await fetch(`${API_URL}/api/periods`); if (!response.ok) throw new Error("Failed"); return await response.json(); }
+export async function getPeriods(): Promise<PeriodSetting[]> { const response = await fetch(`${API_URL}/api/periods-settings`); if (!response.ok) throw new Error("Failed"); return await response.json(); }
+
+export async function savePeriods(periods: PeriodSetting[]) {
+    await post('/api/periods-settings', { periods });
+}
 export async function setPeriod(name: string) { await post('/api/period', { name }); }
 export async function setExtraTime(minutes: number) { await post('/api/extra-time/set', { minutes }); }
 export async function toggleExtraTimeVisibility() { await post('/api/extra-time/toggle', {}); }

@@ -1,0 +1,77 @@
+
+.period-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.period-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-color-2);
+}
+
+.period-item:last-child {
+    border-bottom: none;
+}
+
+.period-item.sortable-ghost {
+    background: var(--accent-color-faded);
+}
+
+.period-item-drag-handle {
+    cursor: grab;
+    margin-right: 10px;
+    color: var(--text-color-secondary);
+}
+
+.period-item-details {
+    flex-grow: 1;
+}
+
+.period-item-name {
+    font-weight: 500;
+}
+
+.period-item-time {
+    font-size: 0.9em;
+    color: var(--text-color-secondary);
+}
+
+.period-item-actions button {
+    margin-left: 8px;
+}
+
+.period-controls-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 16px;
+    align-items: end;
+}
+
+.period-controls-grid .form-group {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.period-controls-grid .form-group input[type="text"] {
+    width: 100%;
+}
+.period-controls-grid .form-group input[type="number"] {
+    width: 70px;
+}
+
+.period-controls-grid .form-group:nth-child(2) {
+    flex-grow: 1;
+}
+
+.period-controls-grid .btn-group {
+    align-self: end;
+}

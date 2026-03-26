@@ -64,8 +64,16 @@ class SetFutsalClockUpdate(BaseModel): is_on: bool
 @app.post("/api/timer/futsal-toggle", tags=["Timer Control"])
 async def set_futsal_clock(update: SetFutsalClockUpdate): websocket_manager.set_futsal_clock(update.is_on); return {"message": f"Futsal clock set to {update.is_on}"}
 
-@app.get("/api/periods", tags=["Timer Control"])
+@app.get("/api/periods-settings", tags=["Timer Control"])
 async def get_periods() -> List[PeriodSetting]: return data_manager.get_period_settings()
+
+class PeriodsUpdate(BaseModel):
+    periods: List[PeriodSetting]
+
+@app.post("/api/periods-settings", tags=["Timer Control"])
+async def save_periods(update: PeriodsUpdate):
+    await data_manager.save_period_settings(update.periods)
+    return {"message": "Period settings saved"}
 
 @app.post("/api/period", tags=["Timer Control"])
 async def set_current_period(update: PeriodUpdate): config = await data_manager.set_current_period(update.name); await websocket_manager.broadcast_config(config); return {"message": f"Period set to {update.name}"}

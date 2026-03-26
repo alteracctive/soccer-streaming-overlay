@@ -389,6 +389,16 @@ class DataManager:
              self.period_settings = []
 
     def get_period_settings(self) -> List[PeriodSetting]: return self.period_settings
+
+    async def save_period_settings(self, periods: List[PeriodSetting]):
+        self.period_settings = periods
+        try:
+            async with aiofiles.open(WRITABLE_PERIOD_FILE, mode='w') as f:
+                await f.write(json.dumps([p.model_dump() for p in periods], indent=2))
+            print(f"Period settings saved to {WRITABLE_PERIOD_FILE}")
+        except Exception as e:
+            print(f"!!! Critical Error saving period settings to {WRITABLE_PERIOD_FILE}: {e}")
+
     async def set_current_period(self, period_name: str) -> ScoreboardConfig:
         config = self.get_config()
         config.currentPeriod = period_name

@@ -17,6 +17,7 @@ import {
   setScore,
   getPeriods,
   getPlayerToEdit,
+  setTeamInfoCollapsed,
   type PlayerConfig,
   type Goal,
   type Card,
@@ -121,57 +122,63 @@ export function render(container: HTMLElement) {
     
     <div style="display: flex; flex-direction: column; gap: 16px;"> 
       <div class="card">
-         <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start;">
-          <div>
-            <h4>Team A Info <span id="unsaved-a" class="unsaved-indicator"></span></h4>
-            <div class="inline-form-group">
-              <div class="form-group" style="flex-grow: 1;">
-                <label for="team-a-name">Team Name</label>
-                <input type="text" id="team-a-name" value="${config?.teamA.name ?? ''}">
-              </div>
-              <div class="form-group" style="width: 120px;">
-                <label for="team-a-abbr">Abbreviation</label>
-                <input type="text" id="team-a-abbr" maxlength="4" value="${config?.teamA.abbreviation ?? ''}">
-              </div>
-            </div>
-            <h5 style="margin-top: 16px; margin-bottom: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">Team A Colors</h5>
-            <div class="color-picker-row">
-              <label for="team-a-primary">Primary Color</label>
-              <input type="color" id="team-a-primary" value="${config?.teamA.colors.primary ?? '#FF0000'}">
-            </div>
-            <div class="color-picker-row">
-              <label for="team-a-secondary">Secondary Color</label>
-              <input type="color" id="team-a-secondary" value="${config?.teamA.colors.secondary ?? '#FFFFFF'}">
-            </div>
-            <button id="sync-a" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
-          </div>
-          <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
-          <div>
-            <h4>Team B Info <span id="unsaved-b" class="unsaved-indicator"></span></h4>
-            <div class="inline-form-group">
-              <div class="form-group" style="flex-grow: 1;">
-                <label for="team-b-name">Team Name</label>
-                <input type="text" id="team-b-name" value="${config?.teamB.name ?? ''}">
-              </div>
-              <div class="form-group" style="width: 120px;">
-                <label for="team-b-abbr">Abbreviation</label>
-                <input type="text" id="team-b-abbr" maxlength="4" value="${config?.teamB.abbreviation ?? ''}">
-              </div>
-            </div>
-            <h5 style="margin-top: 16px; margin-bottom: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">Team B Colors</h5>
-            <div class="color-picker-row">
-              <label for="team-b-primary">Primary Color</label>
-              <input type="color" id="team-b-primary" value="${config?.teamB.colors.primary ?? '#0000FF'}">
-            </div>
-            <div class="color-picker-row">
-              <label for="team-b-secondary">Secondary Color</label>
-              <input type="color" id="team-b-secondary" value="${config?.teamB.colors.secondary ?? '#FFFFFF'}">
-            </div>
-            <button id="sync-b" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
-          </div>
+        <div class="collapsible-header" id="team-info-header">
+          <h4>Team Info</h4>
+          <button class="collapse-btn">▼</button>
         </div>
-        <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
-          <button id="save-team-info">Save Team Info</button>
+        <div class="collapsible-content">
+          <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start; margin-top: 16px;">
+            <div>
+              <h4>Team A Info <span id="unsaved-a" class="unsaved-indicator"></span></h4>
+              <div class="inline-form-group">
+                <div class="form-group" style="flex-grow: 1;">
+                  <label for="team-a-name">Team Name</label>
+                  <input type="text" id="team-a-name" value="${config?.teamA.name ?? ''}">
+                </div>
+                <div class="form-group" style="width: 120px;">
+                  <label for="team-a-abbr">Abbreviation</label>
+                  <input type="text" id="team-a-abbr" maxlength="4" value="${config?.teamA.abbreviation ?? ''}">
+                </div>
+              </div>
+              <h5 style="margin-top: 16px; margin-bottom: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">Team A Colors</h5>
+              <div class="color-picker-row">
+                <label for="team-a-primary">Primary Color</label>
+                <input type="color" id="team-a-primary" value="${config?.teamA.colors.primary ?? '#FF0000'}">
+              </div>
+              <div class="color-picker-row">
+                <label for="team-a-secondary">Secondary Color</label>
+                <input type="color" id="team-a-secondary" value="${config?.teamA.colors.secondary ?? '#FFFFFF'}">
+              </div>
+              <button id="sync-a" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
+            </div>
+            <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
+            <div>
+              <h4>Team B Info <span id="unsaved-b" class="unsaved-indicator"></span></h4>
+              <div class="inline-form-group">
+                <div class="form-group" style="flex-grow: 1;">
+                  <label for="team-b-name">Team Name</label>
+                  <input type="text" id="team-b-name" value="${config?.teamB.name ?? ''}">
+                </div>
+                <div class="form-group" style="width: 120px;">
+                  <label for="team-b-abbr">Abbreviation</label>
+                  <input type="text" id="team-b-abbr" maxlength="4" value="${config?.teamB.abbreviation ?? ''}">
+                </div>
+              </div>
+              <h5 style="margin-top: 16px; margin-bottom: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">Team B Colors</h5>
+              <div class="color-picker-row">
+                <label for="team-b-primary">Primary Color</label>
+                <input type="color" id="team-b-primary" value="${config?.teamB.colors.primary ?? '#0000FF'}">
+              </div>
+              <div class="color-picker-row">
+                <label for="team-b-secondary">Secondary Color</label>
+                <input type="color" id="team-b-secondary" value="${config?.teamB.colors.secondary ?? '#FFFFFF'}">
+              </div>
+              <button id="sync-b" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
+            <button id="save-team-info">Save Team Info</button>
+          </div>
         </div>
       </div> 
       
@@ -417,8 +424,11 @@ export function render(container: HTMLElement) {
   };
 
   const handleOutsideClick = (e: MouseEvent) => {
+    console.log('Outside click handler', e.target);
     const modalContent = playerEditModal.querySelector('.modal-content');
+    console.log('Modal content', modalContent);
     if (modalContent && !modalContent.contains(e.target as Node)) {
+      console.log('Closing modal');
       hidePlayerEditModal();
     }
   };
@@ -729,6 +739,31 @@ export function render(container: HTMLElement) {
   deleteListBButton.addEventListener('click', () => { const { config } = getState(); const teamName = config?.teamB.name ?? 'Team B'; const teamAbbr = config?.teamB.abbreviation ?? 'TMB'; showConfirmModal(`Are you sure you want to delete the entire player list for ${teamName} (${teamAbbr})?`, async () => { await clearPlayerList('teamB'); showNotification('Team B player list cleared!'); }); });
   resetStatsAButton.addEventListener('click', () => { const { config } = getState(); const teamName = config?.teamA.name ?? 'Team A'; const teamAbbr = config?.teamA.abbreviation ?? 'TMA'; showConfirmModal(`Are you sure you want to reset all stats (goals, cards, on-field) for ${teamName} (${teamAbbr})?`, async () => { await resetTeamStats('teamA'); showNotification('Team A stats reset!'); }); });
   resetStatsBButton.addEventListener('click', () => { const { config } = getState(); const teamName = config?.teamB.name ?? 'Team B'; const teamAbbr = config?.teamB.abbreviation ?? 'TMB'; showConfirmModal(`Are you sure you want to reset all stats (goals, cards, on-field) for ${teamName} (${teamAbbr})?`, async () => { await resetTeamStats('teamB'); showNotification('Team B stats reset!'); }); });
+
+  const teamInfoContent = container.querySelector('.collapsible-content') as HTMLDivElement;
+    const teamInfoHeader = container.querySelector('#team-info-header') as HTMLDivElement;
+    const collapseBtn = teamInfoHeader.querySelector('.collapse-btn') as HTMLButtonElement;
+
+    const { isTeamInfoCollapsed } = getState();
+    if (isTeamInfoCollapsed) {
+        teamInfoContent.style.maxHeight = '0';
+        collapseBtn.style.transform = 'rotate(-90deg)';
+    } else {
+        teamInfoContent.style.maxHeight = teamInfoContent.scrollHeight + 'px';
+        collapseBtn.style.transform = 'rotate(0deg)';
+    }
+
+    teamInfoHeader.addEventListener('click', () => {
+        const { isTeamInfoCollapsed } = getState();
+        setTeamInfoCollapsed(!isTeamInfoCollapsed);
+        if (!isTeamInfoCollapsed) {
+            teamInfoContent.style.maxHeight = '0';
+            collapseBtn.style.transform = 'rotate(-90deg)';
+        } else {
+            teamInfoContent.style.maxHeight = teamInfoContent.scrollHeight + 'px';
+            collapseBtn.style.transform = 'rotate(0deg)';
+        }
+    });
 
   loadPeriodLimit();
 
