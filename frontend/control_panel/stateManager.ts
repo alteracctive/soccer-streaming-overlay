@@ -156,8 +156,8 @@ export const timerControls = { start: () => post('/api/timer/start', {}), stop: 
 export async function setFutsalClock(isOn: boolean) { await post('/api/timer/futsal-toggle', { is_on: isOn }); }
 export async function getPeriods(): Promise<PeriodSetting[]> { const response = await fetch(`${API_URL}/api/periods-settings`); if (!response.ok) throw new Error("Failed"); return await response.json(); }
 
-export async function savePeriods(periods: PeriodSetting[]) {
-    await post('/api/periods-settings', { periods });
+export async function savePeriods(periods: PeriodSetting[], isAscending: boolean) {
+    await post('/api/periods-settings', { periods, is_ascending: isAscending });
 }
 export async function setPeriod(name: string) { await post('/api/period', { name }); }
 export async function setExtraTime(minutes: number) { await post('/api/extra-time/set', { minutes }); }

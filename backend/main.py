@@ -69,10 +69,11 @@ async def get_periods() -> List[PeriodSetting]: return data_manager.get_period_s
 
 class PeriodsUpdate(BaseModel):
     periods: List[PeriodSetting]
+    is_ascending: bool
 
 @app.post("/api/periods-settings", tags=["Timer Control"])
 async def save_periods(update: PeriodsUpdate):
-    await data_manager.save_period_settings(update.periods)
+    await data_manager.save_period_settings(update.periods, update.is_ascending)
     return {"message": "Period settings saved"}
 
 @app.post("/api/period", tags=["Timer Control"])

@@ -36,6 +36,10 @@
     "endTime": 120
   },
   {
+    "name": "Full Time (After Extra Time)",
+    "endTime": 120
+  },
+  {
     "name": "Penalty Shootout",
     "endTime": 120
   }

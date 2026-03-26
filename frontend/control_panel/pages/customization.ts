@@ -579,6 +579,38 @@ export function render(container: HTMLElement) {
           const loadPeriods = async () => {
               try {
                   periods = await getPeriods();
+                  
+                  // Determine sorting order by analyzing the entire array
+                  if (periods.length > 1) {
+                      const sortedAscending = [...periods].sort((a, b) => a.endTime - b.endTime);
+                      const sortedDescending = [...periods].sort((a, b) => b.endTime - a.endTime);
+                      
+                      // Check which sorted order matches the original array
+                      const isAscendingMatch = JSON.stringify(periods) === JSON.stringify(sortedAscending);
+                      const isDescendingMatch = JSON.stringify(periods) === JSON.stringify(sortedDescending);
+                      
+                      if (isAscendingMatch) {
+                          isAscending = true;
+                      } else if (isDescendingMatch) {
+                          isAscending = false;
+                      } else {
+                          // If neither matches perfectly, determine by comparing first few elements
+                          let ascendingCount = 0;
+                          let descendingCount = 0;
+                          
+                          for (let i = 1; i < periods.length; i++) {
+                              if (periods[i].endTime > periods[i-1].endTime) {
+                                  ascendingCount++;
+                              } else if (periods[i].endTime < periods[i-1].endTime) {
+                                  descendingCount++;
+                              }
+                          }
+                          
+                          isAscending = ascendingCount >= descendingCount;
+                      }
+                  } else {
+                      isAscending = true;
+                  }
                   renderPeriods();
               } catch (error) {
                   showNotification('Failed to load periods', 'error');
@@ -618,7 +650,7 @@ export function render(container: HTMLElement) {
       
           savePeriodsBtn.addEventListener('click', async () => {
               try {
-                  await savePeriods(periods);
+                  await savePeriods(periods, isAscending);
                   showNotification('Periods saved successfully', 'success');
               } catch (error) {
                   showNotification('Failed to save periods', 'error');

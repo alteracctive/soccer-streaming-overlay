@@ -390,11 +390,13 @@ class DataManager:
 
     def get_period_settings(self) -> List[PeriodSetting]: return self.period_settings
 
-    async def save_period_settings(self, periods: List[PeriodSetting]):
-        self.period_settings = periods
+    async def save_period_settings(self, periods: List[PeriodSetting], is_ascending: bool = True):
+        # Sort the periods by endTime before saving, based on the is_ascending flag
+        sorted_periods = sorted(periods, key=lambda p: p.endTime, reverse=not is_ascending)
+        self.period_settings = sorted_periods
         try:
             async with aiofiles.open(WRITABLE_PERIOD_FILE, mode='w') as f:
-                await f.write(json.dumps([p.model_dump() for p in periods], indent=2))
+                await f.write(json.dumps([p.model_dump() for p in sorted_periods], indent=2))
             print(f"Period settings saved to {WRITABLE_PERIOD_FILE}")
         except Exception as e:
             print(f"!!! Critical Error saving period settings to {WRITABLE_PERIOD_FILE}: {e}")
