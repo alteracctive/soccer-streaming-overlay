@@ -226,6 +226,12 @@ class DataManager:
             Shortcut(action_id="toggle_players_list_all", label="Toggle All Player Lists", key="Ctrl+KeyP"),
             Shortcut(action_id="toggle_players_list_a", label="Toggle Team A List", key=None),
             Shortcut(action_id="toggle_players_list_b", label="Toggle Team B List", key=None),
+            Shortcut(action_id="navigate_to_dashboard", label="Go to Dashboard", key="Alt+KeyD"),
+            Shortcut(action_id="navigate_to_broadcast", label="Go to Broadcast", key="Alt+KeyB"),
+            Shortcut(action_id="navigate_to_team_info", label="Go to Team Info", key="Alt+KeyT"),
+            Shortcut(action_id="navigate_to_customization", label="Go to Customization", key="Alt+KeyC"),
+            Shortcut(action_id="navigate_to_settings", label="Go to Settings", key="Alt+KeyS"),
+            Shortcut(action_id="navigate_to_shortcuts", label="Go to Shortcuts", key="Alt+KeyK"),
         ]
         
         try:

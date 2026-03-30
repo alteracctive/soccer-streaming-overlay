@@ -146,6 +146,7 @@ button.btn-red {
 .btn-group {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Switches (Toggle) */

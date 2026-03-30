@@ -1,4 +1,5 @@
 // frontend/control_panel/globalShortcuts.ts
+import { navigate } from './main';
 import { 
     timerControls, 
     getState,
@@ -18,7 +19,7 @@ declare global {
 }
 
 // Track currently held keys
-const activeKeys = new Set<string>();
+const activeKeys = new Set<String>();
 
 export function normalizeKey(code: string): string {
     if (code === 'ControlLeft' || code === 'ControlRight') return 'Ctrl';
@@ -28,7 +29,7 @@ export function normalizeKey(code: string): string {
     return code;
 }
 
-export function generateComboId(keys: Set<string>): string {
+export function generateComboId(keys: Set<String>): string {
     return Array.from(keys).sort().join('+');
 }
 
@@ -127,6 +128,36 @@ export async function initGlobalShortcuts(enableNotifications: boolean = true) {
                     }
                     break;
                 
+                case 'navigate_to_dashboard':
+                    navigate('dashboard');
+                    notify(`Navigated to Dashboard`);
+                    break;
+                
+                case 'navigate_to_broadcast':
+                    navigate('broadcast');
+                    notify(`Navigated to Broadcast`);
+                    break;
+
+                case 'navigate_to_team_info':
+                    navigate('team-info');
+                    notify(`Navigated to Team Info`);
+                    break;
+
+                case 'navigate_to_customization':
+                    navigate('customization');
+                    notify(`Navigated to Customization`);
+                    break;
+
+                case 'navigate_to_settings':
+                    navigate('setting');
+                    notify(`Navigated to Settings`);
+                    break;
+
+                case 'navigate_to_shortcuts':
+                    navigate('shortcuts');
+                    notify(`Navigated to Shortcuts`);
+                    break;
+
                 default:
                     notify(`Action triggered: ${match.label}`);
                     break;

@@ -1,6 +1,7 @@
 import asyncio
 from fastapi import WebSocket
 from data_manager import data_manager, ScoreboardConfig, ScoreboardStyleConfig
+from typing import Dict, Any
 
 class WebSocketManager:
     def __init__(self):
@@ -20,6 +21,15 @@ class WebSocketManager:
         self._is_match_info_visible: bool = False
         self._is_futsal_clock_on: bool = False
         self._last_set_futsal_time: int = 0
+        self._var_state: Dict[str, Any] = {
+            "isVisible": False,
+            "scenario": "",
+            "message": "",
+            "decision": ""
+        }
+
+    def get_var_status(self):
+        return self._var_state
 
     def get_status(self):
         return {"isRunning": self._is_running, "seconds": self._seconds}
@@ -56,6 +66,7 @@ class WebSocketManager:
         await self.broadcast_extra_time_status(to_single_client=websocket)
         await self.broadcast_match_info_visibility(to_single_client=websocket)
         await self.broadcast_futsal_clock_status(to_single_client=websocket)
+        await self.broadcast_var_update(to_single_client=websocket)
 
     def disconnect(self, websocket: WebSocket):
         self._active_connections.remove(websocket)
@@ -132,6 +143,16 @@ class WebSocketManager:
         message = {"type": "futsal_clock_status", **status}
         if to_single_client: await to_single_client.send_json(message)
         else: await asyncio.gather(*[client.send_json(message) for client in self._active_connections])
+    
+    async def broadcast_var_update(self, data: dict = None, to_single_client: WebSocket | None = None):
+        if data:
+            self._var_state.update(data)
+        
+        message = {"type": "var_update", "data": self.get_var_status()}
+        if to_single_client:
+            await to_single_client.send_json(message)
+        else:
+            await asyncio.gather(*[client.send_json(message) for client in self._active_connections])
 
     async def toggle_game_report(self):
         self._is_game_report_visible = not self._is_game_report_visible

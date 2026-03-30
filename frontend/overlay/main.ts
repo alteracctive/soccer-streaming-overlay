@@ -64,6 +64,11 @@ const teamBRedCards = document.getElementById('team-b-red-cards') as HTMLDivElem
 const timerSectionRow = document.getElementById('timer-section-row') as HTMLDivElement;
 const gameReportPeriod = document.getElementById('game-report-period') as HTMLDivElement;
 
+const varContainer = document.getElementById('var-container') as HTMLDivElement;
+const varScenarioText = document.getElementById('var-scenario-text') as HTMLSpanElement;
+const varMessageText = document.getElementById('var-message-text') as HTMLSpanElement;
+const varDecisionText = document.getElementById('var-decision-text') as HTMLDivElement;
+
 function formatTime(totalSeconds: number): string {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const sec = (totalSeconds % 60).toString().padStart(2, '0');
@@ -128,7 +133,8 @@ function updateUI() {
   const { 
     config, timer, extraTime, scoreboardStyle, 
     isGameReportVisible, isScoreboardVisible, isMatchInfoVisible,
-    isPlayersListVisibleA, isPlayersListVisibleB
+    isPlayersListVisibleA, isPlayersListVisibleB,
+    varState
   } = getState();
   
   const SCROLL_TRIGGER_LIMIT = 15;
@@ -245,6 +251,19 @@ function updateUI() {
   
   if (playersListContainerA) playersListContainerA.style.display = isPlayersListVisibleA ? 'flex' : 'none';
   if (playersListContainerB) playersListContainerB.style.display = isPlayersListVisibleB ? 'flex' : 'none';
+
+  if (varContainer && varScenarioText && varMessageText && varDecisionText) {
+    if (varState.isVisible) {
+        varContainer.style.display = 'block';
+        varScenarioText.textContent = varState.scenario;
+        varMessageText.textContent = varState.message;
+        varDecisionText.textContent = varState.decision;
+
+
+    } else {
+        varContainer.style.display = 'none';
+    }
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -7,6 +7,7 @@ import {
   togglePlayersListB,
   setPlayersListVisibility,
   toggleMatchInfoVisibility,
+  sendVarUpdate,
   subscribe,
   unsubscribe
 } from '../stateManager';
@@ -47,7 +48,27 @@ export function render(container: HTMLElement) {
                 <button id="hide-both-lists-btn" class="btn-red" style="font-size: 12px; padding: 6px 10px;">Hide All</button>
             </div>
         </div>
+      </div>
 
+      <div class="card">
+        <h4>VAR Check</h4>
+        <div class="form-group">
+          <label>Scenario</label>
+          <div id="var-scenario-buttons" class="btn-group">
+            <!-- Scenario buttons will be injected here -->
+          </div>
+        </div>
+        <div class="form-group" id="var-message-group" style="display: none;">
+          <label>Message</label>
+          <div id="var-message-buttons" class="btn-group">
+            <!-- Message buttons will be injected here -->
+          </div>
+        </div>
+        <div id="var-buttons" style="display: none; gap: 6px; margin-top: 16px;">
+          <button id="var-hide-btn" class="btn-secondary">Hide Pop up</button>
+          <button id="var-confirm-btn" class="btn-green"></button>
+          <button id="var-deny-btn" class="btn-red"></button>
+        </div>
       </div>
 
     </div>
@@ -62,6 +83,19 @@ export function render(container: HTMLElement) {
   const showBothBtn = container.querySelector('#show-both-lists-btn') as HTMLButtonElement;
   const hideBothBtn = container.querySelector('#hide-both-lists-btn') as HTMLButtonElement;
 
+  const varScenarioButtons = container.querySelector('#var-scenario-buttons') as HTMLDivElement;
+  const varMessageGroup = container.querySelector('#var-message-group') as HTMLDivElement;
+  const varMessageButtons = container.querySelector('#var-message-buttons') as HTMLDivElement;
+  const varButtonsDiv = container.querySelector('#var-buttons') as HTMLDivElement;
+  const varHideBtn = container.querySelector('#var-hide-btn') as HTMLButtonElement;
+  const varConfirmBtn = container.querySelector('#var-confirm-btn') as HTMLButtonElement;
+  const varDenyBtn = container.querySelector('#var-deny-btn') as HTMLButtonElement;
+
+  const varMessages: Record<string, string[]> = {
+    "Possible Red Card": ["Professional Foul", "Serious Foul", "Second Yellow Card", "Violent Conduct", "Offensive Language"],
+    "Checking Goal": ["Possible Offside", "Possible Foul", "Ball out of bound", "Checking goal line"],
+    "Possible Penalty": ["Possible Offside", "Possible Foul", "Checking Foul location"]
+  };
 
   const updateUI = () => {
     const { 
@@ -69,7 +103,8 @@ export function render(container: HTMLElement) {
         isGameReportVisible, 
         isPlayersListVisibleA, 
         isPlayersListVisibleB, 
-        isMatchInfoVisible 
+        isMatchInfoVisible,
+        varState
     } = getState();
 
     // Scoreboard
@@ -126,8 +161,88 @@ export function render(container: HTMLElement) {
       listBBtn.classList.remove('btn-green');
       listBBtn.classList.add('btn-secondary');
     }
+
+    // VAR
+    const { scenario, message } = varState;
+    
+    varScenarioButtons.innerHTML = Object.keys(varMessages).map(scen => 
+        `<button class="btn ${scenario === scen ? 'btn-green' : 'btn-secondary'}" data-scenario="${scen}">${scen}</button>`
+    ).join('');
+
+    if (scenario) {
+      varMessageGroup.style.display = 'block';
+      varMessageButtons.innerHTML = varMessages[scenario].map(msg => 
+        `<button class="btn ${message === msg ? 'btn-green' : 'btn-secondary'}" data-message="${msg}">${msg}</button>`
+      ).join('');
+    } else {
+      varMessageGroup.style.display = 'none';
+      varMessageButtons.innerHTML = '';
+    }
+
+    if (scenario && message) {
+      varButtonsDiv.style.display = 'flex';
+      switch (scenario) {
+        case "Possible Red Card":
+          varConfirmBtn.textContent = "No Red Card";
+          varDenyBtn.textContent = "Red Card";
+          break;
+        case "Checking Goal":
+          varConfirmBtn.textContent = "Goal";
+          varDenyBtn.textContent = "No Goal";
+          break;
+        case "Possible Penalty":
+          varConfirmBtn.textContent = "No Penalty";
+          varDenyBtn.textContent = "Penalty";
+          break;
+      }
+    } else {
+      varButtonsDiv.style.display = 'none';
+    }
   };
 
+  function handleScenarioClick(e: Event) {
+    const target = e.target as HTMLButtonElement;
+    const scenario = target.dataset.scenario;
+    if (scenario) {
+      const currentState = getState().varState;
+      if (currentState.scenario === scenario) {
+        // Deselect
+        sendVarUpdate({ isVisible: false, scenario: '', message: '', decision: '' });
+      } else {
+        sendVarUpdate({ isVisible: true, scenario: scenario, message: '', decision: '' });
+      }
+    }
+  }
+
+  function handleMessageClick(e: Event) {
+    const target = e.target as HTMLButtonElement;
+    const message = target.dataset.message;
+    if (message) {
+      const currentState = getState().varState;
+      if (currentState.message === message) {
+        // Deselect
+        sendVarUpdate({ isVisible: true, message: '', decision: '' });
+      } else {
+        sendVarUpdate({ isVisible: true, message: message, decision: '' });
+      }
+    }
+  }
+
+  varScenarioButtons.addEventListener('click', handleScenarioClick);
+  varMessageButtons.addEventListener('click', handleMessageClick);
+
+  varHideBtn.addEventListener('click', () => {
+    sendVarUpdate({ isVisible: false, scenario: '', message: '', decision: '' });
+  });
+  
+  varConfirmBtn.addEventListener('click', () => {
+    sendVarUpdate({ decision: varConfirmBtn.textContent || '' });
+  });
+
+  varDenyBtn.addEventListener('click', () => {
+    sendVarUpdate({ decision: varDenyBtn.textContent || '' });
+  });
+  
   // Listeners
   scoreboardBtn.addEventListener('click', toggleScoreboard);
   matchInfoBtn.addEventListener('click', toggleMatchInfoVisibility);

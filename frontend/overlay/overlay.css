@@ -295,3 +295,48 @@ body {
 
 .players-table tr.not-on-field { opacity: 0.8; font-style: italic; }
 .players-table tr.player-padding-row td { padding: 6px; font-size: 18px; height: 33px; box-sizing: border-box; }
+
+/* VAR Box Styles */
+.var-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.var-box {
+    display: flex;
+    flex-direction: column;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.var-title {
+    background-color: var(--scoreboard-text-tertiary);
+    color: black;
+    font-weight: bold;
+    text-align: center;
+    padding: 2px 8px;
+    font-size: 1.2em;
+    text-shadow: 0 0 5px rgba(255,255,255,0.7);
+}
+
+.var-content {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: var(--scoreboard-text-secondary);
+    padding: 10px 15px;
+}
+
+.var-header {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.var-decision {
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+    padding-top: 5px;
+    border-top: 1px solid #555;
+    margin-top: 5px;
+}

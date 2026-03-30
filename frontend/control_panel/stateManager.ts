@@ -20,6 +20,13 @@ export interface Shortcut {
     key: string | null;
 }
 
+export interface VarState {
+    isVisible: boolean;
+    scenario: string;
+    message: string;
+    decision: string;
+}
+
 const API_URL = 'http://localhost:8000';
 const WS_URL = 'ws://localhost:8000/ws';
 
@@ -42,6 +49,7 @@ let appState: {
   shortcuts: Shortcut[];
   playerToEdit: { team: 'teamA' | 'teamB', number: number } | null;
   isTeamInfoCollapsed: boolean;
+  varState: VarState;
 } = {
   config: null,
   timer: { isRunning: false, seconds: 0 },
@@ -61,6 +69,7 @@ let appState: {
   shortcuts: [],
   playerToEdit: null,
   isTeamInfoCollapsed: false,
+  varState: { isVisible: false, scenario: '', message: '', decision: '' },
 };
 
 export const stateEmitter = new EventTarget();
@@ -78,6 +87,7 @@ function updatePlayersListVisibility(data: { isVisibleA: boolean, isVisibleB: bo
 function updateExtraTimeStatus(status: ExtraTimeStatus) { appState.extraTime = status; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
 function updateMatchInfoVisibility(isVisible: boolean) { appState.isMatchInfoVisible = isVisible; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
 function updateFutsalClockStatus(isOn: boolean) { appState.isFutsalClockOn = isOn; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
+function updateVarState(newVarState: VarState) { appState.varState = newVarState; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
 
 // --- New Helper for Shortcuts ---
 function updateShortcuts(shortcuts: Shortcut[]) {
@@ -108,9 +118,14 @@ function connectWebSocket() {
     else if (message.type === 'extra_time_status') updateExtraTimeStatus(message as ExtraTimeStatus);
     else if (message.type === 'match_info_visibility') updateMatchInfoVisibility(message.isVisible as boolean);
     else if (message.type === 'futsal_clock_status') updateFutsalClockStatus(message.isOn as boolean);
+    else if (message.type === 'var_update') updateVarState(message.data as VarState);
   };
   ws.onclose = () => { console.log('WS disconnected'); updateConnectionStatus(false); setTimeout(connectWebSocket, 3000); };
   ws.onerror = (error) => { console.error('WS error:', error); updateConnectionStatus(false); ws.close(); };
+}
+
+export async function sendVarUpdate(varData: Partial<VarState>) {
+    await post('/api/var-update', varData);
 }
 
 export async function initStateManager() {

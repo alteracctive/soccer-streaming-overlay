@@ -133,6 +133,17 @@ async def edit_player(update: EditPlayerUpdate): config = await data_manager.edi
 async def reset_player_stats(update: ResetStatsUpdate): config = await data_manager.reset_team_stats(update); await websocket_manager.broadcast_config(config); return config
 
 # --- Scoreboard & Overlays ---
+class VarUpdate(BaseModel):
+    isVisible: Optional[bool] = None
+    scenario: Optional[str] = None
+    message: Optional[str] = None
+    decision: Optional[str] = None
+
+@app.post("/api/var-update", tags=["VAR Control"])
+async def update_var(update: VarUpdate):
+    await websocket_manager.broadcast_var_update(update.model_dump(exclude_none=True))
+    return {"message": "VAR updated"}
+
 @app.post("/api/match-info", tags=["Scoreboard & Overlays"])
 async def update_match_info(update: MatchInfoUpdate): new_style = await data_manager.update_match_info(update.info); await websocket_manager.broadcast_scoreboard_style(new_style); return new_style
 
