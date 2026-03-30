@@ -1,0 +1,37 @@
+[
+  {
+    "action_id": "toggle_timer",
+    "label": "Start/Stop Timer",
+    "key": "KeyL"
+  },
+  {
+    "action_id": "toggle_scoreboard",
+    "label": "Toggle Scoreboard",
+    "key": "Ctrl+KeyS"
+  },
+  {
+    "action_id": "toggle_match_info",
+    "label": "Toggle Match Info",
+    "key": "Ctrl+KeyM"
+  },
+  {
+    "action_id": "toggle_game_report",
+    "label": "Toggle Game Report",
+    "key": "Ctrl+KeyG"
+  },
+  {
+    "action_id": "toggle_players_list_all",
+    "label": "Toggle All Player Lists",
+    "key": "Ctrl+KeyP"
+  },
+  {
+    "action_id": "toggle_players_list_a",
+    "label": "Toggle Team A List",
+    "key": null
+  },
+  {
+    "action_id": "toggle_players_list_b",
+    "label": "Toggle Team B List",
+    "key": null
+  }
+]

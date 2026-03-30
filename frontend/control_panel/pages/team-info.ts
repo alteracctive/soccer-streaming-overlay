@@ -15,7 +15,9 @@ import {
   subscribe,
   unsubscribe,
   setScore,
-  getPeriods, 
+  getPeriods,
+  getPlayerToEdit,
+  setTeamInfoCollapsed,
   type PlayerConfig,
   type Goal,
   type Card,
@@ -93,6 +95,22 @@ export function render(container: HTMLElement) {
             </div>
             <ul class="goal-list" id="edit-red-cards-list"></ul>
           </div>
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label style="margin-bottom: 0;">On Field Time</label>
+            </div>
+            <div id="time-display-container" style="display: flex; align-items: center; gap: 8px;">
+              <span id="time-display" style="font-weight: bold;">00:00</span>
+              <button id="edit-time-btn" class="btn-secondary" style="padding: 2px 8px; font-size: 12px; width: auto; height: auto; line-height: 1.5;">Edit</button>
+            </div>
+            <div id="time-edit-container" style="display: none; align-items: center; gap: 4px;">
+              <input type="number" id="edit-player-time-min" min="0" style="width: 60px;">
+              <span style="font-weight: bold;">:</span>
+              <input type="number" id="edit-player-time-sec" min="0" max="59" style="width: 60px;">
+              <button id="save-time-btn" class="btn-green" style="padding: 2px 8px; font-size: 12px; width: auto; height: auto; line-height: 1.5;">Save</button>
+              <button id="cancel-edit-time-btn" class="btn-secondary" style="padding: 2px 8px; font-size: 12px; width: auto; height: auto; line-height: 1.5;">Cancel</button>
+            </div>
+          </div>
         </div>
         <div class="modal-buttons">
           <button id="modal-delete-player-btn" class="btn-red">Delete Player</button>
@@ -104,57 +122,63 @@ export function render(container: HTMLElement) {
     
     <div style="display: flex; flex-direction: column; gap: 16px;"> 
       <div class="card">
-         <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start;">
-          <div>
-            <h4>Team A Info <span id="unsaved-a" class="unsaved-indicator"></span></h4>
-            <div class="inline-form-group">
-              <div class="form-group" style="flex-grow: 1;">
-                <label for="team-a-name">Team Name</label>
-                <input type="text" id="team-a-name" value="${config?.teamA.name ?? ''}">
-              </div>
-              <div class="form-group" style="width: 120px;">
-                <label for="team-a-abbr">Abbreviation</label>
-                <input type="text" id="team-a-abbr" maxlength="4" value="${config?.teamA.abbreviation ?? ''}">
-              </div>
-            </div>
-            <h5 style="margin-top: 16px; margin-bottom: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">Team A Colors</h5>
-            <div class="color-picker-row">
-              <label for="team-a-primary">Primary Color</label>
-              <input type="color" id="team-a-primary" value="${config?.teamA.colors.primary ?? '#FF0000'}">
-            </div>
-            <div class="color-picker-row">
-              <label for="team-a-secondary">Secondary Color</label>
-              <input type="color" id="team-a-secondary" value="${config?.teamA.colors.secondary ?? '#FFFFFF'}">
-            </div>
-            <button id="sync-a" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
-          </div>
-          <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
-          <div>
-            <h4>Team B Info <span id="unsaved-b" class="unsaved-indicator"></span></h4>
-            <div class="inline-form-group">
-              <div class="form-group" style="flex-grow: 1;">
-                <label for="team-b-name">Team Name</label>
-                <input type="text" id="team-b-name" value="${config?.teamB.name ?? ''}">
-              </div>
-              <div class="form-group" style="width: 120px;">
-                <label for="team-b-abbr">Abbreviation</label>
-                <input type="text" id="team-b-abbr" maxlength="4" value="${config?.teamB.abbreviation ?? ''}">
-              </div>
-            </div>
-            <h5 style="margin-top: 16px; margin-bottom: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">Team B Colors</h5>
-            <div class="color-picker-row">
-              <label for="team-b-primary">Primary Color</label>
-              <input type="color" id="team-b-primary" value="${config?.teamB.colors.primary ?? '#0000FF'}">
-            </div>
-            <div class="color-picker-row">
-              <label for="team-b-secondary">Secondary Color</label>
-              <input type="color" id="team-b-secondary" value="${config?.teamB.colors.secondary ?? '#FFFFFF'}">
-            </div>
-            <button id="sync-b" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
-          </div>
+        <div class="collapsible-header" id="team-info-header">
+          <h4>Team Info</h4>
+          <button class="collapse-btn">▼</button>
         </div>
-        <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
-          <button id="save-team-info">Save Team Info</button>
+        <div class="collapsible-content">
+          <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start; margin-top: 16px;">
+            <div>
+              <h4>Team A Info <span id="unsaved-a" class="unsaved-indicator"></span></h4>
+              <div class="inline-form-group">
+                <div class="form-group" style="flex-grow: 1;">
+                  <label for="team-a-name">Team Name</label>
+                  <input type="text" id="team-a-name" value="${config?.teamA.name ?? ''}">
+                </div>
+                <div class="form-group" style="width: 120px;">
+                  <label for="team-a-abbr">Abbreviation</label>
+                  <input type="text" id="team-a-abbr" maxlength="4" value="${config?.teamA.abbreviation ?? ''}">
+                </div>
+              </div>
+              <h5 style="margin-top: 16px; margin-bottom: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">Team A Colors</h5>
+              <div class="color-picker-row">
+                <label for="team-a-primary">Primary Color</label>
+                <input type="color" id="team-a-primary" value="${config?.teamA.colors.primary ?? '#FF0000'}">
+              </div>
+              <div class="color-picker-row">
+                <label for="team-a-secondary">Secondary Color</label>
+                <input type="color" id="team-a-secondary" value="${config?.teamA.colors.secondary ?? '#FFFFFF'}">
+              </div>
+              <button id="sync-a" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
+            </div>
+            <div style="width: 1px; background-color: var(--border-color); height: 100%; align-self: stretch;"></div>
+            <div>
+              <h4>Team B Info <span id="unsaved-b" class="unsaved-indicator"></span></h4>
+              <div class="inline-form-group">
+                <div class="form-group" style="flex-grow: 1;">
+                  <label for="team-b-name">Team Name</label>
+                  <input type="text" id="team-b-name" value="${config?.teamB.name ?? ''}">
+                </div>
+                <div class="form-group" style="width: 120px;">
+                  <label for="team-b-abbr">Abbreviation</label>
+                  <input type="text" id="team-b-abbr" maxlength="4" value="${config?.teamB.abbreviation ?? ''}">
+                </div>
+              </div>
+              <h5 style="margin-top: 16px; margin-bottom: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">Team B Colors</h5>
+              <div class="color-picker-row">
+                <label for="team-b-primary">Primary Color</label>
+                <input type="color" id="team-b-primary" value="${config?.teamB.colors.primary ?? '#0000FF'}">
+              </div>
+              <div class="color-picker-row">
+                <label for="team-b-secondary">Secondary Color</label>
+                <input type="color" id="team-b-secondary" value="${config?.teamB.colors.secondary ?? '#FFFFFF'}">
+              </div>
+              <button id="sync-b" class="btn-secondary" style="margin-top: 12px; width: 100%;">Use Primary as Secondary</button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
+            <button id="save-team-info">Save Team Info</button>
+          </div>
         </div>
       </div> 
       
@@ -213,6 +237,7 @@ export function render(container: HTMLElement) {
   let isTeamBUnsaved = false;
   let playerToEdit: PlayerConfig | null = null;
   let teamToEdit: 'teamA' | 'teamB' | null = null;
+  let editTimeOnField = 0;
   let editGoals: Goal[] = [];
   let editYellowCards: Card[] = [];
   let editRedCards: Card[] = [];
@@ -254,6 +279,14 @@ export function render(container: HTMLElement) {
   const nextPlayerNum = container.querySelector('#next-player-num') as HTMLSpanElement;
   const editPlayerNumber = container.querySelector('#edit-player-number') as HTMLInputElement;
   const editPlayerName = container.querySelector('#edit-player-name') as HTMLInputElement;
+  const timeDisplayContainer = container.querySelector('#time-display-container') as HTMLDivElement;
+  const timeDisplay = container.querySelector('#time-display') as HTMLSpanElement;
+  const editTimeBtn = container.querySelector('#edit-time-btn') as HTMLButtonElement;
+  const timeEditContainer = container.querySelector('#time-edit-container') as HTMLDivElement;
+  const editPlayerTimeMin = container.querySelector('#edit-player-time-min') as HTMLInputElement;
+  const editPlayerTimeSec = container.querySelector('#edit-player-time-sec') as HTMLInputElement;
+  const saveTimeBtn = container.querySelector('#save-time-btn') as HTMLButtonElement;
+  const cancelEditTimeBtn = container.querySelector('#cancel-edit-time-btn') as HTMLButtonElement;
   const editGoalsList = container.querySelector('#edit-player-goals-list') as HTMLUListElement;
   const editAddGoalBtn = container.querySelector('#edit-add-goal-btn') as HTMLButtonElement;
   const editAddOwnGoalBtn = container.querySelector('#edit-add-own-goal-btn') as HTMLButtonElement; 
@@ -367,6 +400,10 @@ export function render(container: HTMLElement) {
             <span>+</span>
             <input type="number" class="goal-minute-input add-input" value="${goal.addMinute}" data-index="${index}" min="0" max="99" style="width: 40px;">
             <span>'</span>
+            <label class="penalty-label" style="margin-left: 10px; display: flex; align-items: center; cursor: pointer;">
+              <input type="checkbox" class="penalty-checkbox" data-index="${index}" ${goal.isPenalty ? 'checked' : ''} ${goal.isOwnGoal ? 'disabled' : ''}> 
+              <span style="margin-left: 4px; ${goal.isOwnGoal ? 'opacity: 0.5' : ''}">Penalty</span>
+            </label>
         </div>
         <button class="goal-delete-btn" data-index="${index}">❌</button>
       `;
@@ -375,6 +412,25 @@ export function render(container: HTMLElement) {
     listEl.querySelectorAll('.goal-delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { const idx = parseInt((e.currentTarget as HTMLButtonElement).dataset.index || '-1', 10); if (idx > -1) { goals.splice(idx, 1); renderGoalList(listEl, goals); } }); });
     listEl.querySelectorAll('.reg-input').forEach(input => { input.addEventListener('change', (e) => { const target = e.currentTarget as HTMLInputElement; const idx = parseInt(target.dataset.index || '-1', 10); const val = parseInt(target.value, 10) || 1; if (idx > -1) goals[idx].regMinute = val; }); });
     listEl.querySelectorAll('.add-input').forEach(input => { input.addEventListener('change', (e) => { const target = e.currentTarget as HTMLInputElement; const idx = parseInt(target.dataset.index || '-1', 10); const val = parseInt(target.value, 10) || 0; if (idx > -1) goals[idx].addMinute = val; }); });
+    listEl.querySelectorAll('.penalty-checkbox').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const target = e.currentTarget as HTMLInputElement;
+        const idx = parseInt(target.dataset.index || '-1', 10);
+        if (idx > -1) {
+          goals[idx].isPenalty = target.checked;
+        }
+      });
+    });
+  };
+
+  const handleOutsideClick = (e: MouseEvent) => {
+    console.log('Outside click handler', e.target);
+    const modalContent = playerEditModal.querySelector('.modal-content');
+    console.log('Modal content', modalContent);
+    if (modalContent && !modalContent.contains(e.target as Node)) {
+      console.log('Closing modal');
+      hidePlayerEditModal();
+    }
   };
 
   const showPlayerEditModal = (player: PlayerConfig, team: 'teamA' | 'teamB') => {
@@ -383,7 +439,7 @@ export function render(container: HTMLElement) {
     const { config } = getState();
     if (config) {
       const teamConfig = config[team];
-      const players = teamConfig.players;
+      const players = teamConfig.players.sort((a, b) => a.number - b.number);
       const currentIndex = players.findIndex(p => p.number === player.number);
       modalTeamName.textContent = teamConfig.name;
       modalTeamPrimary.style.backgroundColor = teamConfig.colors.primary;
@@ -394,35 +450,93 @@ export function render(container: HTMLElement) {
       if (nextPlayer) { nextPlayerNum.textContent = `#${nextPlayer.number}`; nextPlayerBtn.disabled = false; } else { nextPlayerNum.textContent = ''; nextPlayerBtn.disabled = true; }
     }
     editGoals = player.goals.map(g => ({ ...g }));
-    // Map cards to ensure we have object copies if needed
     editYellowCards = player.yellowCards.map(c => ({ ...c }));
     editRedCards = player.redCards.map(c => ({ ...c }));
     playerEditTitle.textContent = `#${player.number} ${player.name}`;
     editPlayerNumber.value = player.number.toString();
     editPlayerName.value = player.name;
+    editTimeOnField = player.timeOnField;
+    updateAndRenderTime();
     renderGoalList(editGoalsList, editGoals);
     renderCardList(editYellowCardsList, editYellowCards, 'Yellow');
     renderCardList(editRedCardsList, editRedCards, 'Red');
     playerEditModal.style.display = 'flex';
+    setTimeout(() => {
+        document.addEventListener('mousedown', handleOutsideClick);
+    }, 0);
   };
-  const hidePlayerEditModal = () => { playerEditModal.style.display = 'none'; playerToEdit = null; teamToEdit = null; editGoals = []; editYellowCards = []; editRedCards = []; };
+  const hidePlayerEditModal = () => {
+    playerEditModal.style.display = 'none';
+    playerToEdit = null;
+    teamToEdit = null;
+    editGoals = [];
+    editYellowCards = [];
+    editRedCards = [];
+    document.removeEventListener('mousedown', handleOutsideClick);
+  };
+  
+  const updateAndRenderTime = () => {
+    const minutes = Math.floor(editTimeOnField / 60);
+    const seconds = editTimeOnField % 60;
+    timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    timeDisplayContainer.style.display = 'flex';
+    timeEditContainer.style.display = 'none';
+  };
+
+  editTimeBtn.addEventListener('click', () => {
+    const minutes = Math.floor(editTimeOnField / 60);
+    const seconds = editTimeOnField % 60;
+    editPlayerTimeMin.value = minutes.toString();
+    editPlayerTimeSec.value = seconds.toString();
+    timeDisplayContainer.style.display = 'none';
+    timeEditContainer.style.display = 'flex';
+  });
+
+  cancelEditTimeBtn.addEventListener('click', () => {
+    updateAndRenderTime();
+  });
+
+  saveTimeBtn.addEventListener('click', () => {
+    const minutes = parseInt(editPlayerTimeMin.value, 10) || 0;
+    let seconds = parseInt(editPlayerTimeSec.value, 10) || 0;
+    if (seconds > 59) {
+      seconds = 59;
+    }
+    editTimeOnField = (minutes * 60) + seconds;
+    updateAndRenderTime();
+  });
+
+  editPlayerTimeMin.addEventListener('input', () => {
+    editPlayerTimeMin.value = editPlayerTimeMin.value.replace(/[^0-9]/g, '');
+  });
+
+  editPlayerTimeSec.addEventListener('input', () => {
+    editPlayerTimeSec.value = editPlayerTimeSec.value.replace(/[^0-g]/g, '');
+    if (parseInt(editPlayerTimeSec.value, 10) > 59) {
+      editPlayerTimeSec.value = '59';
+    }
+  });
+
   const navigatePlayer = (direction: 'prev' | 'next') => { if (!playerToEdit || !teamToEdit) return; const { config } = getState(); if (!config) return; const players = config[teamToEdit].players; const currentIndex = players.findIndex(p => p.number === playerToEdit!.number); const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1; if (newIndex >= 0 && newIndex < players.length) { showPlayerEditModal(players[newIndex], teamToEdit); } };
   prevPlayerBtn.addEventListener('click', () => navigatePlayer('prev'));
   nextPlayerBtn.addEventListener('click', () => navigatePlayer('next'));
 
-  editAddGoalBtn.addEventListener('click', () => {
+  editAddGoalBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     const { reg, add } = getCurrentGameTime();
-    editGoals.push({ regMinute: reg, addMinute: add, isOwnGoal: false });
+    editGoals.push({ regMinute: reg, addMinute: add, isOwnGoal: false, isPenalty: false });
     renderGoalList(editGoalsList, editGoals);
   });
   
-  editAddOwnGoalBtn.addEventListener('click', () => {
+  editAddOwnGoalBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
       const { reg, add } = getCurrentGameTime();
-      editGoals.push({ regMinute: reg, addMinute: add, isOwnGoal: true });
+      editGoals.push({ regMinute: reg, addMinute: add, isOwnGoal: true, isPenalty: false });
       renderGoalList(editGoalsList, editGoals);
   });
 
-  editAddYellowBtn.addEventListener('click', () => {
+  editAddYellowBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (editYellowCards.length >= 2) { showNotification('Max 2 yellow cards.', 'error'); return; }
     const { reg, add } = getCurrentGameTime();
     editYellowCards.push({ regMinute: reg, addMinute: add });
@@ -434,7 +548,8 @@ export function render(container: HTMLElement) {
       showNotification('2nd yellow auto-added a red card!');
     }
   });
-  editAddRedBtn.addEventListener('click', () => {
+  editAddRedBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (editRedCards.length >= 1) { showNotification('Max 1 red card.', 'error'); return; }
     const { reg, add } = getCurrentGameTime();
     editRedCards.push({ regMinute: reg, addMinute: add });
@@ -444,6 +559,12 @@ export function render(container: HTMLElement) {
   modalEditCancelBtn.addEventListener('click', hidePlayerEditModal);
   modalDeletePlayerBtn.addEventListener('click', () => { if (!playerToEdit || !teamToEdit) return; const player = playerToEdit; const team = teamToEdit; hidePlayerEditModal(); showConfirmModal(`Are you sure you want to delete ${player.name} (#${player.number})?`, async () => { await deletePlayer(team, player.number); showNotification(`${player.name} deleted!`); }); });
   
+  playerEditModal.addEventListener('click', (e) => {
+    if (e.target === playerEditModal) {
+      hidePlayerEditModal();
+    }
+  });
+
   modalSaveBtn.addEventListener('click', async () => { 
       if (!playerToEdit || !teamToEdit) return; 
       const newNumber = parseInt(editPlayerNumber.value, 10); 
@@ -458,7 +579,15 @@ export function render(container: HTMLElement) {
       const diffRegular = newRegular - oldRegular;
       const diffOwn = newOwn - oldOwn;
 
-      const updatedPlayerData: PlayerConfig = { ...playerToEdit, number: newNumber, name: newName, yellowCards: editYellowCards, redCards: editRedCards, goals: editGoals, }; 
+      const updatedPlayerData: PlayerConfig = {
+        number: newNumber,
+        name: newName,
+        onField: playerToEdit.onField,
+        timeOnField: editTimeOnField,
+        yellowCards: editYellowCards,
+        redCards: editRedCards,
+        goals: editGoals,
+      }; 
       
       try { 
           await editPlayer(teamToEdit, playerToEdit.number, updatedPlayerData); 
@@ -532,11 +661,14 @@ export function render(container: HTMLElement) {
         <table class="player-list-table">
           <thead><tr><th>#</th><th>Name</th><th>⚽</th><th>OG</th><th>🟨</th><th>🟥</th><th>✅</th><th>Actions</th></tr></thead>
           <tbody>
-            ${players.map(player => `
+            ${players.map(player => {
+              const regularGoals = player.goals.filter(g => !g.isOwnGoal);
+
+              return `
               <tr>
                 <td>${player.number}</td>
                 <td>${player.name}</td>
-                <td><button class="player-stat-btn player-goal-btn" data-team="${team}" data-number="${player.number}">${player.goals.filter(g => !g.isOwnGoal).length}</button></td>
+                <td><button class="player-stat-btn player-goal-btn" data-team="${team}" data-number="${player.number}">${regularGoals.length}</button></td>
                 <td><button class="player-stat-btn player-own-goal-btn" data-team="${team}" data-number="${player.number}">${player.goals.filter(g => g.isOwnGoal).length}</button></td>
                 <td><button class="player-stat-btn player-yellow-btn" data-team="${team}" data-number="${player.number}">${player.yellowCards.length}</button></td>
                 <td><button class="player-stat-btn player-red-btn" data-team="${team}" data-number="${player.number}">${player.redCards.length}</button></td>
@@ -548,7 +680,7 @@ export function render(container: HTMLElement) {
                   </div>
                 </td>
               </tr>
-            `).join('')}
+            `}).join('')}
           </tbody>
         </table>`;
     };
@@ -567,14 +699,14 @@ export function render(container: HTMLElement) {
       container.querySelectorAll('.player-goal-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
           const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
           const { timer } = getState(); const { reg, add } = getCurrentGameTime(); 
-          await addGoal(team, number, reg, add, false);
+          await addGoal(team, number, reg, add, false, false);
           showNotification(`Goal given to #${number}`);
       }); });
       
       container.querySelectorAll('.player-own-goal-btn').forEach(btn => { btn.addEventListener('click', async (e) => { 
           const target = e.currentTarget as HTMLButtonElement; const team = target.dataset.team as 'teamA' | 'teamB'; const number = parseInt(target.dataset.number || '', 10);
           const { timer } = getState(); const { reg, add } = getCurrentGameTime(); 
-          await addGoal(team, number, reg, add, true);
+          await addGoal(team, number, reg, add, true, false);
           showNotification(`Own Goal given to #${number}`);
       }); });
 
@@ -608,6 +740,31 @@ export function render(container: HTMLElement) {
   resetStatsAButton.addEventListener('click', () => { const { config } = getState(); const teamName = config?.teamA.name ?? 'Team A'; const teamAbbr = config?.teamA.abbreviation ?? 'TMA'; showConfirmModal(`Are you sure you want to reset all stats (goals, cards, on-field) for ${teamName} (${teamAbbr})?`, async () => { await resetTeamStats('teamA'); showNotification('Team A stats reset!'); }); });
   resetStatsBButton.addEventListener('click', () => { const { config } = getState(); const teamName = config?.teamB.name ?? 'Team B'; const teamAbbr = config?.teamB.abbreviation ?? 'TMB'; showConfirmModal(`Are you sure you want to reset all stats (goals, cards, on-field) for ${teamName} (${teamAbbr})?`, async () => { await resetTeamStats('teamB'); showNotification('Team B stats reset!'); }); });
 
+  const teamInfoContent = container.querySelector('.collapsible-content') as HTMLDivElement;
+    const teamInfoHeader = container.querySelector('#team-info-header') as HTMLDivElement;
+    const collapseBtn = teamInfoHeader.querySelector('.collapse-btn') as HTMLButtonElement;
+
+    const { isTeamInfoCollapsed } = getState();
+    if (isTeamInfoCollapsed) {
+        teamInfoContent.style.maxHeight = '0';
+        collapseBtn.style.transform = 'rotate(-90deg)';
+    } else {
+        teamInfoContent.style.maxHeight = teamInfoContent.scrollHeight + 'px';
+        collapseBtn.style.transform = 'rotate(0deg)';
+    }
+
+    teamInfoHeader.addEventListener('click', () => {
+        const { isTeamInfoCollapsed } = getState();
+        setTeamInfoCollapsed(!isTeamInfoCollapsed);
+        if (!isTeamInfoCollapsed) {
+            teamInfoContent.style.maxHeight = '0';
+            collapseBtn.style.transform = 'rotate(-90deg)';
+        } else {
+            teamInfoContent.style.maxHeight = teamInfoContent.scrollHeight + 'px';
+            collapseBtn.style.transform = 'rotate(0deg)';
+        }
+    });
+
   loadPeriodLimit();
 
   const onStateUpdate = () => {
@@ -617,6 +774,17 @@ export function render(container: HTMLElement) {
   
   subscribe(onStateUpdate); 
   updatePlayerLists(); 
+
+  const playerToEditData = getPlayerToEdit();
+  if (playerToEditData) {
+      const { config } = getState();
+      if (config) {
+          const player = (playerToEditData.team === 'teamA' ? config.teamA.players : config.teamB.players).find(p => p.number === playerToEditData.number);
+          if (player) {
+              showPlayerEditModal(player, playerToEditData.team);
+          }
+      }
+  }
 
   return () => {
     unsubscribe(onStateUpdate); 

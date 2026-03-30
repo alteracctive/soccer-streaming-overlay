@@ -12,6 +12,7 @@
         "number": 1,
         "name": "Marc-Andre ter Stegen",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -20,6 +21,7 @@
         "number": 2,
         "name": "Pau Cubarsi",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -28,6 +30,7 @@
         "number": 3,
         "name": "Alejandro Balde",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -36,6 +39,7 @@
         "number": 4,
         "name": "Ronald Araujo",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -44,6 +48,7 @@
         "number": 5,
         "name": "Inigo Martinez",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -52,6 +57,7 @@
         "number": 6,
         "name": "Gavi",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -60,6 +66,7 @@
         "number": 7,
         "name": "Ferran Torres",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -68,6 +75,7 @@
         "number": 8,
         "name": "Pedri",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -76,6 +84,7 @@
         "number": 9,
         "name": "Robert Lewandowski",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -84,6 +93,7 @@
         "number": 10,
         "name": "Dani Olmo",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -92,6 +102,7 @@
         "number": 11,
         "name": "Raphinha",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -100,6 +111,7 @@
         "number": 13,
         "name": "Inaki Pena",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -108,6 +120,7 @@
         "number": 14,
         "name": "Joao Felix",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -116,6 +129,7 @@
         "number": 15,
         "name": "Andreas Christensen",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -124,6 +138,7 @@
         "number": 16,
         "name": "Fermin Lopez",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -132,6 +147,7 @@
         "number": 17,
         "name": "Mikel Merino",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -140,6 +156,7 @@
         "number": 18,
         "name": "Pablo Torre",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -148,6 +165,7 @@
         "number": 19,
         "name": "Vitor Roque",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -156,6 +174,7 @@
         "number": 20,
         "name": "Sergi Roberto",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -164,6 +183,7 @@
         "number": 21,
         "name": "Frenkie de Jong",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -172,6 +192,7 @@
         "number": 22,
         "name": "Ilkay Guendogan",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -180,6 +201,7 @@
         "number": 23,
         "name": "Jules Kounde",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -188,6 +210,7 @@
         "number": 24,
         "name": "Eric Garcia",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -196,6 +219,7 @@
         "number": 25,
         "name": "Ander Astralaga",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -204,6 +228,7 @@
         "number": 27,
         "name": "Lamine Yamal",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -223,6 +248,7 @@
         "number": 1,
         "name": "Manuel Neuer",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -231,6 +257,7 @@
         "number": 2,
         "name": "Dayot Upamecano",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -239,6 +266,7 @@
         "number": 3,
         "name": "Kim Min-jae",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -247,6 +275,7 @@
         "number": 4,
         "name": "Matthijs de Ligt",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -255,6 +284,7 @@
         "number": 6,
         "name": "Joshua Kimmich",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -263,6 +293,7 @@
         "number": 7,
         "name": "Serge Gnabry",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -271,6 +302,7 @@
         "number": 8,
         "name": "Leon Goretzka",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -279,6 +311,7 @@
         "number": 9,
         "name": "Harry Kane",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -287,6 +320,7 @@
         "number": 10,
         "name": "Leroy Sane",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -295,6 +329,7 @@
         "number": 11,
         "name": "Kingsley Coman",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -303,6 +338,7 @@
         "number": 15,
         "name": "Eric Dier",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -311,6 +347,7 @@
         "number": 17,
         "name": "Michael Olise",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -319,6 +356,7 @@
         "number": 18,
         "name": "Daniel Peretz",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -327,6 +365,7 @@
         "number": 19,
         "name": "Alphonso Davies",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -335,6 +374,7 @@
         "number": 20,
         "name": "Sacha Boey",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -343,6 +383,7 @@
         "number": 21,
         "name": "Hiroki Ito",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -351,6 +392,7 @@
         "number": 22,
         "name": "Raphael Guerreiro",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -359,6 +401,7 @@
         "number": 23,
         "name": "Joao Palhinha",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -367,6 +410,7 @@
         "number": 25,
         "name": "Thomas Mueller",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -375,6 +419,7 @@
         "number": 26,
         "name": "Sven Ulreich",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -383,6 +428,7 @@
         "number": 27,
         "name": "Konrad Laimer",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -391,6 +437,7 @@
         "number": 39,
         "name": "Mathys Tel",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -399,6 +446,7 @@
         "number": 42,
         "name": "Jamal Musiala",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -407,6 +455,7 @@
         "number": 44,
         "name": "Josip Stanisic",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []
@@ -415,6 +464,7 @@
         "number": 45,
         "name": "Aleksandar Pavlovic",
         "onField": false,
+        "timeOnField": 0,
         "yellowCards": [],
         "redCards": [],
         "goals": []

@@ -23,24 +23,27 @@
             Copy
           </button>
         </div>
+        
         <div class="mini-scoreboard">
           <div class="mini-score-row">
             <div class="team-color-strip" id="mini-strip-a">
               <div id="mini-strip-a-primary"></div>
               <div id="mini-strip-a-secondary"></div>
             </div>
-            <span id="mini-score-a">00</span>
+            <button id="mini-score-a" class="mini-score-btn" title="Add 1 Goal">00</button>
             <span class="dash">-</span>
-            <span id="mini-score-b">00</span>
+            <button id="mini-score-b" class="mini-score-btn" title="Add 1 Goal">00</button>
+            
             <div class="team-color-strip" id="mini-strip-b">
               <div id="mini-strip-b-primary"></div>
               <div id="mini-strip-b-secondary"></div>
             </div>
           </div>
           <div class="mini-timer-row">
-            <span id="mini-timer">00:00</span>
+            <button id="mini-timer-btn" class="mini-timer-btn" title="Click to Play/Pause">00:00</button>
           </div>
         </div>
+        
         <ul>
           <li>
             <a href="#" class="nav-link active" data-page="dashboard"
@@ -69,6 +72,9 @@
           </li>
           <li>
             <a href="#" class="nav-link" data-page="setting">⚙️ Setting</a>
+          </li>
+          <li>
+            <a href="#" class="nav-link" data-page="shortcuts">⌨️ Shortcuts</a>
           </li>
         </ul>
       </nav>

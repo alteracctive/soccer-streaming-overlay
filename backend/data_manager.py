@@ -4,7 +4,7 @@ import json
 import sys
 import os
 from pydantic import BaseModel, Field, ValidationError
-from typing import Literal, List
+from typing import Literal, List, Optional
 
 # --- Helper Function ---
 def resource_path(relative_path):
@@ -23,10 +23,12 @@ WRITABLE_DIR = os.path.abspath(".")
 WRITABLE_CONFIG_FILE = os.path.join(WRITABLE_DIR, "team-info-config.json")
 WRITABLE_STYLE_FILE = os.path.join(WRITABLE_DIR, "scoreboard-customization.json")
 WRITABLE_PERIOD_FILE = os.path.join(WRITABLE_DIR, "time-period-setting.json")
+WRITABLE_SHORTCUT_FILE = os.path.join(WRITABLE_DIR, "shortcuts.json")
 
 BUNDLED_CONFIG_FILE = resource_path("team-info-config.json")
 BUNDLED_STYLE_FILE = resource_path("scoreboard-customization.json")
 BUNDLED_PERIOD_FILE = resource_path("time-period-setting.json")
+BUNDLED_SHORTCUT_FILE = resource_path("shortcuts.json")
 
 
 class ScoreboardStyleConfig(BaseModel):
@@ -47,6 +49,7 @@ class Goal(BaseModel):
     regMinute: int
     addMinute: int = 0
     isOwnGoal: bool = False
+    isPenalty: bool = False
 
 class Card(BaseModel):
     regMinute: int
@@ -56,6 +59,7 @@ class PlayerConfig(BaseModel):
     number: int
     name: str
     onField: bool = False
+    timeOnField: int = 0
     yellowCards: List[Card] = []
     redCards: List[Card] = []
     goals: List[Goal] = []
@@ -75,6 +79,15 @@ class ScoreboardConfig(BaseModel):
 class PeriodSetting(BaseModel):
     name: str
     endTime: int
+
+class Shortcut(BaseModel):
+    action_id: str
+    label: str
+    key: Optional[str] = None 
+
+class ShortcutUpdate(BaseModel):
+    action_id: str
+    key: Optional[str]
 
 class TeamInfoUpdate(BaseModel):
     teamA: dict
@@ -106,6 +119,7 @@ class AddGoalUpdate(BaseModel):
     regMinute: int
     addMinute: int
     isOwnGoal: bool
+    isPenalty: bool
 
 class AddCardUpdate(BaseModel):
     team: Literal["teamA", "teamB"]
@@ -125,6 +139,7 @@ class EditPlayerUpdate(BaseModel):
     number: int
     name: str
     onField: bool
+    timeOnField: int
     yellowCards: List[Card]
     redCards: List[Card]
     goals: List[Goal]
@@ -165,6 +180,7 @@ class DataManager:
         self.config: ScoreboardConfig | None = None
         self.scoreboard_style: ScoreboardStyleConfig | None = None
         self.period_settings: List[PeriodSetting] = []
+        self.shortcuts: List[Shortcut] = [] 
         self._config_lock = asyncio.Lock()
         self._style_lock = asyncio.Lock()
 
@@ -199,6 +215,72 @@ class DataManager:
         async with self._style_lock:
             await self._save_scoreboard_style_nolock()
 
+    # --- Updated Shortcut Logic ---
+    async def load_shortcuts(self):
+        # Default Shortcuts
+        default_shortcuts = [
+            Shortcut(action_id="toggle_timer", label="Start/Stop Timer", key="Space"),
+            Shortcut(action_id="toggle_scoreboard", label="Toggle Scoreboard", key="Ctrl+KeyS"),
+            Shortcut(action_id="toggle_match_info", label="Toggle Match Info", key="Ctrl+KeyM"),
+            Shortcut(action_id="toggle_game_report", label="Toggle Game Report", key="Ctrl+KeyG"),
+            Shortcut(action_id="toggle_players_list_all", label="Toggle All Player Lists", key="Ctrl+KeyP"),
+            Shortcut(action_id="toggle_players_list_a", label="Toggle Team A List", key=None),
+            Shortcut(action_id="toggle_players_list_b", label="Toggle Team B List", key=None),
+            Shortcut(action_id="navigate_to_dashboard", label="Go to Dashboard", key="Alt+KeyD"),
+            Shortcut(action_id="navigate_to_broadcast", label="Go to Broadcast", key="Alt+KeyB"),
+            Shortcut(action_id="navigate_to_team_info", label="Go to Team Info", key="Alt+KeyT"),
+            Shortcut(action_id="navigate_to_customization", label="Go to Customization", key="Alt+KeyC"),
+            Shortcut(action_id="navigate_to_settings", label="Go to Settings", key="Alt+KeyS"),
+            Shortcut(action_id="navigate_to_shortcuts", label="Go to Shortcuts", key="Alt+KeyK"),
+        ]
+        
+        try:
+            path = WRITABLE_SHORTCUT_FILE
+            if not os.path.exists(path):
+                # Save defaults if not exists
+                self.shortcuts = default_shortcuts
+                async with aiofiles.open(path, mode='w') as f:
+                    await f.write(json.dumps([s.model_dump() for s in self.shortcuts], indent=2))
+                print("Default shortcuts created.")
+                return
+
+            async with aiofiles.open(path, mode='r') as f:
+                content = await f.read()
+                data = json.loads(content)
+                loaded_shortcuts = [Shortcut.model_validate(item) for item in data]
+                
+                # Merge logic: Ensure new defaults appear in existing files
+                final_shortcuts = []
+                loaded_map = {s.action_id: s for s in loaded_shortcuts}
+                
+                # Preserve existing, add missing defaults
+                # We iterate defaults to keep a nice order
+                for default in default_shortcuts:
+                    if default.action_id in loaded_map:
+                        final_shortcuts.append(loaded_map[default.action_id])
+                    else:
+                        final_shortcuts.append(default)
+                
+                self.shortcuts = final_shortcuts
+            print("Shortcuts loaded.")
+        except Exception as e:
+            print(f"Error loading shortcuts: {e}")
+            self.shortcuts = default_shortcuts
+
+    def get_shortcuts(self) -> List[Shortcut]:
+        return self.shortcuts
+
+    async def update_shortcut(self, update: ShortcutUpdate) -> List[Shortcut]:
+        for s in self.shortcuts:
+            if s.action_id == update.action_id:
+                s.key = update.key
+                break
+        
+        async with aiofiles.open(WRITABLE_SHORTCUT_FILE, mode='w') as f:
+            await f.write(json.dumps([s.model_dump() for s in self.shortcuts], indent=2))
+        return self.shortcuts
+
+    # ... (Rest of file unchanged: load_config, get_raw_json, etc.) ...
     async def load_config(self):
         async with self._config_lock:
             try:
@@ -209,49 +291,49 @@ class DataManager:
                     for team_key in ['teamA', 'teamB']:
                         if team_key in data and 'players' in data[team_key]:
                             for player in data[team_key]['players']:
-                                # Migrate Goals (int -> dict)
+                                if 'timeOnField' not in player:
+                                    player['timeOnField'] = 0
+                                    migrated = True
+                                if isinstance(player.get('yellowCards'), int):
+                                    player['yellowCards'] = []
+                                    migrated = True
+                                if isinstance(player.get('redCards'), int):
+                                    player['redCards'] = []
+                                    migrated = True
                                 if 'goals' in player:
                                     new_goals = []
                                     for g in player['goals']:
                                         if isinstance(g, int):
                                             is_og = g < 0
                                             minute = abs(g)
-                                            new_goals.append({"regMinute": minute, "addMinute": 0, "isOwnGoal": is_og})
+                                            new_goals.append({"regMinute": minute, "addMinute": 0, "isOwnGoal": is_og, "isPenalty": False})
                                             migrated = True
-                                        else:
+                                        else: 
+                                            if 'isPenalty' not in g:
+                                                g['isPenalty'] = False
+                                                migrated = True
                                             new_goals.append(g)
                                     player['goals'] = new_goals
-
-                                # Migrate Yellow Cards (int -> dict)
                                 if 'yellowCards' in player:
                                     new_yellows = []
                                     for y in player['yellowCards']:
                                         if isinstance(y, int):
                                             new_yellows.append({"regMinute": y, "addMinute": 0})
                                             migrated = True
-                                        else:
-                                            new_yellows.append(y)
+                                        else: new_yellows.append(y)
                                     player['yellowCards'] = new_yellows
-
-                                # Migrate Red Cards (int -> dict)
                                 if 'redCards' in player:
                                     new_reds = []
                                     for r in player['redCards']:
                                         if isinstance(r, int):
                                             new_reds.append({"regMinute": r, "addMinute": 0})
                                             migrated = True
-                                        else:
-                                            new_reds.append(r)
+                                        else: new_reds.append(r)
                                     player['redCards'] = new_reds
-                    
-                    if 'currentPeriod' not in data:
-                        data['currentPeriod'] = "First Half"
-                        
+                    if 'currentPeriod' not in data: data['currentPeriod'] = "First Half"
                     self.config = ScoreboardConfig.model_validate(data)
                 print("Config loaded successfully.")
-                if migrated:
-                    await self._save_config_nolock()
-
+                if migrated: await self._save_config_nolock()
             except (FileNotFoundError, ValidationError):
                 print(f"Writable config not found. Loading default.")
                 try:
@@ -259,9 +341,7 @@ class DataManager:
                         content = await f.read()
                         self.config = ScoreboardConfig.model_validate_json(content)
                     await self._save_config_nolock() 
-                except Exception as e:
-                    print(f"CRITICAL: Could not load bundled config: {e}")
-                    raise
+                except Exception as e: print(f"CRITICAL: Could not load bundled config: {e}"); raise
 
     async def load_scoreboard_style(self):
         async with self._style_lock:
@@ -314,8 +394,18 @@ class DataManager:
              print(f"Error loading period settings: {e}")
              self.period_settings = []
 
-    def get_period_settings(self) -> List[PeriodSetting]:
-        return self.period_settings
+    def get_period_settings(self) -> List[PeriodSetting]: return self.period_settings
+
+    async def save_period_settings(self, periods: List[PeriodSetting], is_ascending: bool = True):
+        # Sort the periods by endTime before saving, based on the is_ascending flag
+        sorted_periods = sorted(periods, key=lambda p: p.endTime, reverse=not is_ascending)
+        self.period_settings = sorted_periods
+        try:
+            async with aiofiles.open(WRITABLE_PERIOD_FILE, mode='w') as f:
+                await f.write(json.dumps([p.model_dump() for p in sorted_periods], indent=2))
+            print(f"Period settings saved to {WRITABLE_PERIOD_FILE}")
+        except Exception as e:
+            print(f"!!! Critical Error saving period settings to {WRITABLE_PERIOD_FILE}: {e}")
 
     async def set_current_period(self, period_name: str) -> ScoreboardConfig:
         config = self.get_config()
@@ -323,27 +413,22 @@ class DataManager:
         await self.save_config()
         return config
 
-    # --- Updated get_raw_json to include time-period-setting.json ---
     async def get_raw_json(self, file_name: str) -> str:
         path_to_read = None
-        if file_name == "team-info-config.json": 
-            path_to_read = self.file_path
-        elif file_name == "scoreboard-customization.json": 
-            path_to_read = self.scoreboard_style_path
-        elif file_name == "time-period-setting.json":
-            # Check writable first, then bundled
-            if os.path.exists(WRITABLE_PERIOD_FILE):
-                path_to_read = WRITABLE_PERIOD_FILE
-            else:
-                path_to_read = BUNDLED_PERIOD_FILE
+        if file_name == "team-info-config.json": path_to_read = self.file_path
+        elif file_name == "scoreboard-customization.json": path_to_read = self.scoreboard_style_path
+        elif file_name == "time-period-setting.json": path_to_read = WRITABLE_PERIOD_FILE if os.path.exists(WRITABLE_PERIOD_FILE) else BUNDLED_PERIOD_FILE
+        elif file_name == "shortcuts.json": path_to_read = WRITABLE_SHORTCUT_FILE if os.path.exists(WRITABLE_SHORTCUT_FILE) else BUNDLED_SHORTCUT_FILE
 
         if path_to_read and os.path.exists(path_to_read):
             async with aiofiles.open(path_to_read, mode='r') as f: return await f.read()
         raise FileNotFoundError(f"{file_name} not found.")
 
-    async def set_raw_json(self, file_name: str, raw_json_data: str):
+    async def set_raw_json(self, file_name: str, raw_json_data: str) -> List[str]:
         path_to_write = None
         data_to_write = ""
+        warnings = []
+
         try:
             if file_name == "team-info-config.json":
                 model = ScoreboardConfig.model_validate_json(raw_json_data)
@@ -354,21 +439,37 @@ class DataManager:
                 path_to_write = self.scoreboard_style_path
                 data_to_write = model.model_dump_json(indent=2)
             elif file_name == "time-period-setting.json":
-                # Validate list of periods
                 raw_list = json.loads(raw_json_data)
-                if not isinstance(raw_list, list):
-                    raise ValueError("Root element must be a list")
+                if not isinstance(raw_list, list): raise ValueError("Root element must be a list")
                 models = [PeriodSetting.model_validate(item) for item in raw_list]
                 path_to_write = WRITABLE_PERIOD_FILE
                 data_to_write = json.dumps([m.model_dump() for m in models], indent=2)
+                
+            elif file_name == "shortcuts.json":
+                imported_shortcuts = json.loads(raw_json_data)
+                if not isinstance(imported_shortcuts, list):
+                    raise ValueError("Root element must be a list")
+                existing_map = {s.action_id: s for s in self.shortcuts}
+                for item in imported_shortcuts:
+                    action_id = item.get("action_id")
+                    key = item.get("key")
+                    if action_id in existing_map:
+                        existing_map[action_id].key = key
+                    else:
+                        warnings.append(f"Unknown shortcut action ignored: {action_id}")
+                path_to_write = WRITABLE_SHORTCUT_FILE
+                data_to_write = json.dumps([s.model_dump() for s in self.shortcuts], indent=2)
+                
             else: raise Exception("Invalid file name.")
             
             async with aiofiles.open(path_to_write, mode='w') as f: await f.write(data_to_write)
             
-            # Reload
             if file_name == "team-info-config.json": await self.load_config()
             elif file_name == "scoreboard-customization.json": await self.load_scoreboard_style()
             elif file_name == "time-period-setting.json": await self.load_period_settings()
+            elif file_name == "shortcuts.json": await self.load_shortcuts()
+            
+            return warnings
 
         except ValidationError as e:
             raise Exception(f"Invalid JSON structure. {str(e)}")
@@ -464,7 +565,8 @@ class DataManager:
                 new_goal = Goal(
                     regMinute=update.regMinute,
                     addMinute=update.addMinute,
-                    isOwnGoal=update.isOwnGoal
+                    isOwnGoal=update.isOwnGoal,
+                    isPenalty=update.isPenalty
                 )
                 player.goals.append(new_goal)
                 player.goals.sort(key=lambda g: (g.regMinute, g.addMinute))
@@ -509,6 +611,7 @@ class DataManager:
                 player.number = update.number
                 player.name = update.name
                 player.onField = update.onField
+                player.timeOnField = update.timeOnField
                 player.yellowCards = sorted(update.yellowCards, key=lambda c: (c.regMinute, c.addMinute))[:2]
                 player.redCards = sorted(update.redCards, key=lambda c: (c.regMinute, c.addMinute))[:1]
                 player.goals = sorted(update.goals, key=lambda g: (g.regMinute, g.addMinute))
