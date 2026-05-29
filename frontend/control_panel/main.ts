@@ -181,5 +181,103 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Initialize Shortcuts: TRUE = Enable Notifications ---
   await initGlobalShortcuts(true);
   
+  // --- Initialize Search Bar ---
+  const searchInput = document.getElementById('sidebar-search-input') as HTMLInputElement;
+  const searchSuggestions = document.getElementById('sidebar-search-suggestions') as HTMLDivElement;
+  
+  if (searchInput && searchSuggestions) {
+    const searchIndex = [
+      { term: 'Dashboard', page: 'dashboard', desc: 'Main overview' },
+      { term: 'Score', page: 'dashboard', desc: 'Update match score' },
+      { term: 'Timer', page: 'dashboard', desc: 'Control match clock' },
+      { term: 'Substitution', page: 'dashboard', desc: 'Player substitutions' },
+      { term: 'Broadcast', page: 'broadcast', desc: 'General info' },
+      { term: 'Match Title', page: 'broadcast', desc: 'Update title' },
+      { term: 'League', page: 'broadcast', desc: 'League name' },
+      { term: 'Period', page: 'broadcast', desc: 'Current half/period' },
+      { term: 'Details', page: 'details', desc: 'Match events' },
+      { term: 'Statistics', page: 'details', desc: 'Match stats' },
+      { term: 'Timeline', page: 'details', desc: 'Events timeline' },
+      { term: 'Cards', page: 'details', desc: 'Yellow/Red cards' },
+      { term: 'Possession', page: 'details', desc: 'Ball possession' },
+      { term: 'Customization', page: 'customization', desc: 'Appearance' },
+      { term: 'Colors', page: 'customization', desc: 'Team colors' },
+      { term: 'Fonts', page: 'customization', desc: 'Typography' },
+      { term: 'Layout', page: 'customization', desc: 'Overlay layout' },
+      { term: 'Team Info', page: 'team-info', desc: 'Roster & Staff' },
+      { term: 'Players', page: 'team-info', desc: 'Edit players' },
+      { term: 'Manager', page: 'team-info', desc: 'Edit manager' },
+      { term: 'Logos', page: 'team-info', desc: 'Team crests' },
+      { term: 'Setting', page: 'setting', desc: 'Global configuration' },
+      { term: 'Shortcuts', page: 'shortcuts', desc: 'Keyboard hotkeys' },
+      { term: 'Hotkeys', page: 'shortcuts', desc: 'Keyboard shortcuts' }
+    ];
+
+    const renderSuggestions = (query: string) => {
+      searchSuggestions.innerHTML = '';
+      if (!query.trim()) {
+        searchSuggestions.classList.add('hidden');
+        return;
+      }
+      
+      const lowerQuery = query.toLowerCase();
+      const matches = searchIndex.filter(item => 
+        item.term.toLowerCase().includes(lowerQuery) || 
+        item.desc.toLowerCase().includes(lowerQuery) ||
+        item.page.toLowerCase().includes(lowerQuery)
+      );
+
+      if (matches.length === 0) {
+        searchSuggestions.classList.add('hidden');
+        return;
+      }
+
+      matches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        
+        const termSpan = document.createElement('span');
+        termSpan.textContent = match.term;
+        
+        const pageSpan = document.createElement('span');
+        pageSpan.className = 'suggestion-page';
+        // Capitalize page name
+        const pageName = match.page.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        pageSpan.textContent = pageName;
+        
+        div.appendChild(termSpan);
+        div.appendChild(pageSpan);
+        
+        div.addEventListener('click', () => {
+          navigate(match.page);
+          searchInput.value = '';
+          searchSuggestions.classList.add('hidden');
+        });
+        
+        searchSuggestions.appendChild(div);
+      });
+      
+      searchSuggestions.classList.remove('hidden');
+    };
+
+    searchInput.addEventListener('input', (e) => {
+      renderSuggestions((e.target as HTMLInputElement).value);
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target as Node) && !searchSuggestions.contains(e.target as Node)) {
+        searchSuggestions.classList.add('hidden');
+      }
+    });
+    
+    // Show suggestions on focus if there's text
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.trim()) {
+        searchSuggestions.classList.remove('hidden');
+      }
+    });
+  }
+
   navigate('dashboard');
 });
