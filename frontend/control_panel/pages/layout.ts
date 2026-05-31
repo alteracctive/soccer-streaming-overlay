@@ -265,6 +265,28 @@ export function render(container: HTMLElement) {
       .aspect-ratio-controls button:hover {
         background: var(--bg-hover);
       }
+      /* Overlay preview anchor dots */
+      .overlay-dot {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        border: 2px solid rgba(0,0,0,0.5);
+        box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        transition: background 0.15s, transform 0.15s, border-color 0.15s;
+        pointer-events: none;
+        z-index: 50;
+      }
+      .overlay-dot.anchor-highlight {
+        background: #00ff88;
+        transform: scale(1.25);
+        border-color: rgba(0,0,0,0.7);
+      }
+      .preview-element.anchor-highlight {
+        border: 2px solid #00ff88;
+        box-shadow: 0 0 6px rgba(0,255,136,0.12);
+      }
     </style>
 
     <div class="card">
@@ -402,6 +424,62 @@ export function render(container: HTMLElement) {
   
   const elements = [elMatchInfo, elScoreRow, elTimer, elExtraTime, elVarBox, elPlayersListA, elPlayersListB, elGameReport];
 
+  // Create overlay edge/center dots inside the preview container
+  const dotKeys = ['top-left','top-center','top-right','center','middle-left','middle-right','bottom-left','bottom-center','bottom-right'];
+  const dotsMap: Record<string, HTMLDivElement> = {};
+  const createDot = (key: string) => {
+    const d = document.createElement('div');
+    d.className = 'overlay-dot';
+    d.id = `dot-${key}`;
+    d.dataset.pos = key;
+    // position
+    switch (key) {
+      case 'top-left': d.style.left = '8px'; d.style.top = '8px'; break;
+      case 'top-center': d.style.left = '50%'; d.style.top = '8px'; d.style.transform = 'translateX(-50%)'; break;
+      case 'top-right': d.style.right = '8px'; d.style.top = '8px'; break;
+      case 'center': d.style.left = '50%'; d.style.top = '50%'; d.style.transform = 'translate(-50%, -50%)'; break;
+      case 'middle-left': d.style.left = '8px'; d.style.top = '50%'; d.style.transform = 'translateY(-50%)'; break;
+      case 'middle-right': d.style.right = '8px'; d.style.top = '50%'; d.style.transform = 'translateY(-50%)'; break;
+      case 'bottom-left': d.style.left = '8px'; d.style.bottom = '8px'; break;
+      case 'bottom-center': d.style.left = '50%'; d.style.bottom = '8px'; d.style.transform = 'translateX(-50%)'; break;
+      case 'bottom-right': d.style.right = '8px'; d.style.bottom = '8px'; break;
+    }
+    previewContainer.appendChild(d);
+    dotsMap[key] = d;
+  };
+  dotKeys.forEach(createDot);
+
+  // Mapping of element -> anchor (either a dot or another element id)
+  const anchorMap: Record<string, { type: 'dot' | 'element', targetId: string }> = {
+    'match-info': { type: 'element', targetId: 'score-row' },
+    'score-row': { type: 'dot', targetId: 'top-left' },
+    'timer': { type: 'element', targetId: 'score-row' },
+    'extra-time': { type: 'element', targetId: 'timer' },
+    'var-box': { type: 'dot', targetId: 'bottom-left' },
+    'players-list-a': { type: 'dot', targetId: 'middle-left' },
+    'players-list-b': { type: 'dot', targetId: 'middle-right' },
+    'game-report': { type: 'dot', targetId: 'bottom-center' }
+  };
+
+  const clearAnchorHighlights = () => {
+    Object.values(dotsMap).forEach(d => d.classList.remove('anchor-highlight'));
+    elements.forEach(e => e.classList.remove('anchor-highlight'));
+  };
+
+  const highlightAnchorFor = (elId: string) => {
+    clearAnchorHighlights();
+    const entry = anchorMap[elId];
+    if (!entry) return;
+    if (entry.type === 'dot') {
+      const dot = dotsMap[entry.targetId];
+      if (dot) dot.classList.add('anchor-highlight');
+    } else {
+      // highlight the target element (if present)
+      const target = elements.find(x => (x.dataset.id === entry.targetId));
+      if (target) target.classList.add('anchor-highlight');
+    }
+  };
+
   const aspectRatioSelect = container.querySelector('#aspect-ratio-select') as HTMLSelectElement;
   const resWidthInput = container.querySelector('#res-width') as HTMLInputElement;
   const resHeightInput = container.querySelector('#res-height') as HTMLInputElement;
@@ -499,35 +577,70 @@ export function render(container: HTMLElement) {
       html += `<div class="details-row"><div class="details-label">${label}</div><div>${swatch}${value}</div></div>`;
     };
 
+    const computePadding = (alignmentText: string, elId: string) => {
+      // default padding values (px)
+      const defaults = { x: 0, y: 20 };
+      // timer special-case: depends on scoreboardStyle.timerPosition
+      if (elId === 'timer') {
+        if ((scoreboardStyle as any).timerPosition === 'Right') return { x: 8, y: 0 };
+        return { x: 0, y: 8 };
+      }
+
+      // heuristics based on keywords in alignmentText
+      const t = alignmentText.toLowerCase();
+      if (t.includes('top left') || t.includes('with margins')) return { x: 40, y: 20 };
+      if (t.includes('bottom left')) return { x: 40, y: 20 };
+      if (t.includes('left edge')) return { x: 20, y: 0 };
+      if (t.includes('right edge')) return { x: 20, y: 0 };
+      if (t.includes('bottom edge') || t.includes('bottom')) return { x: 0, y: 20 };
+      if (t.includes('top')) return { x: 0, y: 20 };
+      if (t.includes('right')) return { x: 8, y: 0 };
+      if (t.includes('middle')) return { x: 0, y: 0 };
+      // fallback
+      return defaults;
+    };
+
+    const addAlignmentRows = (alignmentText: string, elId: string) => {
+      let anchor = alignmentText;
+      const m = alignmentText.match(/(.*)\s*\((.*)\)/);
+      if (m) {
+        anchor = m[1].trim();
+      }
+      if (anchor.startsWith('Relative to ')) anchor = anchor.replace('Relative to ', '').trim();
+      const pad = computePadding(alignmentText, elId);
+      addRow('Anchor', anchor);
+      addRow('Padding', `(${pad.x}px, ${pad.y}px)`);
+    };
+
     switch (elementId) {
       case 'match-info':
         addRow('Element', 'Match Info Banner');
-        addRow('Alignment', 'Relative to Main Scoreboard Row (Top)');
+        addAlignmentRows('Relative to Main Scoreboard Row (Top)', 'match-info');
         addRow('Text', scoreboardStyle.matchInfo || '(Empty)');
         addRow('Background Color', `Box Alt Color (${scoreboardStyle.boxAltColor})`, scoreboardStyle.boxAltColor);
         addRow('Text Color', `Text Main Color (${scoreboardStyle.textMainColor})`, scoreboardStyle.textMainColor);
         break;
       case 'score-row':
         addRow('Element', 'Main Scoreboard Row');
-        addRow('Alignment', 'Top Left Corner of Screen (with margins)');
+        addAlignmentRows('Top Left Corner of Screen (with margins)', 'score-row');
         addRow('Background Color', `Box Main Color (${scoreboardStyle.boxMainColor})`, scoreboardStyle.boxMainColor);
         addRow('Text Color', `Text Main Color (${scoreboardStyle.textMainColor})`, scoreboardStyle.textMainColor);
         break;
       case 'timer':
         addRow('Element', 'Timer Box');
-        addRow('Alignment', 'Relative to Main Scoreboard Row (Bottom)');
+        addAlignmentRows('Relative to Main Scoreboard Row (Bottom)', 'timer');
         addRow('Background Color', `Box Main Color (${scoreboardStyle.boxMainColor})`, scoreboardStyle.boxMainColor);
         addRow('Text Color', `Text Main Color (${scoreboardStyle.textMainColor})`, scoreboardStyle.textMainColor);
         break;
       case 'extra-time':
         addRow('Element', 'Extra Time Box');
-        addRow('Alignment', 'Relative to Timer Box (Right)');
+        addAlignmentRows('Relative to Timer Box (Right)', 'extra-time');
         addRow('Background Color', `Box Main Color (${scoreboardStyle.boxMainColor})`, scoreboardStyle.boxMainColor);
         addRow('Text Color', `Text Alt Color (${scoreboardStyle.textAltColor})`, scoreboardStyle.textAltColor);
         break;
       case 'var-box':
         addRow('Element', 'VAR Box');
-        addRow('Alignment', 'Bottom Left Corner of Screen (with margins)');
+        addAlignmentRows('Bottom Left Corner of Screen (with margins)', 'var-box');
         addRow('Header Background', `Box Alt Color (${scoreboardStyle.boxAltColor})`, scoreboardStyle.boxAltColor);
         addRow('Header Text Color', `Text Alt Color (${scoreboardStyle.textAltColor})`, scoreboardStyle.textAltColor);
         addRow('Content Background', `Box Main Color (${scoreboardStyle.boxMainColor})`, scoreboardStyle.boxMainColor);
@@ -535,17 +648,17 @@ export function render(container: HTMLElement) {
         break;
       case 'players-list-a':
         addRow('Element', 'Team A Players List');
-        addRow('Alignment', 'Left Edge (Middle Y-axis)');
+        addAlignmentRows('Left Edge (Middle Y-axis)', 'players-list-a');
         addRow('Background Color', 'Fixed Dark Overlay (rgba(0,0,0,0.75))');
         break;
       case 'players-list-b':
         addRow('Element', 'Team B Players List');
-        addRow('Alignment', 'Right Edge (Middle Y-axis)');
+        addAlignmentRows('Right Edge (Middle Y-axis)', 'players-list-b');
         addRow('Background Color', 'Fixed Dark Overlay (rgba(0,0,0,0.75))');
         break;
       case 'game-report':
         addRow('Element', 'Game Report Container');
-        addRow('Alignment', 'Bottom Edge (Center X-axis)');
+        addAlignmentRows('Bottom Edge (Center X-axis)', 'game-report');
         addRow('Background Color', 'Fixed Dark Overlay (rgba(0,0,0,0.75))');
         break;
     }
@@ -558,6 +671,9 @@ export function render(container: HTMLElement) {
     el.addEventListener('click', () => {
       elements.forEach(e => e.classList.remove('selected'));
       el.classList.add('selected');
+      // highlight the anchor target (dot or element)
+      clearAnchorHighlights();
+      highlightAnchorFor(el.dataset.id || '');
       renderDetails(el.dataset.id || '');
     });
   });

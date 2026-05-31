@@ -148,9 +148,14 @@ export function render(container: HTMLElement) {
              </div>
              <div style="text-align: right;">
                 <label style="font-size: 12px; margin-bottom: 4px; display: block;">Target</label>
-                <button id="set-to-period-end-btn" class="btn-secondary" style="white-space: nowrap; height: 35px; font-size: 13px;">
-                   Set to <span id="period-end-time-btn" style="font-weight: bold;">--'</span>
-                </button>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                   <button id="set-to-period-start-btn" class="btn-secondary" style="white-space: nowrap; height: 35px; font-size: 13px; flex: 1;">
+                      Set to <span id="period-start-time-btn" style="font-weight: bold;">0:00</span>
+                   </button>
+                   <button id="set-to-period-end-btn" class="btn-secondary" style="white-space: nowrap; height: 35px; font-size: 13px; flex: 1;">
+                      Set to <span id="period-end-time-btn" style="font-weight: bold;">--'</span>
+                   </button>
+                </div>
              </div>
         </div>
       </div>
@@ -195,9 +200,22 @@ export function render(container: HTMLElement) {
   const teamAInfoDisplay = container.querySelector('#team-a-info-display') as HTMLDivElement;
   const teamBInfoDisplay = container.querySelector('#team-b-info-display') as HTMLDivElement;
   const periodSelect = container.querySelector('#period-select') as HTMLSelectElement;
+  const periodStartTimeBtnSpan = container.querySelector('#period-start-time-btn') as HTMLSpanElement;
   const periodEndTimeBtnSpan = container.querySelector('#period-end-time-btn') as HTMLSpanElement;
+  const setToPeriodStartBtn = container.querySelector('#set-to-period-start-btn') as HTMLButtonElement;
   const setToPeriodEndBtn = container.querySelector('#set-to-period-end-btn') as HTMLButtonElement;
 
+
+  const getPeriodStartTime = (periodIndex: number): number => {
+      if (periodIndex <= 0) return 0;
+      const currentEndTime = allPeriods[periodIndex].endTime;
+      for (let i = periodIndex - 1; i >= 0; i -= 1) {
+          if (allPeriods[i].endTime !== currentEndTime) {
+              return allPeriods[i].endTime;
+          }
+      }
+      return 0;
+  };
 
   const initPeriods = async () => {
     try {
@@ -211,14 +229,20 @@ export function render(container: HTMLElement) {
   
   const updateEndTimeLabel = () => {
       const selectedName = periodSelect.value;
-      const period = allPeriods.find(p => p.name === selectedName);
+      const periodIndex = allPeriods.findIndex(p => p.name === selectedName);
+      const period = allPeriods[periodIndex];
       if (period) {
           currentPeriodLimit = period.endTime;
           periodEndTimeBtnSpan.textContent = `${period.endTime}:00`;
+          const startTime = getPeriodStartTime(periodIndex);
+          periodStartTimeBtnSpan.textContent = `${startTime}:00`;
+          setToPeriodStartBtn.disabled = false;
           setToPeriodEndBtn.disabled = false;
       } else {
           periodEndTimeBtnSpan.textContent = "--";
+          periodStartTimeBtnSpan.textContent = "0:00";
           setToPeriodEndBtn.disabled = true;
+          setToPeriodStartBtn.disabled = true;
       }
   };
 
@@ -417,6 +441,16 @@ export function render(container: HTMLElement) {
   
   extraTimeActionBtn.addEventListener('click', () => { const { extraTime } = getState(); if (extraTime.isVisible) { toggleExtraTimeVisibility(); } else { let minutes = parseInt(extraTimeInput.value, 10) || 0; if (minutes < 0) minutes = 0; if (minutes > 99) minutes = 99; extraTimeInput.value = minutes.toString(); setExtraTime(minutes); toggleExtraTimeVisibility(); } });
   periodSelect.addEventListener('change', async () => { updateEndTimeLabel(); await setPeriod(periodSelect.value); showNotification(`Period set to ${periodSelect.value}`); });
+  setToPeriodStartBtn.addEventListener('click', () => {
+      const selectedName = periodSelect.value;
+      const periodIndex = allPeriods.findIndex(p => p.name === selectedName);
+      const period = allPeriods[periodIndex];
+      if (period) {
+          const startTime = getPeriodStartTime(periodIndex);
+          timerControls.set(startTime * 60);
+          showNotification(`Timer set to ${startTime}:00`);
+      }
+  });
   setToPeriodEndBtn.addEventListener('click', async () => { const selectedName = periodSelect.value; const periodIndex = allPeriods.findIndex(p => p.name === selectedName); const period = allPeriods[periodIndex]; if (period) { const seconds = period.endTime * 60; timerControls.set(seconds); showNotification(`Timer set to ${period.endTime}:00`); const { isAutoAdvancePeriodOn } = getState(); if (isAutoAdvancePeriodOn) { const nextPeriod = allPeriods[periodIndex + 1]; if (nextPeriod) { await setPeriod(nextPeriod.name); showNotification(`Auto-advanced to ${nextPeriod.name}`); } } } });
 
   initPeriods();
