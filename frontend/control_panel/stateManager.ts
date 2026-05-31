@@ -22,7 +22,7 @@ export interface TimerStatus {
     seconds: number;
 }
 export interface ExtraTimeStatus { minutes: number; isVisible: boolean; }
-export interface ScoreboardStyleConfig { primary: string; secondary: string; tertiary: string; opacity: number; scale: number; matchInfo: string; timerPosition: "Under" | "Right"; showRedCardIndicators: boolean; }
+export interface ScoreboardStyleConfig { boxMainColor: string; textMainColor: string; textAltColor: string; boxAltColor: string; opacity: number; scale: number; matchInfo: string; timerPosition: "Under" | "Right"; showRedCardIndicators: boolean; }
 export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition' | 'showRedCardIndicators'>;
 export interface LayoutConfig { position: "Under" | "Right"; showRedCardIndicators: boolean; }
 

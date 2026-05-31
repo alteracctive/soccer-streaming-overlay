@@ -46,7 +46,7 @@ This project is a multi-component sports broadcasting graphic system.
 ### 4. Running the Project Locally
 When testing or validating your code changes, use the following commands:
 *   **Frontend**: `cd frontend && npm install && npm run dev`
-*   **Backend**: `cd backend && pip install -r requirements.txt && uvicorn main:app --reload`
+*   **Backend**: **DO NOT run the backend yourself via shell commands.** Ask the user to start the backend locally on their machine, as the AI environment may not successfully run the FastAPI server. The user should run `cd backend && uvicorn main:app --reload` (or provide them with instructions on how to do it).
 *   **Desktop**: `cd desktop-app && npm install && npm start`
 *   **Validation**: Always run `cd frontend && npm run build` (which includes `tsc`) to ensure no TypeScript compilation errors were introduced.
 

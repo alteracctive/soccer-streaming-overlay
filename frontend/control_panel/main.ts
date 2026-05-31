@@ -6,6 +6,7 @@ import { render as renderTeamInfo } from './pages/team-info';
 import { render as renderSetting } from './pages/setting';
 import { render as renderDetails } from './pages/details';
 import { render as renderShortcuts } from './pages/shortcuts';
+import { render as renderLayout } from './pages/layout';
 import { initGlobalShortcuts } from './globalShortcuts';
 
 import {
@@ -39,6 +40,7 @@ const pages: Record<string, PageModule> = {
   dashboard: { render: renderDashboard },
   broadcast: { render: renderBroadcast },
   customization: { render: renderCustomization },
+  layout: { render: renderLayout },
   'team-info': { render: renderTeamInfo },
   setting: { render: renderSetting },
   details: { render: renderDetails },
@@ -195,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       { term: 'Match Title', page: 'broadcast', desc: 'Update title' },
       { term: 'League', page: 'broadcast', desc: 'League name' },
       { term: 'Period', page: 'broadcast', desc: 'Current half/period' },
-      { term: 'Details', page: 'details', desc: 'Match events' },
+      { term: 'Match Details', page: 'details', desc: 'Match events' },
       { term: 'Statistics', page: 'details', desc: 'Match stats' },
       { term: 'Timeline', page: 'details', desc: 'Events timeline' },
       { term: 'Cards', page: 'details', desc: 'Yellow/Red cards' },

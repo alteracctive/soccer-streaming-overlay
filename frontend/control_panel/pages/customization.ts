@@ -109,19 +109,25 @@ export function render(container: HTMLElement) {
                 <div class="color-picker-row">
                    <label id="sb-color-primary-label" for="sb-color-primary">Box Background Color</label>
                    <input type="color" id="sb-color-primary" value="${
-                     scoreboardStyle?.primary ?? '#000000'
+                     scoreboardStyle?.boxMainColor ?? '#000000'
+                   }">
+                </div>
+                <div class="color-picker-row">
+                   <label id="sb-box-bg-alt-label" for="sb-box-bg-alt">Box Background Alternative</label>
+                   <input type="color" id="sb-box-bg-alt" value="${
+                     scoreboardStyle?.boxAltColor ?? '#000e29'
                    }">
                 </div>
                 <div class="color-picker-row">
                    <label id="sb-color-secondary-label" for="sb-color-secondary">Main Text Color</label>
                    <input type="color" id="sb-color-secondary" value="${
-                     scoreboardStyle?.secondary ?? '#FFFFFF'
+                     scoreboardStyle?.textMainColor ?? '#FFFFFF'
                    }">
                 </div>
                 <div class="color-picker-row">
                    <label id="sb-color-tertiary-label" for="sb-color-tertiary">Alternative Text Color</label>
                    <input type="color" id="sb-color-tertiary" value="${
-                     scoreboardStyle?.tertiary ?? '#ffd700'
+                     scoreboardStyle?.textAltColor ?? '#ffd700'
                    }">
                 </div>
       
@@ -237,6 +243,9 @@ export function render(container: HTMLElement) {
         const sbTertiaryInput = container.querySelector(
           '#sb-color-tertiary',
         ) as HTMLInputElement;
+        const sbBoxBgAltInput = container.querySelector(
+          '#sb-box-bg-alt',
+        ) as HTMLInputElement;
         const sbOpacitySlider = container.querySelector(
           '#sb-opacity',
         ) as HTMLInputElement;
@@ -254,6 +263,7 @@ export function render(container: HTMLElement) {
         const sbPrimaryLabel = container.querySelector('#sb-color-primary-label') as HTMLLabelElement;
         const sbSecondaryLabel = container.querySelector('#sb-color-secondary-label') as HTMLLabelElement;
         const sbTertiaryLabel = container.querySelector('#sb-color-tertiary-label') as HTMLLabelElement;
+        const sbBoxBgAltLabel = container.querySelector('#sb-box-bg-alt-label') as HTMLLabelElement;
         const sbOpacityLabel = container.querySelector('#sb-opacity-label') as HTMLLabelElement;
         const sbScaleLabel = container.querySelector('#sb-scale-label') as HTMLLabelElement;
         const unsavedStyle = container.querySelector('#unsaved-style') as HTMLSpanElement;
@@ -315,9 +325,9 @@ export function render(container: HTMLElement) {
       
           // --- Update Style Section ---
           if (!isStyleUnsaved) {
-            sbPrimaryInput.value = scoreboardStyle.primary;
-            sbSecondaryInput.value = scoreboardStyle.secondary;
-            sbTertiaryInput.value = scoreboardStyle.tertiary;
+            sbPrimaryInput.value = scoreboardStyle.boxMainColor;
+            sbSecondaryInput.value = scoreboardStyle.textMainColor;
+            sbTertiaryInput.value = scoreboardStyle.textAltColor;
             sbOpacitySlider.value = scoreboardStyle.opacity.toString();
             sbOpacityValueSpan.textContent = `${scoreboardStyle.opacity}%`;
             sbScaleSlider.value = scoreboardStyle.scale.toString();
@@ -381,6 +391,11 @@ export function render(container: HTMLElement) {
           sbTertiaryLabel.style.fontStyle = 'italic';
           updateUnsavedIndicators();
         });
+        sbBoxBgAltInput.addEventListener('input', () => {
+          isStyleUnsaved = true;
+          sbBoxBgAltLabel.style.fontStyle = 'italic';
+          updateUnsavedIndicators();
+        });
         sbOpacitySlider.addEventListener('input', () => {
           isStyleUnsaved = true;
           sbOpacityValueSpan.textContent = `${sbOpacitySlider.value}%`;
@@ -422,9 +437,10 @@ export function render(container: HTMLElement) {
           ?.addEventListener('click', async () => {
             try {
               const styleData: ScoreboardStyleOnly = {
-                primary: sbPrimaryInput.value,
-                secondary: sbSecondaryInput.value,
-                tertiary: sbTertiaryInput.value,
+                boxMainColor: sbPrimaryInput.value,
+                textMainColor: sbSecondaryInput.value,
+                textAltColor: sbTertiaryInput.value,
+                boxAltColor: sbBoxBgAltInput.value,
                 opacity: parseInt(sbOpacitySlider.value, 10),
                 scale: parseInt(sbScaleSlider.value, 10),
               };

@@ -312,13 +312,12 @@ body {
 }
 
 .var-title {
-    background-color: var(--scoreboard-text-tertiary);
-    color: black;
+    background-color: var(--scoreboard-box-alt);
+    color: var(--scoreboard-text-tertiary);
     font-weight: bold;
     text-align: center;
     padding: 2px 8px;
     font-size: 1.2em;
-    text-shadow: 0 0 5px rgba(255,255,255,0.7);
 }
 
 .var-content {

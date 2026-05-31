@@ -1,7 +1,8 @@
 {
-  "primary": "#001f5c",
-  "secondary": "#ffffff",
-  "tertiary": "#eeff00",
+  "boxMainColor": "#002266",
+  "textMainColor": "#ffffff",
+  "textAltColor": "#eeff00",
+  "boxAltColor": "#eb6a00",
   "opacity": 100,
   "scale": 80,
   "matchInfo": "Sport Cup | Match 1",
