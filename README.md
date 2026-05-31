@@ -17,6 +17,7 @@ The application is a hybrid: a **FastAPI (Python)** backend handles data, a **Vi
         * **Futsal Mode:** Toggle a countdown timer via the Settings page.
         * Includes start, stop, reset, set time, and Additional Time (+5') controls.
     * **Red Card Indicators:** Visual indicators appear on the overlay next to the team score for each player sent off.
+    * **VAR Control:** A dedicated interface to display Video Assistant Referee (VAR) decisions and messages on the overlay.
 
 * **Full Roster & Stat Management (in Team Info page):**
     * Add, edit, and delete players for each team.
@@ -46,6 +47,7 @@ The application is a hybrid: a **FastAPI (Python)** backend handles data, a **Vi
     * **Auto-add Score:** Automatically increment the team score when a goal is given to a player.
     * **Auto-convert Cards:** Automatically issue a red card when a player is given their second yellow card.
     * **Import/Export:** Download (Export) your current files as backups. Upload (Import) a file to instantly overwrite and load a new configuration.
+    * **Configurable Global Shortcuts:** Customize keyboard shortcuts for most major actions from the settings page.
 
 ---
 
@@ -62,7 +64,7 @@ This application is distributed as a portable Windows executable (`.exe`). No in
 * **Broadcast:** Toggle the visibility of the main overlay components: Scoreboard, Details Page (Report/Timeline), and Players List.
 * **Team Info:** Your pre-game setup page. Set team names, the three team colors, and build your player rosters. You can also manage detailed stats (goals, own goals, cards) from here.
 * **Customization:** Adjust the visual appearance of the overlay, including colors, opacity, scale, timer position, and text settings.
-* **Setting:** Configure application behavior (Futsal timer mode, auto-stat rules) and manage your config files using the Import/Export tool.
+* **Setting:** Configure application behavior (Futsal timer mode, auto-stat rules), manage shortcuts, and manage your config files using the Import/Export tool.
 
 ---
 
@@ -89,15 +91,59 @@ To display the overlays on your stream, you add them as **Browser Sources** in O
 The overlays will now appear on your canvas. Use the **Broadcast** page in the Control Panel to toggle their visibility live during your stream.
 
 ---
+## Architecture
 
-## Technical Details & Data
+This application operates as a self-contained ecosystem on your local machine, comprised of three main parts:
 
-### Data Storage
-The application stores all data in two JSON files, located in the same folder as the `.exe`:
-* `team-info-config.json`: Stores all team information, including names, abbreviations, colors, scores, and the complete player rosters with all their stats (goals, cards, etc.).
-* `scoreboard-customization.json`: Stores all visual settings, including overlay colors, opacity, scale, match info text, and the timer's position.
+1.  **Electron App (The Wrapper):** The main executable you run. Its job is to start the other two components and display the user interface.
+2.  **FastAPI Backend (The Brains):** A Python server that runs on `http://localhost:8000`. It manages all the data, logic, and state of the match. It communicates with the frontend via a REST API and WebSockets for real-time updates.
+3.  **Vite Frontend (The Control Panel & Overlay):** A TypeScript-based web interface. The Electron app loads the control panel UI you interact with. A separate part of this frontend is the Overlay, which is served by a dedicated lightweight Express server on `http://localhost:8001` so OBS can access it.
 
-### Network Ports
-The application uses local network ports to communicate. Ensure these ports are free on your system:
-* **Port 8000:** Used by the Python FastAPI backend for all data and logic.
-* **Port 8001:** Used by the internal Express server to serve the overlay's HTML/CSS/JS files to OBS.
+---
+
+## Data & Configuration
+
+All application data is stored in JSON files located in the same folder as the `.exe`. This makes your entire setup portable.
+
+*   `team-info-config.json`: Stores all team information, including names, abbreviations, colors, scores, and the complete player rosters with all their stats (goals, cards, etc.).
+*   `scoreboard-customization.json`: Stores all visual settings, including overlay colors, opacity, scale, match info text, and the timer's position.
+*   `time-period-setting.json`: Stores the configuration for the game periods (e.g., First Half, Break Time), including their names and duration.
+*   `shortcuts.json`: Stores your custom keyboard shortcut configurations.
+
+---
+
+## For Developers
+
+If you want to contribute or run the application in a development environment, you'll need to run the backend and frontend separately.
+
+**1. Backend (FastAPI):**
+```bash
+cd backend
+# Create and activate a virtual environment
+python -m venv venv
+venv\Scripts\activate
+# Install dependencies
+pip install -r requirements.txt
+# Run the server
+python main.py
+```
+
+**2. Frontend (Vite):**
+```bash
+cd frontend
+# Install dependencies
+npm install
+# Run the development server
+npm run dev
+```
+The control panel will be available at `http://localhost:5173` (or another port if 5173 is in use).
+
+---
+
+## Technologies Used
+
+*   **Backend:** Python, FastAPI
+*   **Frontend:** TypeScript, Vite, HTML/CSS
+*   **Desktop App:** Electron
+*   **Real-time Communication:** WebSockets
+*   **Configuration:** JSON

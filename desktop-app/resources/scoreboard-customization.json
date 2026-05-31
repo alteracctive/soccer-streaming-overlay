@@ -1,10 +1,10 @@
 {
-  "primary": "#000e29",
-  "secondary": "#ffffff",
-  "tertiary": "#ffef3d",
+  "boxMainColor": "#000e29",
+  "textMainColor": "#ffffff",
+  "textAltColor": "#ffef3d",
   "opacity": 100,
   "scale": 100,
-  "matchInfo": "Soccer Cup | Match 1",
+  "matchInfo": "Sb2vn Cup | Match 1",
   "timerPosition": "Right",
-  "showRedCardIndicators": true
+  "showRedCardIndicators": false
 }

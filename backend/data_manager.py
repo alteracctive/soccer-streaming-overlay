@@ -32,9 +32,10 @@ BUNDLED_SHORTCUT_FILE = resource_path("shortcuts.json")
 
 
 class ScoreboardStyleConfig(BaseModel):
-    primary: str = "#000000"
-    secondary: str = "#FFFFFF"
-    tertiary: str = "#ffd700"
+    boxMainColor: str = "#000000"
+    textMainColor: str = "#FFFFFF"
+    textAltColor: str = "#ffd700"
+    boxAltColor: str = "#000e29"
     opacity: int = Field(default=75, ge=50, le=100)
     scale: int = Field(default=100, ge=50, le=150)
     matchInfo: str = ""
@@ -163,9 +164,10 @@ class LayoutUpdate(BaseModel):
     showRedCardIndicators: bool
 
 class StyleUpdate(BaseModel):
-    primary: str
-    secondary: str
-    tertiary: str
+    boxMainColor: str
+    textMainColor: str
+    textAltColor: str
+    boxAltColor: str
     opacity: int
     scale: int
     
@@ -349,15 +351,19 @@ class DataManager:
                 async with aiofiles.open(self.scoreboard_style_path, mode='r') as f:
                     content = await f.read()
                     data = json.loads(content)
-                    if 'textColorPrimary' in data: data['secondary'] = data.pop('textColorPrimary')
-                    if 'textColorTertiary' in data: data['tertiary'] = data.pop('textColorTertiary')
-                    if 'textColorSecondary' in data: data['tertiary'] = data.pop('textColorSecondary')
+                    if 'primary' in data: data['boxMainColor'] = data.pop('primary')
+                    if 'secondary' in data: data['textMainColor'] = data.pop('secondary')
+                    if 'tertiary' in data: data['textAltColor'] = data.pop('tertiary')
+                    if 'boxBackgroundAlt' in data: data['boxAltColor'] = data.pop('boxBackgroundAlt')
+                    if 'textColorPrimary' in data: data['textMainColor'] = data.pop('textColorPrimary')
+                    if 'textColorTertiary' in data: data['textAltColor'] = data.pop('textColorTertiary')
+                    if 'textColorSecondary' in data: data['textAltColor'] = data.pop('textColorSecondary')
                     if 'showRedCardBoxes' in data: data['showRedCardIndicators'] = data.pop('showRedCardBoxes')
                     if 'timerPosition' not in data: data['timerPosition'] = 'Under'
                     if 'matchInfo' not in data: data['matchInfo'] = ''
                     if 'showRedCardIndicators' not in data: data['showRedCardIndicators'] = False
-                    if 'secondary' not in data: data['secondary'] = '#FFFFFF'
-                    if 'tertiary' not in data: data['tertiary'] = '#ffd700'
+                    if 'textMainColor' not in data: data['textMainColor'] = '#FFFFFF'
+                    if 'textAltColor' not in data: data['textAltColor'] = '#ffd700'
                     self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
                 print("Scoreboard style loaded.")
             except (FileNotFoundError, ValidationError):
@@ -375,6 +381,7 @@ class DataManager:
                         if 'showRedCardIndicators' not in data: data['showRedCardIndicators'] = False
                         if 'secondary' not in data: data['secondary'] = '#FFFFFF'
                         if 'tertiary' not in data: data['tertiary'] = '#ffd700'
+                        if 'boxBackgroundAlt' not in data: data['boxBackgroundAlt'] = '#000e29'
                         self.scoreboard_style = ScoreboardStyleConfig.model_validate(data)
                     await self._save_scoreboard_style_nolock()
                 except Exception as e:
@@ -481,9 +488,10 @@ class DataManager:
 
     async def update_scoreboard_style(self, style_update: StyleUpdate) -> ScoreboardStyleConfig:
         current_style = self.get_scoreboard_style()
-        current_style.primary = style_update.primary
-        current_style.secondary = style_update.secondary
-        current_style.tertiary = style_update.tertiary
+        current_style.boxMainColor = style_update.boxMainColor
+        current_style.textMainColor = style_update.textMainColor
+        current_style.textAltColor = style_update.textAltColor
+        current_style.boxAltColor = style_update.boxAltColor
         current_style.opacity = style_update.opacity
         current_style.scale = style_update.scale
         self.scoreboard_style = current_style 

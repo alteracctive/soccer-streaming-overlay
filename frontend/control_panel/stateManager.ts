@@ -7,10 +7,22 @@ export interface Card { regMinute: number; addMinute: number; }
 export interface PlayerConfig { number: number; name: string; onField: boolean; timeOnField: number; yellowCards: Card[]; redCards: Card[]; goals: Goal[]; }
 export interface TeamConfig { name: string; abbreviation: string; score: number; colors: ColorConfig; players: PlayerConfig[]; }
 export interface ScoreboardConfig { teamA: TeamConfig; teamB: TeamConfig; currentPeriod: string; }
-export interface PeriodSetting { name: string; endTime: number; }
-export interface TimerStatus { isRunning: boolean; seconds: number; }
+export interface PeriodSetting {
+    name: string;
+    endTime: number;
+}
+
+export interface PeriodSettingsData {
+    periods: PeriodSetting[];
+    is_ascending: boolean;
+}
+
+export interface TimerStatus {
+    isRunning: boolean;
+    seconds: number;
+}
 export interface ExtraTimeStatus { minutes: number; isVisible: boolean; }
-export interface ScoreboardStyleConfig { primary: string; secondary: string; tertiary: string; opacity: number; scale: number; matchInfo: string; timerPosition: "Under" | "Right"; showRedCardIndicators: boolean; }
+export interface ScoreboardStyleConfig { boxMainColor: string; textMainColor: string; textAltColor: string; boxAltColor: string; opacity: number; scale: number; matchInfo: string; timerPosition: "Under" | "Right"; showRedCardIndicators: boolean; }
 export type ScoreboardStyleOnly = Omit<ScoreboardStyleConfig, 'matchInfo' | 'timerPosition' | 'showRedCardIndicators'>;
 export interface LayoutConfig { position: "Under" | "Right"; showRedCardIndicators: boolean; }
 
@@ -35,6 +47,8 @@ let appState: {
   timer: TimerStatus;
   isConnected: boolean;
   scoreboardStyle: ScoreboardStyleConfig | null;
+  periods: PeriodSetting[] | null;
+  isPeriodAscending: boolean | null;
   isGameReportVisible: boolean;
   isScoreboardVisible: boolean;
   isPlayersListVisibleA: boolean;
@@ -55,6 +69,8 @@ let appState: {
   timer: { isRunning: false, seconds: 0 },
   isConnected: false,
   scoreboardStyle: { primary: '#000000', secondary: '#FFFFFF', tertiary: '#ffd700', opacity: 75, scale: 100, matchInfo: "", timerPosition: "Under", showRedCardIndicators: false },
+  periods: null,
+  isPeriodAscending: null,
   isGameReportVisible: false, 
   isScoreboardVisible: true,
   isPlayersListVisibleA: false,
@@ -81,6 +97,13 @@ function updateConfig(newConfig: ScoreboardConfig) { appState.config = newConfig
 function updateTimer(newTimerStatus: Partial<TimerStatus>) { appState.timer = { ...appState.timer, ...newTimerStatus }; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
 function updateConnectionStatus(status: boolean) { appState.isConnected = status; stateEmitter.dispatchEvent(new CustomEvent(CONNECTION_STATUS_EVENT, { detail: status })); }
 function updateScoreboardStyle(newStyle: ScoreboardStyleConfig) { appState.scoreboardStyle = newStyle; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
+
+function updatePeriods(data: PeriodSettingsData) {
+    appState.periods = data.periods;
+    appState.isPeriodAscending = data.is_ascending;
+    stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT));
+}
+
 function updateGameReportVisibility(isVisible: boolean) { appState.isGameReportVisible = isVisible; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
 function updateScoreboardVisibility(isVisible: boolean) { appState.isScoreboardVisible = isVisible; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
 function updatePlayersListVisibility(data: { isVisibleA: boolean, isVisibleB: boolean }) { appState.isPlayersListVisibleA = data.isVisibleA; appState.isPlayersListVisibleB = data.isVisibleB; appState.isPlayersListVisible = data.isVisibleA || data.isVisibleB; stateEmitter.dispatchEvent(new CustomEvent(STATE_UPDATE_EVENT)); }
@@ -112,6 +135,7 @@ function connectWebSocket() {
     else if (message.type === 'status') updateTimer({ isRunning: message.isRunning, seconds: message.seconds });
     else if (message.type === 'config') updateConfig(message.config as ScoreboardConfig);
     else if (message.type === 'scoreboard_style') updateScoreboardStyle(message.style as ScoreboardStyleConfig);
+    else if (message.type === 'period_settings') updatePeriods(message.settings as PeriodSettingsData);
     else if (message.type === 'game_report_visibility') updateGameReportVisibility(message.isVisible as boolean);
     else if (message.type === 'scoreboard_visibility') updateScoreboardVisibility(message.isVisible as boolean);
     else if (message.type === 'players_list_visibility') updatePlayersListVisibility(message);
@@ -169,10 +193,33 @@ export function getPlayerToEdit() {
 // ... (Other functions: timerControls, setFutsalClock, getPeriods, setPeriod, setExtraTime, toggleExtraTimeVisibility, setScore, saveTeamInfo, saveColors, saveScoreboardStyle, saveMatchInfo, saveLayout, toggleGameReport, toggleScoreboard, toggleMatchInfoVisibility, togglePlayersListA, togglePlayersListB, setPlayersListVisibility, addPlayer, replacePlayer, clearPlayerList, deletePlayer, addGoal, addCard, toggleOnField, editPlayer, resetTeamStats, downloadJson, getRawJson, uploadJson - ALL UNCHANGED) ...
 export const timerControls = { start: () => post('/api/timer/start', {}), stop: () => post('/api/timer/stop', {}), set: (seconds: number) => post('/api/timer/set', { seconds }) };
 export async function setFutsalClock(isOn: boolean) { await post('/api/timer/futsal-toggle', { is_on: isOn }); }
-export async function getPeriods(): Promise<PeriodSetting[]> { const response = await fetch(`${API_URL}/api/periods-settings`); if (!response.ok) throw new Error("Failed"); return await response.json(); }
+
+export async function getPeriods(forceRefetch = false): Promise<PeriodSettingsData> {
+    if (!forceRefetch && appState.periods && appState.isPeriodAscending !== null) {
+        return {
+            periods: appState.periods,
+            is_ascending: appState.isPeriodAscending,
+        };
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/periods-settings`);
+        if (!response.ok) {
+            throw new Error("Failed to fetch period settings");
+        }
+        const data: PeriodSettingsData = await response.json();
+        updatePeriods(data);
+        return data;
+    } catch (error) {
+        console.error("Error fetching period settings:", error);
+        throw error;
+    }
+}
 
 export async function savePeriods(periods: PeriodSetting[], isAscending: boolean) {
     await post('/api/periods-settings', { periods, is_ascending: isAscending });
+    // After saving, update the state to reflect the changes
+    updatePeriods({ periods, is_ascending: isAscending });
 }
 export async function setPeriod(name: string) { await post('/api/period', { name }); }
 export async function setExtraTime(minutes: number) { await post('/api/extra-time/set', { minutes }); }

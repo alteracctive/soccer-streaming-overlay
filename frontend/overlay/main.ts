@@ -203,16 +203,18 @@ function updateUI() {
   }
 
   if (scoreboardStyle) {
-    const backgroundColorWithOpacity = hexToRgba(scoreboardStyle.primary, scoreboardStyle.opacity);
+    const backgroundColorWithOpacity = hexToRgba(scoreboardStyle.boxMainColor, scoreboardStyle.opacity);
+    const boxAltColorWithOpacity = hexToRgba(scoreboardStyle.boxAltColor, scoreboardStyle.opacity);
     const scaleValue = Math.max(0.5, Math.min(1.5, scoreboardStyle.scale / 100));
-    document.body.style.setProperty('--scoreboard-text-secondary', scoreboardStyle.secondary);
-    document.body.style.setProperty('--scoreboard-text-tertiary', scoreboardStyle.tertiary);
+    document.body.style.setProperty('--scoreboard-text-secondary', scoreboardStyle.textMainColor);
+    document.body.style.setProperty('--scoreboard-text-tertiary', scoreboardStyle.textAltColor);
+    document.body.style.setProperty('--scoreboard-box-alt', boxAltColorWithOpacity);
+    document.body.style.setProperty('--scoreboard-box-main', backgroundColorWithOpacity);
 
-    if (matchInfoRow && matchInfoText) { checkAndApplyScroll(matchInfoRow.querySelector('.scrolling-text-wrapper'), scoreboardStyle.matchInfo); matchInfoRow.style.backgroundColor = backgroundColorWithOpacity; matchInfoRow.style.color = scoreboardStyle.secondary; }
-    if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.secondary; } 
-    if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.secondary; } 
-    if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; extraTimeBox.style.color = scoreboardStyle.tertiary; } 
-    if (scoreboardContainer) { 
+    if (matchInfoRow && matchInfoText) { checkAndApplyScroll(matchInfoRow.querySelector('.scrolling-text-wrapper'), scoreboardStyle.matchInfo); matchInfoRow.style.backgroundColor = boxAltColorWithOpacity; matchInfoRow.style.color = scoreboardStyle.textMainColor; }
+    if (scoreRow) { scoreRow.style.backgroundColor = backgroundColorWithOpacity; scoreRow.style.color = scoreboardStyle.textMainColor; }
+    if (timerRow) { timerRow.style.backgroundColor = backgroundColorWithOpacity; timerRow.style.color = scoreboardStyle.textMainColor; }
+    if (extraTimeBox) { extraTimeBox.style.backgroundColor = backgroundColorWithOpacity; extraTimeBox.style.color = scoreboardStyle.textAltColor; }    if (scoreboardContainer) { 
       scoreboardContainer.style.transform = `scale(${scaleValue})`;
       const isRightLayout = scoreboardStyle.timerPosition === 'Right';
       scoreboardContainer.classList.toggle('timer-position-right', isRightLayout);
@@ -224,16 +226,16 @@ function updateUI() {
         } else { timerSectionRow.style.marginLeft = '0'; }
       }
     }
-    if (gameReportContainer) { gameReportContainer.style.backgroundColor = backgroundColorWithOpacity; gameReportContainer.style.color = scoreboardStyle.secondary; gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`; }
+    if (gameReportContainer) { gameReportContainer.style.backgroundColor = backgroundColorWithOpacity; gameReportContainer.style.color = scoreboardStyle.textMainColor; gameReportContainer.style.transform = `translateX(-50%) scale(${scaleValue})`; }
     
     if (playersListContainerA) {
         playersListContainerA.style.backgroundColor = backgroundColorWithOpacity;
-        playersListContainerA.style.color = scoreboardStyle.secondary;
+        playersListContainerA.style.color = scoreboardStyle.textMainColor;
         playersListContainerA.style.transform = `translateY(-50%) scale(${scaleValue})`;
     }
     if (playersListContainerB) {
         playersListContainerB.style.backgroundColor = backgroundColorWithOpacity;
-        playersListContainerB.style.color = scoreboardStyle.secondary;
+        playersListContainerB.style.color = scoreboardStyle.textMainColor;
         playersListContainerB.style.transform = `translateY(-50%) scale(${scaleValue})`;
     }
 

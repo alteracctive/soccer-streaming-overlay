@@ -209,7 +209,7 @@ export function render(container: HTMLElement) {
         // Deselect
         sendVarUpdate({ isVisible: false, scenario: '', message: '', decision: '' });
       } else {
-        sendVarUpdate({ isVisible: true, scenario: scenario, message: '', decision: '' });
+        sendVarUpdate({ isVisible: false, scenario: scenario, message: '', decision: '' });
       }
     }
   }
@@ -221,7 +221,7 @@ export function render(container: HTMLElement) {
       const currentState = getState().varState;
       if (currentState.message === message) {
         // Deselect
-        sendVarUpdate({ isVisible: true, message: '', decision: '' });
+        sendVarUpdate({ isVisible: false, message: '', decision: '' });
       } else {
         sendVarUpdate({ isVisible: true, message: message, decision: '' });
       }

@@ -28,9 +28,25 @@ import { showNotification } from '../notification';
 type ConfirmAction = (() => Promise<void>) | null;
 
 export function render(container: HTMLElement) {
-  const { config } = getState();
-  let allPeriods: PeriodSetting[] = [];
+  let { config, periods: allPeriods, isPeriodAscending } = getState();
   let currentPeriodLimit = 45; 
+
+  const updatePeriodLimit = () => {
+    ({ config, periods: allPeriods } = getState());
+    if (config && config.currentPeriod && allPeriods) {
+        const p = allPeriods.find(per => per.name === config.currentPeriod);
+        if (p) {
+            currentPeriodLimit = p.endTime;
+        }
+    }
+  };
+  
+  // Initial Load
+  getPeriods().then(data => {
+      allPeriods = data.periods;
+      isPeriodAscending = data.is_ascending;
+      updatePeriodLimit();
+  }).catch(e => console.error("Failed to load initial periods", e)); 
 
   container.innerHTML = `
     <style>
@@ -318,16 +334,7 @@ export function render(container: HTMLElement) {
   modalCancelBtn.addEventListener('click', hideConfirmModal);
   confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) { hideConfirmModal(); } });
 
-  const loadPeriodLimit = async () => {
-    try {
-        const periods = await getPeriods();
-        const { config } = getState();
-        if (config && config.currentPeriod) {
-            const p = periods.find(per => per.name === config.currentPeriod);
-            if (p) currentPeriodLimit = p.endTime;
-        }
-    } catch (e) { console.error(e); }
-  };
+  
 
   const getCurrentGameTime = (): { reg: number, add: number } => {
       const { timer } = getState();
@@ -765,11 +772,9 @@ export function render(container: HTMLElement) {
         }
     });
 
-  loadPeriodLimit();
-
   const onStateUpdate = () => {
     updatePlayerLists();
-    loadPeriodLimit(); 
+    updatePeriodLimit(); 
   };
   
   subscribe(onStateUpdate); 
